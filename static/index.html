@@ -4,265 +4,131 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Brain</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:        #f5f5f7;
-      --surface:   #ffffff;
-      --primary:   #5b5bd6;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --primary: #5b5bd6;
       --primary-light: #ebebff;
-      --text:      #1a1a2e;
-      --muted:     #8a8a9a;
-      --border:    #e5e5ea;
-      --user-bg:   #5b5bd6;
-      --user-text: #ffffff;
-      --ai-bg:     #ffffff;
-      --ai-text:   #1a1a2e;
-      --radius:    18px;
+      --text: #1a1a2e;
+      --muted: #8a8a9a;
+      --border: #e5e5ea;
+      --radius: 14px;
+      --clinical: #1565c0; --clinical-bg: #e3f2fd;
+      --business: #2e7d32; --business-bg: #e8f5e9;
+      --study:    #f57f17; --study-bg:    #fff8e1;
+      --resources:#6a1b9a; --resources-bg:#f3e5f5;
+      --personal: #880e4f; --personal-bg: #fce4ec;
     }
-
-    html, body { height: 100%; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
-    }
+    html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
     /* ── Login ── */
-    #login-screen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100dvh;
-      padding: 24px;
-      gap: 16px;
-    }
-
-    #login-screen .logo {
-      font-size: 48px;
-      margin-bottom: 8px;
-    }
-
-    #login-screen h1 {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    #login-screen p {
-      color: var(--muted);
-      font-size: 15px;
-      text-align: center;
-    }
-
-    #login-screen input {
-      width: 100%;
-      max-width: 320px;
-      padding: 14px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      font-size: 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    #login-screen input:focus { border-color: var(--primary); }
-
-    #login-screen button {
-      width: 100%;
-      max-width: 320px;
-      padding: 14px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    #login-error {
-      color: #e53935;
-      font-size: 14px;
-      display: none;
-    }
+    #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100dvh; padding:24px; gap:16px; }
+    #login-screen .logo { font-size:52px; }
+    #login-screen h1 { font-size:30px; font-weight:700; }
+    #login-screen p { color:var(--muted); font-size:15px; text-align:center; }
+    #login-screen input { width:100%; max-width:320px; padding:14px 16px; border:1.5px solid var(--border); border-radius:12px; font-size:16px; outline:none; }
+    #login-screen input:focus { border-color:var(--primary); }
+    #login-screen button { width:100%; max-width:320px; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; }
+    #login-error { color:#e53935; font-size:14px; display:none; }
 
     /* ── App shell ── */
-    #app { display: none; flex-direction: column; height: 100dvh; }
+    #app { display:none; flex-direction:column; height:100dvh; }
 
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
+    /* ── Tab bar ── */
+    #tab-bar { display:flex; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; padding-bottom:env(safe-area-inset-bottom); }
+    .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 0 8px; gap:3px; cursor:pointer; font-size:11px; color:var(--muted); border:none; background:none; }
+    .tab.active { color:var(--primary); }
+    .tab svg { width:22px; height:22px; }
+    .tab.active svg { stroke:var(--primary); }
+    .tab svg { stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .header-logo { font-size: 22px; }
+    /* ── Pages ── */
+    .page { display:none; flex:1; flex-direction:column; overflow:hidden; }
+    .page.active { display:flex; }
 
-    header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
+    /* ── Header ── */
+    .page-header { background:var(--surface); border-bottom:1px solid var(--border); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .page-header h1 { font-size:18px; font-weight:700; }
+    .page-header .subtitle { font-size:12px; color:var(--muted); }
+    .header-left { display:flex; align-items:center; gap:10px; }
+    .sign-out { background:none; border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:13px; color:var(--muted); cursor:pointer; }
 
-    header .subtitle {
-      font-size: 12px;
-      color: var(--muted);
-    }
+    /* ── Chat page ── */
+    #messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
+    .msg { display:flex; flex-direction:column; max-width:82%; gap:4px; }
+    .msg.user  { align-self:flex-end; align-items:flex-end; }
+    .msg.brain { align-self:flex-start; align-items:flex-start; }
+    .bubble { padding:10px 14px; border-radius:var(--radius); font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+    .msg.user  .bubble { background:var(--primary); color:white; border-bottom-right-radius:4px; }
+    .msg.brain .bubble { background:var(--surface); color:var(--text); border-bottom-left-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,0.07); }
+    .msg-meta { font-size:11px; color:var(--muted); padding:0 4px; }
+    .typing .bubble { display:flex; align-items:center; gap:4px; padding:12px 16px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); animation:bounce 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay:.2s; }
+    .dot:nth-child(3) { animation-delay:.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+    .welcome { background:var(--primary-light); border-radius:16px; padding:20px; margin:8px 0; }
+    .welcome h2 { font-size:17px; font-weight:700; margin-bottom:6px; color:var(--primary); }
+    .welcome p { font-size:14px; color:#444; line-height:1.5; }
+    .welcome ul { font-size:14px; color:#444; line-height:1.8; padding-left:18px; margin-top:8px; }
+    #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; align-items:flex-end; gap:10px; flex-shrink:0; }
+    #input { flex:1; border:1.5px solid var(--border); border-radius:20px; padding:10px 16px; font-size:16px; font-family:inherit; resize:none; outline:none; max-height:120px; line-height:1.4; background:var(--bg); }
+    #input:focus { border-color:var(--primary); background:white; }
+    #input::placeholder { color:var(--muted); }
+    #send-btn { width:42px; height:42px; border-radius:50%; background:var(--primary); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    #send-btn:disabled { opacity:.4; cursor:default; }
+    #send-btn svg { fill:white; stroke:none; }
 
-    .header-btn {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 13px;
-      color: var(--muted);
-      cursor: pointer;
-    }
+    /* ── Notes page ── */
+    #notes-page { background:var(--bg); }
+    .category-scroll { display:flex; gap:8px; padding:14px 16px; overflow-x:auto; flex-shrink:0; background:var(--surface); border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .category-scroll::-webkit-scrollbar { display:none; }
+    .cat-pill { padding:7px 14px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; border:1.5px solid transparent; background:var(--bg); color:var(--muted); }
+    .cat-pill.active { background:var(--primary); color:white; }
+    .cat-pill.clinical  { border-color:var(--clinical);  color:var(--clinical); }
+    .cat-pill.business  { border-color:var(--business);  color:var(--business); }
+    .cat-pill.study     { border-color:var(--study);     color:var(--study); }
+    .cat-pill.resources { border-color:var(--resources); color:var(--resources); }
+    .cat-pill.personal  { border-color:var(--personal);  color:var(--personal); }
+    .cat-pill.clinical.active  { background:var(--clinical);  border-color:var(--clinical); color:white; }
+    .cat-pill.business.active  { background:var(--business);  border-color:var(--business); color:white; }
+    .cat-pill.study.active     { background:var(--study);     border-color:var(--study);    color:white; }
+    .cat-pill.resources.active { background:var(--resources); border-color:var(--resources);color:white; }
+    .cat-pill.personal.active  { background:var(--personal);  border-color:var(--personal); color:white; }
 
-    /* ── Messages ── */
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      -webkit-overflow-scrolling: touch;
-    }
+    #notes-list { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
+    .note-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; }
+    .note-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+    .badge.clinical  { background:var(--clinical-bg);  color:var(--clinical); }
+    .badge.business  { background:var(--business-bg);  color:var(--business); }
+    .badge.study     { background:var(--study-bg);     color:var(--study); }
+    .badge.resources { background:var(--resources-bg); color:var(--resources); }
+    .badge.personal  { background:var(--personal-bg);  color:var(--personal); }
+    .note-date { font-size:11px; color:var(--muted); }
+    .note-summary { font-size:15px; font-weight:600; margin-bottom:6px; line-height:1.4; }
+    .note-content { font-size:13px; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .note-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+    .tag { padding:2px 8px; background:var(--bg); border-radius:10px; font-size:11px; color:var(--muted); }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:12px; color:var(--muted); padding:40px; text-align:center; }
+    .empty-state .icon { font-size:48px; }
+    .empty-state p { font-size:15px; line-height:1.5; }
+    .loading-notes { display:flex; align-items:center; justify-content:center; flex:1; color:var(--muted); font-size:15px; }
 
-    .msg {
-      display: flex;
-      flex-direction: column;
-      max-width: 82%;
-      gap: 4px;
-    }
-
-    .msg.user  { align-self: flex-end; align-items: flex-end; }
-    .msg.brain { align-self: flex-start; align-items: flex-start; }
-
-    .bubble {
-      padding: 10px 14px;
-      border-radius: var(--radius);
-      font-size: 15px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .msg.user  .bubble { background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; }
-    .msg.brain .bubble { background: var(--ai-bg); color: var(--ai-text); border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
-
-    .msg-meta {
-      font-size: 11px;
-      color: var(--muted);
-      padding: 0 4px;
-    }
-
-    /* category badge */
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-    .badge.clinical  { background: #e3f2fd; color: #1565c0; }
-    .badge.business  { background: #e8f5e9; color: #2e7d32; }
-    .badge.study     { background: #fff8e1; color: #f57f17; }
-    .badge.resources { background: #f3e5f5; color: #6a1b9a; }
-    .badge.personal  { background: #fce4ec; color: #880e4f; }
-
-    /* typing indicator */
-    .typing .bubble {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 12px 16px;
-    }
-    .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: bounce 1.2s infinite;
-    }
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); }
-      30%            { transform: translateY(-6px); }
-    }
-
-    /* welcome card */
-    .welcome {
-      background: var(--primary-light);
-      border-radius: 16px;
-      padding: 20px;
-      margin: 8px 0;
-    }
-    .welcome h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--primary); }
-    .welcome p  { font-size: 14px; color: #444; line-height: 1.5; }
-    .welcome ul { font-size: 14px; color: #444; line-height: 1.8; padding-left: 18px; margin-top: 8px; }
-
-    /* ── Input bar ── */
-    #input-bar {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 12px 16px;
-      padding-bottom: max(12px, env(safe-area-inset-bottom));
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    #input {
-      flex: 1;
-      border: 1.5px solid var(--border);
-      border-radius: 20px;
-      padding: 10px 16px;
-      font-size: 16px;
-      font-family: inherit;
-      resize: none;
-      outline: none;
-      max-height: 120px;
-      line-height: 1.4;
-      transition: border-color 0.2s;
-      background: var(--bg);
-    }
-
-    #input:focus { border-color: var(--primary); background: white; }
-    #input::placeholder { color: var(--muted); }
-
-    #send-btn {
-      width: 42px; height: 42px;
-      border-radius: 50%;
-      background: var(--primary);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: opacity 0.2s;
-    }
-
-    #send-btn:disabled { opacity: 0.4; cursor: default; }
-    #send-btn svg { fill: white; }
+    /* ── Note detail modal ── */
+    #note-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:flex-end; }
+    #note-modal.open { display:flex; }
+    .modal-sheet { background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-height:80dvh; overflow-y:auto; padding:20px; }
+    .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
+    .modal-badge-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .modal-date { font-size:12px; color:var(--muted); }
+    .modal-title { font-size:18px; font-weight:700; margin-bottom:12px; }
+    .modal-body { font-size:15px; line-height:1.6; white-space:pre-wrap; color:var(--text); }
+    .modal-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
+    .modal-close { position:sticky; bottom:0; width:100%; margin-top:20px; padding:14px; background:var(--bg); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--text); cursor:pointer; }
   </style>
 </head>
 <body>
@@ -271,7 +137,7 @@
 <div id="login-screen">
   <div class="logo">🧠</div>
   <h1>Brain</h1>
-  <p>Your personal AI note-taking team.<br>Everything in one place.</p>
+  <p>Your personal AI note team</p>
   <input type="password" id="pw-input" placeholder="Enter your password" autocomplete="current-password">
   <button onclick="doLogin()">Sign In</button>
   <span id="login-error">Wrong password. Try again.</span>
@@ -279,168 +145,223 @@
 
 <!-- App -->
 <div id="app">
-  <header>
-    <div class="header-left">
-      <span class="header-logo">🧠</span>
-      <div>
-        <h1>Brain</h1>
-        <div class="subtitle">Your AI note team</div>
+
+  <!-- Chat Page -->
+  <div class="page active" id="chat-page">
+    <div class="page-header">
+      <div class="header-left">
+        <span style="font-size:22px">🧠</span>
+        <div><div style="font-size:18px;font-weight:700">Brain</div><div class="subtitle">Your AI note team</div></div>
+      </div>
+      <button class="sign-out" onclick="doLogout()">Sign out</button>
+    </div>
+    <div id="messages">
+      <div class="welcome">
+        <h2>Hey! I'm Brain 👋</h2>
+        <p>Tell me anything — I'll save it, organize it, and remember it for you. Check the <b>Notes tab</b> to browse everything.</p>
+        <ul>
+          <li>💊 <b>Clinical</b> — "sertraline 50mg is first-line for MDD"</li>
+          <li>📋 <b>Contact</b> — "met Dr. Lee at conference, telehealth in CA"</li>
+          <li>📚 <b>Boards</b> — "PHQ-9 cutoff is 10 for moderate depression"</li>
+          <li>🔍 <b>Find it</b> — "what do I know about SSRIs?"</li>
+        </ul>
       </div>
     </div>
-    <button class="header-btn" onclick="doLogout()">Sign out</button>
-  </header>
-
-  <div id="messages">
-    <div class="welcome">
-      <h2>Hey! I'm Brain 👋</h2>
-      <p>I'm your personal AI note-taking team. Just talk to me naturally — I'll remember everything and organize it for you.</p>
-      <ul>
-        <li>💊 <b>Save a clinical note</b> — "sertraline 50mg is first-line for MDD"</li>
-        <li>📋 <b>Save a contact</b> — "met Dr. Lee at conference, does telehealth in CA"</li>
-        <li>🔍 <b>Find something</b> — "what do I know about SSRIs?"</li>
-        <li>👤 <b>Look up a person</b> — "tell me about Dr. Lee"</li>
-        <li>📚 <b>Board prep</b> — "note for boards: PHQ-9 cutoff is 10 for MDD"</li>
-      </ul>
+    <div id="input-bar">
+      <textarea id="input" placeholder="Tell me something or ask anything..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
     </div>
   </div>
 
-  <div id="input-bar">
-    <textarea id="input" placeholder="Tell me something or ask me anything..." rows="1"></textarea>
-    <button id="send-btn" onclick="sendMessage()" disabled>
-      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+  <!-- Notes Page -->
+  <div class="page" id="notes-page">
+    <div class="page-header">
+      <div><div style="font-size:18px;font-weight:700">My Notes</div><div class="subtitle" id="notes-count">Loading...</div></div>
+      <button class="sign-out" onclick="loadNotes()">Refresh</button>
+    </div>
+    <div class="category-scroll">
+      <div class="cat-pill active" data-cat="all" onclick="filterNotes('all')">All</div>
+      <div class="cat-pill clinical"  data-cat="clinical"  onclick="filterNotes('clinical')">Clinical</div>
+      <div class="cat-pill study"     data-cat="study"     onclick="filterNotes('study')">Study</div>
+      <div class="cat-pill business"  data-cat="business"  onclick="filterNotes('business')">Business</div>
+      <div class="cat-pill resources" data-cat="resources" onclick="filterNotes('resources')">Resources</div>
+      <div class="cat-pill personal"  data-cat="personal"  onclick="filterNotes('personal')">Personal</div>
+    </div>
+    <div id="notes-list"></div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div id="tab-bar">
+    <button class="tab active" onclick="showTab('chat')">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat
     </button>
+    <button class="tab" onclick="showTab('notes')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Notes
+    </button>
+  </div>
+</div>
+
+<!-- Note Detail Modal -->
+<div id="note-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-badge-row">
+      <span class="badge" id="modal-badge"></span>
+      <span class="modal-date" id="modal-date"></span>
+    </div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-tags" id="modal-tags"></div>
+    <button class="modal-close" onclick="closeModal()">Close</button>
   </div>
 </div>
 
 <script>
   const $ = id => document.getElementById(id);
+  let allNotes = [];
+  let currentCat = 'all';
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────
   async function doLogin() {
-    const pw = $('pw-input').value;
     const res = await fetch('/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({password: pw})
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) {
-      $('login-screen').style.display = 'none';
-      $('app').style.display = 'flex';
-    } else {
-      $('login-error').style.display = 'block';
-    }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); }
+    else $('login-error').style.display='block';
   }
-
   async function doLogout() {
-    await fetch('/logout', {method: 'POST'});
-    location.reload();
+    await fetch('/logout', {method:'POST'}); location.reload();
+  }
+  $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();}})();
+
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  function showTab(tab) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    $(`${tab}-page`).classList.add('active');
+    document.querySelectorAll('.tab')[tab==='chat'?0:1].classList.add('active');
+    if(tab==='notes') loadNotes();
   }
 
-  $('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-  // ── Check session on load ─────────────────────────────────────────────────
-  (async () => {
-    const res = await fetch('/notes?limit=1');
-    if (res.ok) {
-      $('login-screen').style.display = 'none';
-      $('app').style.display = 'flex';
-    }
-  })();
-
-  // ── Input auto-resize ─────────────────────────────────────────────────────
-  const input = $('input');
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-    $('send-btn').disabled = !input.value.trim();
-  });
-
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  // ── Messages ──────────────────────────────────────────────────────────────
-  function timeStr() {
-    return new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-  }
-
-  function appendMessage(role, text) {
-    const msgs = $('messages');
-    const div = document.createElement('div');
-    div.className = `msg ${role}`;
-
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.textContent = text;
-
-    const meta = document.createElement('div');
-    meta.className = 'msg-meta';
-    meta.textContent = role === 'user' ? `You · ${timeStr()}` : `Brain · ${timeStr()}`;
-
-    div.appendChild(bubble);
-    div.appendChild(meta);
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-    return div;
-  }
-
-  function showTyping() {
-    const msgs = $('messages');
-    const div = document.createElement('div');
-    div.className = 'msg brain typing';
-    div.id = 'typing-indicator';
-    div.innerHTML = `<div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  function removeTyping() {
-    const t = $('typing-indicator');
-    if (t) t.remove();
-  }
-
-  // ── Send ──────────────────────────────────────────────────────────────────
-  let sending = false;
-
-  async function sendMessage() {
-    const text = input.value.trim();
-    if (!text || sending) return;
-
-    sending = true;
-    input.value = '';
-    input.style.height = 'auto';
-    $('send-btn').disabled = true;
-
-    appendMessage('user', text);
-    showTyping();
-
+  // ── Notes ─────────────────────────────────────────────────────────────
+  async function loadNotes() {
+    $('notes-list').innerHTML = '<div class="loading-notes">Loading your notes...</div>';
     try {
-      const res = await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: text})
-      });
-
-      removeTyping();
-
-      if (res.status === 401) {
-        location.reload();
-        return;
-      }
-
-      const data = await res.json();
-      appendMessage('brain', data.reply);
-    } catch (err) {
-      removeTyping();
-      appendMessage('brain', 'Something went wrong. Please try again.');
-    } finally {
-      sending = false;
-      input.focus();
+      const res = await fetch('/notes?limit=200');
+      if(res.status===401){location.reload();return;}
+      allNotes = await res.json();
+      renderNotes();
+    } catch(e) {
+      $('notes-list').innerHTML = '<div class="loading-notes">Could not load notes.</div>';
     }
   }
+
+  function filterNotes(cat) {
+    currentCat = cat;
+    document.querySelectorAll('.cat-pill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.cat===cat);
+    });
+    renderNotes();
+  }
+
+  function renderNotes() {
+    const filtered = currentCat==='all' ? allNotes : allNotes.filter(n=>n.category===currentCat);
+    $('notes-count').textContent = `${filtered.length} note${filtered.length!==1?'s':''}`;
+
+    if(!filtered.length) {
+      $('notes-list').innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No ${currentCat==='all'?'':currentCat+' '}notes yet.<br>Tell Brain something to save it here.</p></div>`;
+      return;
+    }
+
+    $('notes-list').innerHTML = filtered.map((n,i) => {
+      const tags = tryParse(n.tags);
+      const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="note-card" onclick="openNote(${i})">
+        <div class="note-card-header">
+          <span class="badge ${n.category}">${n.category}</span>
+          <span class="note-date">${date}</span>
+        </div>
+        <div class="note-summary">${esc(n.summary||'Note')}</div>
+        <div class="note-content">${esc(n.content)}</div>
+        ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+      </div>`;
+    }).join('');
+
+    // re-index for modal (filtered array)
+    window._filteredNotes = filtered;
+  }
+
+  function openNote(i) {
+    const n = window._filteredNotes[i];
+    const tags = tryParse(n.tags);
+    const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+    $('modal-badge').className = `badge ${n.category}`;
+    $('modal-badge').textContent = n.category;
+    $('modal-date').textContent = date;
+    $('modal-title').textContent = n.summary || 'Note';
+    $('modal-body').textContent = n.content;
+    $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    $('note-modal').classList.add('open');
+  }
+
+  function closeModal() { $('note-modal').classList.remove('open'); }
+  $('note-modal').addEventListener('click', e=>{ if(e.target===$('note-modal')) closeModal(); });
+
+  // ── Chat ──────────────────────────────────────────────────────────────
+  const input = $('input');
+  input.addEventListener('input',()=>{
+    input.style.height='auto';
+    input.style.height=Math.min(input.scrollHeight,120)+'px';
+    $('send-btn').disabled=!input.value.trim();
+  });
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} });
+
+  function timeStr(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+  function appendMessage(role,text){
+    const msgs=$('messages'), div=document.createElement('div');
+    div.className=`msg ${role}`;
+    const bubble=document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
+    const meta=document.createElement('div'); meta.className='msg-meta';
+    meta.textContent=role==='user'?`You · ${timeStr()}`:`Brain · ${timeStr()}`;
+    div.appendChild(bubble); div.appendChild(meta);
+    msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+  }
+
+  function showTyping(){
+    const msgs=$('messages'),div=document.createElement('div');
+    div.className='msg brain typing'; div.id='typing-indicator';
+    div.innerHTML='<div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+    msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+  }
+  function removeTyping(){ const t=$('typing-indicator'); if(t)t.remove(); }
+
+  let sending=false;
+  async function sendMessage(){
+    const text=input.value.trim(); if(!text||sending) return;
+    sending=true; input.value=''; input.style.height='auto'; $('send-btn').disabled=true;
+    appendMessage('user',text); showTyping();
+    try {
+      const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+      removeTyping();
+      if(res.status===401){location.reload();return;}
+      const data=await res.json();
+      appendMessage('brain',data.reply);
+      // refresh notes count quietly
+      fetch('/notes?limit=200').then(r=>r.json()).then(n=>{allNotes=n;});
+    } catch(e){ removeTyping(); appendMessage('brain','Something went wrong. Please try again.'); }
+    finally { sending=false; input.focus(); }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────
+  function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
+  function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 </script>
 </body>
 </html>
