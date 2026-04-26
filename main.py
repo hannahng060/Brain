@@ -250,22 +250,42 @@ def content_to_dict(block) -> dict:
 def run_agent(user_message: str) -> str:
     db_add_message("user", user_message)
     messages = db_get_history(20)
-    print(f"Sending {len(messages)} messages to Claude")
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
+        max_tokens=2048,
         system=SYSTEM_PROMPT,
+        tools=TOOLS,
         messages=messages
     )
 
-    print(f"Got response: stop_reason={response.stop_reason}, blocks={len(response.content)}")
+    while response.stop_reason == "tool_use":
+        assistant_content = [content_to_dict(b) for b in response.content]
+        tool_results = []
+        for block in response.content:
+            if block.type != "tool_use":
+                continue
+            result = execute_tool(block.name, block.input, user_message)
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": json.dumps(result)
+            })
 
-    final_text = ""
-    for block in response.content:
-        if block.type == "text":
-            final_text += block.text
-            print(f"Text block: {block.text[:50]}")
+        messages = messages + [
+            {"role": "assistant", "content": assistant_content},
+            {"role": "user",      "content": tool_results}
+        ]
+
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
+            tools=TOOLS,
+            messages=messages
+        )
+
+    final_text = "".join(b.text for b in response.content if hasattr(b, "text"))
 
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
