@@ -436,6 +436,26 @@ def extract_excel_text(data: bytes) -> str:
                 parts.append("\t".join(cells))
     return "\n".join(parts)
 
+def extract_docx_text(data: bytes) -> str:
+    import docx, io
+    doc = docx.Document(io.BytesIO(data))
+    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+def extract_pptx_text(data: bytes) -> str:
+    from pptx import Presentation
+    import io
+    prs = Presentation(io.BytesIO(data))
+    parts = []
+    for i, slide in enumerate(prs.slides, 1):
+        parts.append(f"Slide {i}:")
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for para in shape.text_frame.paragraphs:
+                    t = para.text.strip()
+                    if t:
+                        parts.append(t)
+    return "\n".join(parts)
+
 def extract_image_text(data: bytes, media_type: str) -> str:
     b64 = base64.standard_b64encode(data).decode("utf-8")
     response = client.messages.create(
@@ -466,11 +486,17 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         elif filename.endswith((".xlsx", ".xls")) or "spreadsheet" in content_type or "excel" in content_type:
             extracted = extract_excel_text(data)
             file_label = f"Excel: {filename}"
+        elif filename.endswith(".docx") or "wordprocessingml" in content_type or "msword" in content_type:
+            extracted = extract_docx_text(data)
+            file_label = f"Word doc: {filename}"
+        elif filename.endswith(".pptx") or "presentationml" in content_type or "powerpoint" in content_type:
+            extracted = extract_pptx_text(data)
+            file_label = f"PowerPoint: {filename}"
         elif content_type.startswith("image/"):
             extracted = extract_image_text(data, content_type)
             file_label = f"Image: {filename or 'screenshot'}"
         else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Excel, or image file.")
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Word doc, PowerPoint, Excel, or image file.")
 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
