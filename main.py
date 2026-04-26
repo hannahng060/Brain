@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 import anthropic
-import sqlite3
+import psycopg2
+import psycopg2.extras
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +15,7 @@ from pydantic import BaseModel
 # ── Config ────────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 APP_PASSWORD      = os.environ.get("APP_PASSWORD", "brain2024")
-DB_PATH           = os.environ.get("DB_PATH", "/tmp/brain.db")
+DATABASE_URL      = os.environ.get("DATABASE_URL", "")
 
 app = FastAPI(title="Brain")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -22,19 +23,16 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 active_sessions = set()
 
 # ── Database ──────────────────────────────────────────────────────────────────
-def get_db() -> sqlite3.Connection:
-    db_dir = os.path.dirname(DB_PATH)
-    if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
 def init_db():
     conn = get_db()
-    conn.executescript("""
+    cur = conn.cursor()
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS notes (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            id          SERIAL PRIMARY KEY,
             raw_input   TEXT    NOT NULL,
             content     TEXT    NOT NULL,
             summary     TEXT,
@@ -42,17 +40,19 @@ def init_db():
             subcategory TEXT,
             tags        TEXT    DEFAULT '[]',
             entities    TEXT    DEFAULT '[]',
-            created_at  TEXT    DEFAULT (datetime('now'))
-        );
-
+            created_at  TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS messages (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            id         SERIAL PRIMARY KEY,
             role       TEXT NOT NULL,
             content    TEXT NOT NULL,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
+            created_at TIMESTAMP DEFAULT NOW()
+        )
     """)
     conn.commit()
+    cur.close()
     conn.close()
 
 @app.on_event("startup")
@@ -67,84 +67,93 @@ def db_save_note(raw_input: str, content: str, summary: str,
                  category: str, subcategory: Optional[str],
                  tags: list, entities: list) -> dict:
     conn = get_db()
-    conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         """INSERT INTO notes (raw_input, content, summary, category, subcategory, tags, entities)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
         (raw_input, content, summary, category, subcategory,
          json.dumps(tags), json.dumps(entities))
     )
     conn.commit()
+    cur.close()
     conn.close()
     return {"status": "saved", "category": category, "summary": summary}
 
 def db_search_notes(query: str, category: str = "all", limit: int = 10) -> list:
     conn = get_db()
+    cur = conn.cursor()
     like = f"%{query}%"
     if category == "all":
-        rows = conn.execute(
+        cur.execute(
             """SELECT id, content, summary, category, subcategory, tags, entities, created_at
                FROM notes
-               WHERE content LIKE ? OR summary LIKE ? OR tags LIKE ? OR entities LIKE ?
-               ORDER BY created_at DESC LIMIT ?""",
+               WHERE content ILIKE %s OR summary ILIKE %s OR tags ILIKE %s OR entities ILIKE %s
+               ORDER BY created_at DESC LIMIT %s""",
             (like, like, like, like, limit)
-        ).fetchall()
+        )
     else:
-        rows = conn.execute(
+        cur.execute(
             """SELECT id, content, summary, category, subcategory, tags, entities, created_at
                FROM notes
-               WHERE (content LIKE ? OR summary LIKE ? OR tags LIKE ? OR entities LIKE ?)
-               AND category = ?
-               ORDER BY created_at DESC LIMIT ?""",
+               WHERE (content ILIKE %s OR summary ILIKE %s OR tags ILIKE %s OR entities ILIKE %s)
+               AND category = %s
+               ORDER BY created_at DESC LIMIT %s""",
             (like, like, like, like, category, limit)
-        ).fetchall()
+        )
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
     return [dict(r) for r in rows]
 
 def db_get_person(name: str) -> list:
     conn = get_db()
-    rows = conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         """SELECT id, content, summary, category, tags, created_at
-           FROM notes
-           WHERE entities LIKE ? OR content LIKE ?
+           FROM notes WHERE entities ILIKE %s OR content ILIKE %s
            ORDER BY created_at DESC""",
         (f'%{name}%', f'%{name}%')
-    ).fetchall()
+    )
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
     return [dict(r) for r in rows]
 
 def db_get_recent(limit: int = 10, category: str = "all") -> list:
     conn = get_db()
+    cur = conn.cursor()
     if category == "all":
-        rows = conn.execute(
-            "SELECT id, content, summary, category, tags, created_at FROM notes ORDER BY created_at DESC LIMIT ?",
-            (limit,)
-        ).fetchall()
+        cur.execute("SELECT id, content, summary, category, tags, created_at FROM notes ORDER BY created_at DESC LIMIT %s", (limit,))
     else:
-        rows = conn.execute(
-            "SELECT id, content, summary, category, tags, created_at FROM notes WHERE category=? ORDER BY created_at DESC LIMIT ?",
-            (category, limit)
-        ).fetchall()
+        cur.execute("SELECT id, content, summary, category, tags, created_at FROM notes WHERE category=%s ORDER BY created_at DESC LIMIT %s", (category, limit))
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
     return [dict(r) for r in rows]
 
 def db_get_history(limit: int = 20) -> list:
     conn = get_db()
-    rows = conn.execute(
-        "SELECT role, content FROM messages WHERE content != '' ORDER BY created_at DESC LIMIT ?", (limit,)
-    ).fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT role, content FROM messages WHERE content != '' ORDER BY created_at DESC LIMIT %s", (limit,))
+    rows = cur.fetchall()
+    cur.close()
     conn.close()
     return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
 
 def db_clear_messages():
     conn = get_db()
-    conn.execute("DELETE FROM messages")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM messages")
     conn.commit()
+    cur.close()
     conn.close()
 
 def db_add_message(role: str, content: str):
     conn = get_db()
-    conn.execute("INSERT INTO messages (role, content) VALUES (?, ?)", (role, content))
+    cur = conn.cursor()
+    cur.execute("INSERT INTO messages (role, content) VALUES (%s, %s)", (role, content))
     conn.commit()
+    cur.close()
     conn.close()
 
 # ── AI Tools definition ───────────────────────────────────────────────────────
