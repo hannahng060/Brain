@@ -253,7 +253,7 @@ def run_agent(user_message: str) -> str:
     print(f"Sending {len(messages)} messages to Claude")
 
     response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=messages
@@ -329,7 +329,7 @@ async def chat(body: ChatRequest, request: Request):
 async def test():
     try:
         response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-haiku-4-5-20251001",
             max_tokens=50,
             messages=[{"role": "user", "content": "Say hello in one sentence."}]
         )
