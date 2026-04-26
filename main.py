@@ -1,0 +1,352 @@
+import os
+import json
+import secrets
+from datetime import datetime
+from typing import Optional
+
+import anthropic
+import sqlite3
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+# ── Config ────────────────────────────────────────────────────────────────────
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+APP_PASSWORD      = os.environ.get("APP_PASSWORD", "brain2024")
+DB_PATH           = os.environ.get("DB_PATH", "/data/brain.db")
+
+app = FastAPI(title="Brain")
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+active_sessions: set[str] = set()
+
+# ── Database ──────────────────────────────────────────────────────────────────
+def get_db() -> sqlite3.Connection:
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            raw_input   TEXT    NOT NULL,
+            content     TEXT    NOT NULL,
+            summary     TEXT,
+            category    TEXT    NOT NULL DEFAULT 'general',
+            subcategory TEXT,
+            tags        TEXT    DEFAULT '[]',
+            entities    TEXT    DEFAULT '[]',
+            created_at  TEXT    DEFAULT (datetime('now'))
+        );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
+            content, summary, tags, entities,
+            content='notes',
+            content_rowid='id'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
+            INSERT INTO notes_fts(rowid, content, summary, tags, entities)
+            VALUES (new.id, new.content, new.summary, new.tags, new.entities);
+        END;
+
+        CREATE TABLE IF NOT EXISTS messages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            role       TEXT NOT NULL,
+            content    TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# ── Tool helpers ──────────────────────────────────────────────────────────────
+def db_save_note(raw_input: str, content: str, summary: str,
+                 category: str, subcategory: Optional[str],
+                 tags: list, entities: list) -> dict:
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO notes (raw_input, content, summary, category, subcategory, tags, entities)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (raw_input, content, summary, category, subcategory,
+         json.dumps(tags), json.dumps(entities))
+    )
+    conn.commit()
+    conn.close()
+    return {"status": "saved", "category": category, "summary": summary}
+
+def db_search_notes(query: str, category: str = "all", limit: int = 10) -> list:
+    conn = get_db()
+    if category == "all":
+        rows = conn.execute(
+            """SELECT n.id, n.content, n.summary, n.category, n.subcategory,
+                      n.tags, n.entities, n.created_at
+               FROM notes_fts f
+               JOIN notes n ON f.rowid = n.id
+               WHERE notes_fts MATCH ?
+               ORDER BY rank LIMIT ?""",
+            (query, limit)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """SELECT n.id, n.content, n.summary, n.category, n.subcategory,
+                      n.tags, n.entities, n.created_at
+               FROM notes_fts f
+               JOIN notes n ON f.rowid = n.id
+               WHERE notes_fts MATCH ? AND n.category = ?
+               ORDER BY rank LIMIT ?""",
+            (query, category, limit)
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def db_get_person(name: str) -> list:
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT id, content, summary, category, tags, created_at
+           FROM notes
+           WHERE entities LIKE ? OR content LIKE ?
+           ORDER BY created_at DESC""",
+        (f'%{name}%', f'%{name}%')
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def db_get_recent(limit: int = 10, category: str = "all") -> list:
+    conn = get_db()
+    if category == "all":
+        rows = conn.execute(
+            "SELECT id, content, summary, category, tags, created_at FROM notes ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id, content, summary, category, tags, created_at FROM notes WHERE category=? ORDER BY created_at DESC LIMIT ?",
+            (category, limit)
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def db_get_history(limit: int = 20) -> list:
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT role, content FROM messages ORDER BY created_at DESC LIMIT ?", (limit,)
+    ).fetchall()
+    conn.close()
+    return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+
+def db_add_message(role: str, content: str):
+    conn = get_db()
+    conn.execute("INSERT INTO messages (role, content) VALUES (?, ?)", (role, content))
+    conn.commit()
+    conn.close()
+
+# ── AI Tools definition ───────────────────────────────────────────────────────
+TOOLS = [
+    {
+        "name": "save_note",
+        "description": "Save a note to the database. Use this whenever the user shares information they want to remember.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
+                "summary":     {"type": "string", "description": "One-sentence summary"},
+                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"],
+                                "description": "personal=personal life, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools"},
+                "subcategory": {"type": "string", "description": "Optional subcategory e.g. medications, conditions, contacts, urls, licensing"},
+                "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
+                "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
+            },
+            "required": ["content", "summary", "category", "tags", "entities"]
+        }
+    },
+    {
+        "name": "search_notes",
+        "description": "Search saved notes by keyword or phrase. Use for any retrieval request.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query":    {"type": "string", "description": "Search keywords"},
+                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "all"], "default": "all"},
+                "limit":    {"type": "integer", "default": 10}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "get_person",
+        "description": "Get all notes mentioning a specific person.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Person's name"}
+            },
+            "required": ["name"]
+        }
+    },
+    {
+        "name": "get_recent_notes",
+        "description": "Get the most recently saved notes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit":    {"type": "integer", "default": 10},
+                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "all"], "default": "all"}
+            }
+        }
+    }
+]
+
+SYSTEM_PROMPT = """You are Brain, a personal AI assistant and note-taking agent.
+
+Your user is a PMHNP (Psychiatric Mental Health Nurse Practitioner) who just finished her program. She is:
+- Studying for the PMHNP board exam (ANCC)
+- Building an online psychiatric telehealth clinic
+- Tracking clinical knowledge: conditions, medications, treatments
+- Managing contacts, resources, and her personal life
+
+CATEGORIES:
+- personal    → personal life, feelings, events (handle sensitively)
+- clinical    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols
+- business    → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
+- study       → board exam prep, mnemonics, practice questions, key concepts
+- resources   → contacts/networking, URLs, books, courses, tools, recommendations
+
+RULES:
+1. When user shares info → always call save_note. Never skip saving.
+2. When user asks a question → call search_notes or get_person, then give a clear synthesized answer.
+3. After saving, tell the user what category you saved it under and why.
+4. For clinical notes, structure them: drug class / mechanism / indications / dosing / side effects.
+5. For people, always include their name in entities[].
+6. Be warm, concise, and encouraging. She is working hard.
+7. If you are unsure of category, pick the best fit and mention it."""
+
+# ── Agent loop ────────────────────────────────────────────────────────────────
+def run_agent(user_message: str) -> str:
+    db_add_message("user", user_message)
+    history = db_get_history(20)
+
+    messages = history + []  # history already includes the user message we just added
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
+        system=SYSTEM_PROMPT,
+        tools=TOOLS,
+        messages=messages
+    )
+
+    while response.stop_reason == "tool_use":
+        tool_results = []
+        for block in response.content:
+            if block.type != "tool_use":
+                continue
+            name  = block.name
+            args  = block.input
+            tid   = block.id
+
+            if name == "save_note":
+                result = db_save_note(
+                    raw_input   = user_message,
+                    content     = args["content"],
+                    summary     = args["summary"],
+                    category    = args["category"],
+                    subcategory = args.get("subcategory"),
+                    tags        = args.get("tags", []),
+                    entities    = args.get("entities", [])
+                )
+            elif name == "search_notes":
+                result = db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 10))
+            elif name == "get_person":
+                result = db_get_person(args["name"])
+            elif name == "get_recent_notes":
+                result = db_get_recent(args.get("limit", 10), args.get("category", "all"))
+            else:
+                result = {"error": "unknown tool"}
+
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": tid,
+                "content": json.dumps(result)
+            })
+
+        messages = messages + [
+            {"role": "assistant", "content": response.content},
+            {"role": "user",      "content": tool_results}
+        ]
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
+            tools=TOOLS,
+            messages=messages
+        )
+
+    final_text = ""
+    for block in response.content:
+        if hasattr(block, "text"):
+            final_text += block.text
+
+    db_add_message("assistant", final_text)
+    return final_text
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+def is_authenticated(request: Request) -> bool:
+    token = request.cookies.get("session")
+    return token in active_sessions
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    with open("static/index.html") as f:
+        return HTMLResponse(f.read())
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+class LoginRequest(BaseModel):
+    password: str
+
+@app.post("/login")
+async def login(body: LoginRequest, response: Response):
+    if body.password != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="Wrong password")
+    token = secrets.token_hex(32)
+    active_sessions.add(token)
+    response.set_cookie("session", token, httponly=True, samesite="lax", max_age=60*60*24*30)
+    return {"ok": True}
+
+@app.post("/logout")
+async def logout(request: Request, response: Response):
+    token = request.cookies.get("session")
+    active_sessions.discard(token)
+    response.delete_cookie("session")
+    return {"ok": True}
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/chat")
+async def chat(body: ChatRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not body.message.strip():
+        raise HTTPException(status_code=400, detail="Empty message")
+    reply = run_agent(body.message.strip())
+    return {"reply": reply}
+
+@app.get("/notes")
+async def list_notes(request: Request, category: str = "all", limit: int = 20):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return db_get_recent(limit, category)
