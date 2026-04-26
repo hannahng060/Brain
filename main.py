@@ -45,17 +45,6 @@ def init_db():
             created_at  TEXT    DEFAULT (datetime('now'))
         );
 
-        CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
-            content, summary, tags, entities,
-            content='notes',
-            content_rowid='id'
-        );
-
-        CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
-            INSERT INTO notes_fts(rowid, content, summary, tags, entities)
-            VALUES (new.id, new.content, new.summary, new.tags, new.entities);
-        END;
-
         CREATE TABLE IF NOT EXISTS messages (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             role       TEXT NOT NULL,
@@ -90,25 +79,23 @@ def db_save_note(raw_input: str, content: str, summary: str,
 
 def db_search_notes(query: str, category: str = "all", limit: int = 10) -> list:
     conn = get_db()
+    like = f"%{query}%"
     if category == "all":
         rows = conn.execute(
-            """SELECT n.id, n.content, n.summary, n.category, n.subcategory,
-                      n.tags, n.entities, n.created_at
-               FROM notes_fts f
-               JOIN notes n ON f.rowid = n.id
-               WHERE notes_fts MATCH ?
-               ORDER BY rank LIMIT ?""",
-            (query, limit)
+            """SELECT id, content, summary, category, subcategory, tags, entities, created_at
+               FROM notes
+               WHERE content LIKE ? OR summary LIKE ? OR tags LIKE ? OR entities LIKE ?
+               ORDER BY created_at DESC LIMIT ?""",
+            (like, like, like, like, limit)
         ).fetchall()
     else:
         rows = conn.execute(
-            """SELECT n.id, n.content, n.summary, n.category, n.subcategory,
-                      n.tags, n.entities, n.created_at
-               FROM notes_fts f
-               JOIN notes n ON f.rowid = n.id
-               WHERE notes_fts MATCH ? AND n.category = ?
-               ORDER BY rank LIMIT ?""",
-            (query, category, limit)
+            """SELECT id, content, summary, category, subcategory, tags, entities, created_at
+               FROM notes
+               WHERE (content LIKE ? OR summary LIKE ? OR tags LIKE ? OR entities LIKE ?)
+               AND category = ?
+               ORDER BY created_at DESC LIMIT ?""",
+            (like, like, like, like, category, limit)
         ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
