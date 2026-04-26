@@ -325,6 +325,19 @@ async def chat(body: ChatRequest, request: Request):
         print(f"Chat error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/test")
+async def test():
+    try:
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=50,
+            messages=[{"role": "user", "content": "Say hello in one sentence."}]
+        )
+        text = response.content[0].text if response.content else "empty response"
+        return {"ok": True, "reply": text}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "type": type(e).__name__}
+
 @app.get("/reset")
 async def reset():
     db_clear_messages()
