@@ -246,12 +246,14 @@ def run_agent(user_message: str) -> str:
     messages = db_get_history(20)
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-3-5-sonnet-20241022",
         max_tokens=2048,
         system=SYSTEM_PROMPT,
         tools=TOOLS,
         messages=messages
     )
+
+    print(f"Response stop_reason: {response.stop_reason}, content blocks: {len(response.content)}")
 
     while response.stop_reason == "tool_use":
         assistant_content = [content_to_dict(b) for b in response.content]
@@ -272,7 +274,7 @@ def run_agent(user_message: str) -> str:
         ]
 
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
@@ -280,6 +282,11 @@ def run_agent(user_message: str) -> str:
         )
 
     final_text = "".join(b.text for b in response.content if hasattr(b, "text"))
+    print(f"Final text length: {len(final_text)}")
+
+    if not final_text:
+        final_text = "I'm here! Something went quiet on my end — please try sending your message again."
+
     db_add_message("assistant", final_text)
     return final_text
 
