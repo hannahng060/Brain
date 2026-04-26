@@ -222,11 +222,28 @@ RULES:
 7. If you are unsure of category, pick the best fit and mention it."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
+def execute_tool(name: str, args: dict, raw: str) -> dict:
+    if name == "save_note":
+        return db_save_note(raw, args["content"], args["summary"], args["category"],
+                            args.get("subcategory"), args.get("tags", []), args.get("entities", []))
+    elif name == "search_notes":
+        return db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 10))
+    elif name == "get_person":
+        return db_get_person(args["name"])
+    elif name == "get_recent_notes":
+        return db_get_recent(args.get("limit", 10), args.get("category", "all"))
+    return {"error": "unknown tool"}
+
+def content_to_dict(block) -> dict:
+    if block.type == "text":
+        return {"type": "text", "text": block.text}
+    elif block.type == "tool_use":
+        return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
+    return {}
+
 def run_agent(user_message: str) -> str:
     db_add_message("user", user_message)
-    history = db_get_history(20)
-
-    messages = history + []  # history already includes the user message we just added
+    messages = db_get_history(20)
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -237,41 +254,20 @@ def run_agent(user_message: str) -> str:
     )
 
     while response.stop_reason == "tool_use":
+        assistant_content = [content_to_dict(b) for b in response.content]
         tool_results = []
         for block in response.content:
             if block.type != "tool_use":
                 continue
-            name  = block.name
-            args  = block.input
-            tid   = block.id
-
-            if name == "save_note":
-                result = db_save_note(
-                    raw_input   = user_message,
-                    content     = args["content"],
-                    summary     = args["summary"],
-                    category    = args["category"],
-                    subcategory = args.get("subcategory"),
-                    tags        = args.get("tags", []),
-                    entities    = args.get("entities", [])
-                )
-            elif name == "search_notes":
-                result = db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 10))
-            elif name == "get_person":
-                result = db_get_person(args["name"])
-            elif name == "get_recent_notes":
-                result = db_get_recent(args.get("limit", 10), args.get("category", "all"))
-            else:
-                result = {"error": "unknown tool"}
-
+            result = execute_tool(block.name, block.input, user_message)
             tool_results.append({
                 "type": "tool_result",
-                "tool_use_id": tid,
+                "tool_use_id": block.id,
                 "content": json.dumps(result)
             })
 
         messages = messages + [
-            {"role": "assistant", "content": response.content},
+            {"role": "assistant", "content": assistant_content},
             {"role": "user",      "content": tool_results}
         ]
 
@@ -283,11 +279,7 @@ def run_agent(user_message: str) -> str:
             messages=messages
         )
 
-    final_text = ""
-    for block in response.content:
-        if hasattr(block, "text"):
-            final_text += block.text
-
+    final_text = "".join(b.text for b in response.content if hasattr(b, "text"))
     db_add_message("assistant", final_text)
     return final_text
 
@@ -336,8 +328,12 @@ async def chat(body: ChatRequest, request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     if not body.message.strip():
         raise HTTPException(status_code=400, detail="Empty message")
-    reply = run_agent(body.message.strip())
-    return {"reply": reply}
+    try:
+        reply = run_agent(body.message.strip())
+        return {"reply": reply}
+    except Exception as e:
+        print(f"Chat error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/notes")
 async def list_notes(request: Request, category: str = "all", limit: int = 20):

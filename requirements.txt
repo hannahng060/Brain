@@ -1,5 +1,4 @@
 fastapi==0.111.0
 uvicorn==0.29.0
-anthropic>=0.40.0
-httpx>=0.27.0,<0.28.0
+anthropic
 python-multipart==0.0.9
