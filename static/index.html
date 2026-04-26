@@ -133,7 +133,7 @@
     .modal-badge-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
     .modal-date { font-size:12px; color:var(--muted); }
     .modal-title { font-size:18px; font-weight:700; margin-bottom:12px; }
-    .modal-body { font-size:15px; line-height:1.6; white-space:pre-wrap; color:var(--text); }
+    .modal-body { font-size:15px; line-height:1.6; white-space:pre-wrap; color:var(--text); word-break:break-word; }
     .modal-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
     .modal-close { position:sticky; bottom:0; width:100%; margin-top:20px; padding:14px; background:var(--bg); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--text); cursor:pointer; }
     .modal-edit-btn { width:100%; margin-top:10px; padding:14px; background:var(--primary-light); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--primary); cursor:pointer; }
@@ -142,6 +142,14 @@
     .edit-field { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; resize:vertical; min-height:120px; outline:none; margin-top:8px; }
     .edit-field:focus { border-color:var(--primary); }
     .edit-label { font-size:13px; font-weight:600; color:var(--muted); margin-top:14px; display:block; }
+    .format-toolbar { display:flex; gap:6px; margin-top:8px; }
+    .fmt-btn { padding:6px 14px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:14px; cursor:pointer; font-family:inherit; }
+    .fmt-btn.bold { font-weight:700; }
+    .fmt-btn.underline { text-decoration:underline; }
+    .fmt-btn.highlight { background:#fff176; border-color:#f9a825; }
+    .fmt-btn:active { opacity:0.7; }
+    #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:160px; outline:none; margin-top:8px; overflow-y:auto; }
+    #edit-content:focus { border-color:var(--primary); }
   </style>
 </head>
 <body>
@@ -249,7 +257,12 @@
       <span class="edit-label">Summary</span>
       <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text">
       <span class="edit-label">Content</span>
-      <textarea id="edit-content" class="edit-field"></textarea>
+      <div class="format-toolbar">
+        <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
+        <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
+        <button class="fmt-btn highlight" onclick="fmt('highlight')" title="Highlight">▐ Highlight</button>
+      </div>
+      <div id="edit-content" contenteditable="true"></div>
       <button class="modal-save-btn" onclick="saveEdit()">Save Changes</button>
       <button class="modal-cancel-btn" onclick="cancelEdit()">Cancel</button>
     </div>
@@ -327,7 +340,7 @@
           </div>
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
-        <div class="note-content">${esc(n.content)}</div>
+        <div class="note-content">${esc(stripHtml(n.content))}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
     }).join('');
@@ -345,7 +358,7 @@
     $('modal-badge').textContent = n.category;
     $('modal-date').textContent = date;
     $('modal-title').textContent = n.summary || 'Note';
-    $('modal-body').textContent = n.content;
+    $('modal-body').innerHTML = n.content;
     $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
@@ -363,13 +376,23 @@
     else alert('Could not delete note. Try again.');
   }
 
+  function fmt(type) {
+    if(type === 'highlight') {
+      document.execCommand('backColor', false, '#fff176');
+    } else {
+      document.execCommand(type);
+    }
+    $('edit-content').focus();
+  }
+
   let _editingNote = null;
   function startEdit() {
     _editingNote = window._openNote;
     $('edit-summary').value = _editingNote.summary || '';
-    $('edit-content').value = _editingNote.content || '';
+    $('edit-content').innerHTML = _editingNote.content || '';
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
+    $('edit-content').focus();
   }
   function cancelEdit() {
     $('modal-edit').style.display = 'none';
@@ -377,8 +400,8 @@
   }
   async function saveEdit() {
     const summary = $('edit-summary').value.trim();
-    const content = $('edit-content').value.trim();
-    if(!content) { alert('Content cannot be empty.'); return; }
+    const content = $('edit-content').innerHTML.trim();
+    if(!content || content === '<br>') { alert('Content cannot be empty.'); return; }
     const res = await fetch(`/notes/${_editingNote.id}`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
@@ -495,6 +518,7 @@
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+  function stripHtml(s){ const d=document.createElement('div'); d.innerHTML=s||''; return d.textContent||''; }
 </script>
 </body>
 </html>
