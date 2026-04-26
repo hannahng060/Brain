@@ -456,6 +456,12 @@ def extract_pptx_text(data: bytes) -> str:
                         parts.append(t)
     return "\n".join(parts)
 
+def extract_csv_text(data: bytes) -> str:
+    import csv, io
+    text = data.decode("utf-8", errors="replace")
+    reader = csv.reader(io.StringIO(text))
+    return "\n".join("\t".join(row) for row in reader if any(row))
+
 def extract_image_text(data: bytes, media_type: str) -> str:
     b64 = base64.standard_b64encode(data).decode("utf-8")
     response = client.messages.create(
@@ -492,11 +498,14 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         elif filename.endswith(".pptx") or "presentationml" in content_type or "powerpoint" in content_type:
             extracted = extract_pptx_text(data)
             file_label = f"PowerPoint: {filename}"
+        elif filename.endswith(".csv") or "text/csv" in content_type:
+            extracted = extract_csv_text(data)
+            file_label = f"CSV: {filename}"
         elif content_type.startswith("image/"):
             extracted = extract_image_text(data, content_type)
             file_label = f"Image: {filename or 'screenshot'}"
         else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Word doc, PowerPoint, Excel, or image file.")
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Word, PowerPoint, Excel, CSV, or image file.")
 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
