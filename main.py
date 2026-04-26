@@ -381,6 +381,25 @@ async def list_notes(request: Request, category: str = "all", limit: int = 20):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_recent(limit, category)
 
+class NoteUpdate(BaseModel):
+    summary: Optional[str] = None
+    content: str
+
+@app.put("/notes/{note_id}")
+async def update_note(note_id: int, body: NoteUpdate, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE notes SET content = %s, summary = %s WHERE id = %s",
+        (body.content, body.summary, note_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"ok": True}
+
 @app.delete("/notes/{note_id}")
 async def delete_note(note_id: int, request: Request):
     if not is_authenticated(request):

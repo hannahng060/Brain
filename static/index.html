@@ -131,6 +131,12 @@
     .modal-body { font-size:15px; line-height:1.6; white-space:pre-wrap; color:var(--text); }
     .modal-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
     .modal-close { position:sticky; bottom:0; width:100%; margin-top:20px; padding:14px; background:var(--bg); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--text); cursor:pointer; }
+    .modal-edit-btn { width:100%; margin-top:10px; padding:14px; background:var(--primary-light); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--primary); cursor:pointer; }
+    .modal-save-btn { width:100%; margin-top:10px; padding:14px; background:var(--primary); border:none; border-radius:12px; font-size:16px; font-weight:600; color:white; cursor:pointer; }
+    .modal-cancel-btn { width:100%; margin-top:8px; padding:14px; background:var(--bg); border:none; border-radius:12px; font-size:16px; font-weight:600; color:var(--muted); cursor:pointer; }
+    .edit-field { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; resize:vertical; min-height:120px; outline:none; margin-top:8px; }
+    .edit-field:focus { border-color:var(--primary); }
+    .edit-label { font-size:13px; font-weight:600; color:var(--muted); margin-top:14px; display:block; }
   </style>
 </head>
 <body>
@@ -215,10 +221,25 @@
       <span class="badge" id="modal-badge"></span>
       <span class="modal-date" id="modal-date"></span>
     </div>
-    <div class="modal-title" id="modal-title"></div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-tags" id="modal-tags"></div>
-    <button class="modal-close" onclick="closeModal()">Close</button>
+
+    <!-- View mode -->
+    <div id="modal-view">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-tags" id="modal-tags"></div>
+      <button class="modal-edit-btn" onclick="startEdit()">Edit</button>
+      <button class="modal-close" onclick="closeModal()">Close</button>
+    </div>
+
+    <!-- Edit mode -->
+    <div id="modal-edit" style="display:none">
+      <span class="edit-label">Summary</span>
+      <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text">
+      <span class="edit-label">Content</span>
+      <textarea id="edit-content" class="edit-field"></textarea>
+      <button class="modal-save-btn" onclick="saveEdit()">Save Changes</button>
+      <button class="modal-cancel-btn" onclick="cancelEdit()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -304,6 +325,7 @@
 
   function openNote(i) {
     const n = window._filteredNotes[i];
+    window._openNote = n;
     const tags = tryParse(n.tags);
     const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
     $('modal-badge').className = `badge ${n.category}`;
@@ -312,6 +334,8 @@
     $('modal-title').textContent = n.summary || 'Note';
     $('modal-body').textContent = n.content;
     $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    $('modal-view').style.display = 'block';
+    $('modal-edit').style.display = 'none';
     $('note-modal').classList.add('open');
   }
 
@@ -324,6 +348,35 @@
     const res = await fetch(`/notes/${id}`, {method:'DELETE'});
     if(res.ok) { closeModal(); loadNotes(); }
     else alert('Could not delete note. Try again.');
+  }
+
+  let _editingNote = null;
+  function startEdit() {
+    _editingNote = window._openNote;
+    $('edit-summary').value = _editingNote.summary || '';
+    $('edit-content').value = _editingNote.content || '';
+    $('modal-view').style.display = 'none';
+    $('modal-edit').style.display = 'block';
+  }
+  function cancelEdit() {
+    $('modal-edit').style.display = 'none';
+    $('modal-view').style.display = 'block';
+  }
+  async function saveEdit() {
+    const summary = $('edit-summary').value.trim();
+    const content = $('edit-content').value.trim();
+    if(!content) { alert('Content cannot be empty.'); return; }
+    const res = await fetch(`/notes/${_editingNote.id}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({summary, content})
+    });
+    if(res.ok) {
+      closeModal();
+      loadNotes();
+    } else {
+      alert('Could not save changes. Try again.');
+    }
   }
 
   // ── Chat ──────────────────────────────────────────────────────────────
