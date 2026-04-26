@@ -325,12 +325,12 @@ async def chat(body: ChatRequest, request: Request):
         print(f"Chat error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/reset")
+@app.get("/reset")
 async def reset(request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     db_clear_messages()
-    return {"ok": True}
+    return {"ok": True, "message": "Chat history cleared. Go back to Brain and try again!"}
 
 @app.get("/notes")
 async def list_notes(request: Request, category: str = "all", limit: int = 20):
