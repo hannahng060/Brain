@@ -130,10 +130,16 @@ def db_get_recent(limit: int = 10, category: str = "all") -> list:
 def db_get_history(limit: int = 20) -> list:
     conn = get_db()
     rows = conn.execute(
-        "SELECT role, content FROM messages ORDER BY created_at DESC LIMIT ?", (limit,)
+        "SELECT role, content FROM messages WHERE content != '' ORDER BY created_at DESC LIMIT ?", (limit,)
     ).fetchall()
     conn.close()
     return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+
+def db_clear_messages():
+    conn = get_db()
+    conn.execute("DELETE FROM messages")
+    conn.commit()
+    conn.close()
 
 def db_add_message(role: str, content: str):
     conn = get_db()
@@ -318,6 +324,13 @@ async def chat(body: ChatRequest, request: Request):
     except Exception as e:
         print(f"Chat error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/reset")
+async def reset(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    db_clear_messages()
+    return {"ok": True}
 
 @app.get("/notes")
 async def list_notes(request: Request, category: str = "all", limit: int = 20):
