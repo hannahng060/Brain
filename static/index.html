@@ -340,7 +340,7 @@
           </div>
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
-        <div class="note-content">${esc(stripHtml(n.content))}</div>
+        <div class="note-content">${n.content}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
     }).join('');
