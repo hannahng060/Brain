@@ -14,16 +14,18 @@ from pydantic import BaseModel
 # ── Config ────────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 APP_PASSWORD      = os.environ.get("APP_PASSWORD", "brain2024")
-DB_PATH           = os.environ.get("DB_PATH", "/data/brain.db")
+DB_PATH           = os.environ.get("DB_PATH", "/tmp/brain.db")
 
 app = FastAPI(title="Brain")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-active_sessions: set[str] = set()
+active_sessions = set()
 
 # ── Database ──────────────────────────────────────────────────────────────────
 def get_db() -> sqlite3.Connection:
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -64,7 +66,12 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
+@app.on_event("startup")
+async def startup():
+    try:
+        init_db()
+    except Exception as e:
+        print(f"DB init error: {e}")
 
 # ── Tool helpers ──────────────────────────────────────────────────────────────
 def db_save_note(raw_input: str, content: str, summary: str,
