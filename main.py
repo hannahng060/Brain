@@ -82,24 +82,27 @@ def db_save_note(raw_input: str, content: str, summary: str,
 def db_search_notes(query: str, category: str = "all", limit: int = 10) -> list:
     conn = get_db()
     cur = conn.cursor()
-    like = f"%{query}%"
-    if category == "all":
-        cur.execute(
-            """SELECT id, content, summary, category, subcategory, tags, entities, created_at
-               FROM notes
-               WHERE content ILIKE %s OR summary ILIKE %s OR tags ILIKE %s OR entities ILIKE %s
-               ORDER BY created_at DESC LIMIT %s""",
-            (like, like, like, like, limit)
-        )
-    else:
-        cur.execute(
-            """SELECT id, content, summary, category, subcategory, tags, entities, created_at
-               FROM notes
-               WHERE (content ILIKE %s OR summary ILIKE %s OR tags ILIKE %s OR entities ILIKE %s)
-               AND category = %s
-               ORDER BY created_at DESC LIMIT %s""",
-            (like, like, like, like, category, limit)
-        )
+    # Search for each word independently so "happiness quote" finds notes with either word
+    words = [w.strip() for w in query.split() if w.strip()]
+    if not words:
+        words = [query]
+    conditions = " OR ".join(
+        ["(content ILIKE %s OR summary ILIKE %s OR tags ILIKE %s OR entities ILIKE %s)"] * len(words)
+    )
+    params = []
+    for w in words:
+        like = f"%{w}%"
+        params.extend([like, like, like, like])
+    if category != "all":
+        conditions = f"({conditions}) AND category = %s"
+        params.append(category)
+    params.append(limit)
+    cur.execute(
+        f"""SELECT id, content, summary, category, subcategory, tags, entities, created_at
+            FROM notes WHERE {conditions}
+            ORDER BY created_at DESC LIMIT %s""",
+        params
+    )
     rows = cur.fetchall()
     cur.close()
     conn.close()
