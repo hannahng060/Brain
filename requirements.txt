@@ -3,3 +3,6 @@ uvicorn==0.29.0
 anthropic
 psycopg2-binary
 python-multipart==0.0.9
+pdfplumber
+openpyxl
+Pillow

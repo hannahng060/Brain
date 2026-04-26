@@ -1,13 +1,14 @@
 import os
 import json
 import secrets
+import base64
 from datetime import datetime
 from typing import Optional
 
 import anthropic
 import psycopg2
 import psycopg2.extras
-from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -411,3 +412,78 @@ async def delete_note(note_id: int, request: Request):
     cur.close()
     conn.close()
     return {"ok": True}
+
+def extract_pdf_text(data: bytes) -> str:
+    import pdfplumber, io
+    text_parts = []
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
+        for page in pdf.pages:
+            t = page.extract_text()
+            if t:
+                text_parts.append(t)
+    return "\n\n".join(text_parts)
+
+def extract_excel_text(data: bytes) -> str:
+    import openpyxl, io
+    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+    parts = []
+    for sheet in wb.sheetnames:
+        ws = wb[sheet]
+        parts.append(f"Sheet: {sheet}")
+        for row in ws.iter_rows(values_only=True):
+            cells = [str(c) if c is not None else "" for c in row]
+            if any(cells):
+                parts.append("\t".join(cells))
+    return "\n".join(parts)
+
+def extract_image_text(data: bytes, media_type: str) -> str:
+    b64 = base64.standard_b64encode(data).decode("utf-8")
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=2048,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                {"type": "text", "text": "Extract all text and key information from this image. Format it clearly with structure. Include everything visible."}
+            ]
+        }]
+    )
+    return response.content[0].text if response.content else ""
+
+@app.post("/upload")
+async def upload_file(request: Request, file: UploadFile = File(...), note: str = Form(default="")):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    data = await file.read()
+    filename = file.filename or ""
+    content_type = file.content_type or ""
+
+    try:
+        if filename.endswith(".pdf") or content_type == "application/pdf":
+            extracted = extract_pdf_text(data)
+            file_label = f"PDF: {filename}"
+        elif filename.endswith((".xlsx", ".xls")) or "spreadsheet" in content_type or "excel" in content_type:
+            extracted = extract_excel_text(data)
+            file_label = f"Excel: {filename}"
+        elif content_type.startswith("image/"):
+            extracted = extract_image_text(data, content_type)
+            file_label = f"Image: {filename or 'screenshot'}"
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Excel, or image file.")
+
+        if not extracted.strip():
+            raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
+
+        user_message = f"[Uploaded {file_label}]\n\n{extracted}"
+        if note.strip():
+            user_message = f"{note.strip()}\n\n{user_message}"
+
+        reply = run_agent(user_message)
+        return {"reply": reply}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Upload error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
