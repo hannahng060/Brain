@@ -380,3 +380,15 @@ async def list_notes(request: Request, category: str = "all", limit: int = 20):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_recent(limit, category)
+
+@app.delete("/notes/{note_id}")
+async def delete_note(note_id: int, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM notes WHERE id = %s", (note_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"ok": True}

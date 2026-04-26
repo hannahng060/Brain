@@ -102,6 +102,8 @@
     #notes-list { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
     .note-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; }
     .note-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .delete-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--muted); font-size:16px; line-height:1; }
+    .delete-btn:hover { background:#fce4ec; color:#c62828; }
     .badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
     .badge.clinical  { background:var(--clinical-bg);  color:var(--clinical); }
     .badge.business  { background:var(--business-bg);  color:var(--business); }
@@ -285,7 +287,10 @@
       return `<div class="note-card" onclick="openNote(${i})">
         <div class="note-card-header">
           <span class="badge ${n.category}">${n.category}</span>
-          <span class="note-date">${date}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="note-date">${date}</span>
+            <button class="delete-btn" onclick="deleteNote(event,${n.id})" title="Delete">🗑</button>
+          </div>
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
         <div class="note-content">${esc(n.content)}</div>
@@ -312,6 +317,14 @@
 
   function closeModal() { $('note-modal').classList.remove('open'); }
   $('note-modal').addEventListener('click', e=>{ if(e.target===$('note-modal')) closeModal(); });
+
+  async function deleteNote(e, id) {
+    e.stopPropagation();
+    if(!confirm('Delete this note? This cannot be undone.')) return;
+    const res = await fetch(`/notes/${id}`, {method:'DELETE'});
+    if(res.ok) { closeModal(); loadNotes(); }
+    else alert('Could not delete note. Try again.');
+  }
 
   // ── Chat ──────────────────────────────────────────────────────────────
   const input = $('input');
