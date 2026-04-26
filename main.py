@@ -260,10 +260,7 @@ def content_to_dict(block) -> dict:
         return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
     return {}
 
-def run_agent(user_message: str) -> str:
-    db_add_message("user", user_message)
-    messages = db_get_history(20)
-
+def run_agent_loop(messages: list, raw: str) -> str:
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2048,
@@ -271,25 +268,22 @@ def run_agent(user_message: str) -> str:
         tools=TOOLS,
         messages=messages
     )
-
     while response.stop_reason == "tool_use":
         assistant_content = [content_to_dict(b) for b in response.content]
         tool_results = []
         for block in response.content:
             if block.type != "tool_use":
                 continue
-            result = execute_tool(block.name, block.input, user_message)
+            result = execute_tool(block.name, block.input, raw)
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
                 "content": json.dumps(result, default=str)
             })
-
         messages = messages + [
             {"role": "assistant", "content": assistant_content},
             {"role": "user",      "content": tool_results}
         ]
-
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=2048,
@@ -297,12 +291,28 @@ def run_agent(user_message: str) -> str:
             tools=TOOLS,
             messages=messages
         )
+    return "".join(b.text for b in response.content if hasattr(b, "text"))
 
-    final_text = "".join(b.text for b in response.content if hasattr(b, "text"))
-
+def run_agent(user_message: str) -> str:
+    db_add_message("user", user_message)
+    messages = db_get_history(20)
+    final_text = run_agent_loop(messages, user_message)
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
+    db_add_message("assistant", final_text)
+    return final_text
 
+def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
+    instruction = (
+        f"The user uploaded a file: {file_label}\n"
+        + (f"Their note: {user_note}\n\n" if user_note else "\n")
+        + f"Content:\n{extracted}\n\n"
+        "You MUST call save_note now to save this content. Do not skip saving."
+    )
+    messages = [{"role": "user", "content": instruction}]
+    final_text = run_agent_loop(messages, instruction)
+    if not final_text:
+        final_text = "File saved successfully."
     db_add_message("assistant", final_text)
     return final_text
 
@@ -510,11 +520,7 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
 
-        user_message = f"[Uploaded {file_label}]\n\n{extracted}"
-        if note.strip():
-            user_message = f"{note.strip()}\n\n{user_message}"
-
-        reply = run_agent(user_message)
+        reply = run_upload_agent(file_label, extracted, note.strip())
         return {"reply": reply}
 
     except HTTPException:
