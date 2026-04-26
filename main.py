@@ -278,7 +278,7 @@ def run_agent(user_message: str) -> str:
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
-                "content": json.dumps(result)
+                "content": json.dumps(result, default=str)
             })
 
         messages = messages + [
