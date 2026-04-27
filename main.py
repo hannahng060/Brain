@@ -186,11 +186,17 @@ TOOLS = [
                 "summary":     {"type": "string", "description": "One-sentence summary"},
                 "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"],
                                 "description": "personal=personal life, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools"},
-                "subcategory": {"type": "string", "description": "Subcategory. clinical: Conditions, Medications, Assessments, Treatments, Lab Values. study: DSM-5, Psychopharm, Psychotherapy, Neuroscience, Ethics & Law, Practice Questions. business: Licensing, Credentialing, Billing & Insurance, Marketing, Platforms, Legal. resources: Contacts, URLs & Links, Books, Courses, Tools. personal: Goals, Reflections, Events, Health, Finance"},
+                "subcategory": {"type": "string",
+                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values",
+                                         "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
+                                         "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
+                                         "Contacts","URLs & Links","Books","Courses","Tools",
+                                         "Goals","Reflections","Events","Health","Finance"],
+                                "description": "Pick the subcategory that best fits. clinical→Conditions/Medications/Assessments/Treatments/Lab Values. study→DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools. personal→Goals/Reflections/Events/Health/Finance"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
-            "required": ["content", "summary", "category", "tags", "entities"]
+            "required": ["content", "summary", "category", "subcategory", "tags", "entities"]
         }
     },
     {
@@ -235,7 +241,12 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "note_id":     {"type": "integer", "description": "The id of the note to update"},
-                "subcategory": {"type": "string", "description": "New subcategory. Use exact names: clinical: Conditions, Medications, Assessments, Treatments, Lab Values. study: DSM-5, Psychopharm, Psychotherapy, Neuroscience, Ethics & Law, Practice Questions. business: Licensing, Credentialing, Billing & Insurance, Marketing, Platforms, Legal. resources: Contacts, URLs & Links, Books, Courses, Tools. personal: Goals, Reflections, Events, Health, Finance"},
+                "subcategory": {"type": "string",
+                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values",
+                                         "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
+                                         "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
+                                         "Contacts","URLs & Links","Books","Courses","Tools",
+                                         "Goals","Reflections","Events","Health","Finance"]},
                 "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}

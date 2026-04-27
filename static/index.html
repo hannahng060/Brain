@@ -357,9 +357,8 @@
   function renderNotes() {
     let filtered = currentCat==='all' ? allNotes : allNotes.filter(n=>n.category===currentCat);
     if(currentSubcat !== 'all') {
-      filtered = filtered.filter(n=> n.subcategory &&
-        (n.subcategory.toLowerCase() === currentSubcat.toLowerCase() ||
-         n.subcategory.toLowerCase().includes(currentSubcat.toLowerCase().split(' ')[0].toLowerCase())));
+      const sub = currentSubcat.toLowerCase();
+      filtered = filtered.filter(n=> n.subcategory && n.subcategory.toLowerCase() === sub);
     }
     $('notes-count').textContent = `${filtered.length} note${filtered.length!==1?'s':''}`;
 
