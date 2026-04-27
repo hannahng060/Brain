@@ -263,6 +263,16 @@
     <div id="modal-edit" style="display:none">
       <span class="edit-label">Summary</span>
       <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text">
+      <span class="edit-label">Category</span>
+      <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions()">
+        <option value="clinical">Clinical</option>
+        <option value="study">Study</option>
+        <option value="business">Business</option>
+        <option value="resources">Resources</option>
+        <option value="personal">Personal</option>
+      </select>
+      <span class="edit-label">Subcategory</span>
+      <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
       <span class="edit-label">Content</span>
       <div class="format-toolbar">
         <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
@@ -417,6 +427,13 @@
     else alert('Could not delete note. Try again.');
   }
 
+  function updateSubcatOptions() {
+    const cat = $('edit-category').value;
+    const subs = SUBCATS[cat] || [];
+    $('edit-subcategory').innerHTML = '<option value="">— None —</option>' +
+      subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+
   function fmt(type) {
     if(type === 'highlight') {
       document.execCommand('backColor', false, '#fff176');
@@ -430,6 +447,9 @@
   function startEdit() {
     _editingNote = window._openNote;
     $('edit-summary').value = _editingNote.summary || '';
+    $('edit-category').value = _editingNote.category || 'clinical';
+    updateSubcatOptions();
+    $('edit-subcategory').value = _editingNote.subcategory || '';
     $('edit-content').innerHTML = _editingNote.content || '';
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
@@ -441,12 +461,14 @@
   }
   async function saveEdit() {
     const summary = $('edit-summary').value.trim();
+    const category = $('edit-category').value;
+    const subcategory = $('edit-subcategory').value;
     const content = $('edit-content').innerHTML.trim();
     if(!content || content === '<br>') { alert('Content cannot be empty.'); return; }
     const res = await fetch(`/notes/${_editingNote.id}`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({summary, content})
+      body: JSON.stringify({summary, content, category, subcategory})
     });
     if(res.ok) {
       closeModal();

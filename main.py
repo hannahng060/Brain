@@ -439,6 +439,8 @@ async def list_notes(request: Request, category: str = "all", limit: int = 20):
 class NoteUpdate(BaseModel):
     summary: Optional[str] = None
     content: str
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
 
 @app.put("/notes/{note_id}")
 async def update_note(note_id: int, body: NoteUpdate, request: Request):
@@ -447,8 +449,8 @@ async def update_note(note_id: int, body: NoteUpdate, request: Request):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE notes SET content = %s, summary = %s WHERE id = %s",
-        (body.content, body.summary, note_id)
+        "UPDATE notes SET content = %s, summary = %s, category = %s, subcategory = %s WHERE id = %s",
+        (body.content, body.summary, body.category, body.subcategory, note_id)
     )
     conn.commit()
     cur.close()
