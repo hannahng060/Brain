@@ -276,12 +276,15 @@ CATEGORIES:
 
 RULES:
 1. When user shares info → always call save_note. Never skip saving.
-2. When user asks a question → call search_notes or get_person, then give a clear synthesized answer.
-3. After saving, tell the user what category you saved it under and why.
-4. For clinical notes, structure them: drug class / mechanism / indications / dosing / side effects.
-5. For people, always include their name in entities[].
-6. Be warm, concise, and encouraging. She is working hard.
-7. If you are unsure of category, pick the best fit and mention it."""
+2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note.
+3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
+4. For journal entries → capture people present in entities[], emotions, milestones, events separately from food.
+5. When user asks a question → call search_notes or get_person, then give a clear synthesized answer.
+6. After saving, tell the user what you saved and where (category → subcategory).
+7. For clinical notes, structure them: drug class / mechanism / indications / dosing / side effects.
+8. For people, always include their name in entities[].
+9. Be warm, concise, and encouraging. She is working hard.
+10. If you are unsure of category, pick the best fit and mention it."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
@@ -613,7 +616,17 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
 
-        reply = run_upload_agent(file_label, extracted, note.strip())
+        # Save the file content as its own note
+        file_reply = run_upload_agent(file_label, extracted, "")
+
+        # If user also typed a message, process it separately through the full agent
+        # so Brain can split it into multiple notes (journal, diet, etc.)
+        if note.strip():
+            text_reply = run_agent(note.strip())
+            reply = text_reply + f"\n\n📎 *Also saved {file_label}.*"
+        else:
+            reply = file_reply
+
         return {"reply": reply}
 
     except HTTPException:
