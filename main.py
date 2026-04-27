@@ -144,6 +144,20 @@ def db_get_history(limit: int = 20) -> list:
     conn.close()
     return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
 
+def db_update_note(note_id: int, fields: dict) -> dict:
+    conn = get_db()
+    cur = conn.cursor()
+    allowed = ["subcategory", "category", "summary", "content"]
+    updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not updates:
+        return {"status": "nothing to update"}
+    set_clause = ", ".join(f"{k} = %s" for k in updates)
+    cur.execute(f"UPDATE notes SET {set_clause} WHERE id = %s", list(updates.values()) + [note_id])
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "updated", "note_id": note_id, "fields": list(updates.keys())}
+
 def db_clear_messages():
     conn = get_db()
     cur = conn.cursor()
@@ -213,6 +227,21 @@ TOOLS = [
                 "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "all"], "default": "all"}
             }
         }
+    },
+    {
+        "name": "update_note",
+        "description": "Update an existing note's subcategory, category, content, or summary. Use this to reorganize or correct existing notes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "note_id":     {"type": "integer", "description": "The id of the note to update"},
+                "subcategory": {"type": "string", "description": "New subcategory. Use exact names: clinical: Conditions, Medications, Assessments, Treatments, Lab Values. study: DSM-5, Psychopharm, Psychotherapy, Neuroscience, Ethics & Law, Practice Questions. business: Licensing, Credentialing, Billing & Insurance, Marketing, Platforms, Legal. resources: Contacts, URLs & Links, Books, Courses, Tools. personal: Goals, Reflections, Events, Health, Finance"},
+                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"]},
+                "summary":     {"type": "string"},
+                "content":     {"type": "string"}
+            },
+            "required": ["note_id"]
+        }
     }
 ]
 
@@ -251,6 +280,10 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_get_person(args["name"])
     elif name == "get_recent_notes":
         return db_get_recent(args.get("limit", 10), args.get("category", "all"))
+    elif name == "update_note":
+        note_id = args.get("note_id")
+        fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
+        return db_update_note(note_id, fields)
     return {"error": "unknown tool"}
 
 def content_to_dict(block) -> dict:
