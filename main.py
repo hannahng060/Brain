@@ -192,7 +192,7 @@ TOOLS = [
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
-                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home"],
+                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
                                 "description": "Pick the subcategory. clinical→Conditions/Medications/Assessments/Treatments/Lab Values. study→DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
@@ -369,7 +369,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
-        "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home.\n"
+        "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
     )
 
