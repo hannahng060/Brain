@@ -103,6 +103,12 @@
     .cat-pill.study.active     { background:var(--study);     border-color:var(--study);    color:white; }
     .cat-pill.resources.active { background:var(--resources); border-color:var(--resources);color:white; }
     .cat-pill.personal.active  { background:var(--personal);  border-color:var(--personal); color:white; }
+    #subcat-row { display:none; gap:6px; padding:10px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    #subcat-row::-webkit-scrollbar { display:none; }
+    #subcat-row.visible { display:flex; }
+    .subcat-pill { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; border:1.5px solid var(--border); background:var(--surface); color:var(--muted); }
+    .subcat-pill.active { background:var(--text); color:white; border-color:var(--text); }
+    .note-subcat { font-size:11px; color:var(--muted); margin-top:2px; }
 
     #notes-list { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
     .note-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; }
@@ -218,6 +224,7 @@
       <div class="cat-pill resources" data-cat="resources" onclick="filterNotes('resources')">Resources</div>
       <div class="cat-pill personal"  data-cat="personal"  onclick="filterNotes('personal')">Personal</div>
     </div>
+    <div id="subcat-row"></div>
     <div id="notes-list"></div>
   </div>
 
@@ -273,6 +280,15 @@
   const $ = id => document.getElementById(id);
   let allNotes = [];
   let currentCat = 'all';
+  let currentSubcat = 'all';
+
+  const SUBCATS = {
+    clinical:  ['Conditions','Medications','Assessments','Treatments','Lab Values'],
+    study:     ['DSM-5','Psychopharm','Psychotherapy','Neuroscience','Ethics & Law','Practice Questions'],
+    business:  ['Licensing','Credentialing','Billing & Insurance','Marketing','Platforms','Legal'],
+    resources: ['Contacts','URLs & Links','Books','Courses','Tools'],
+    personal:  ['Goals','Reflections','Events','Health','Finance']
+  };
 
   // ── Auth ──────────────────────────────────────────────────────────────
   async function doLogin() {
@@ -313,14 +329,36 @@
 
   function filterNotes(cat) {
     currentCat = cat;
+    currentSubcat = 'all';
     document.querySelectorAll('.cat-pill').forEach(p=>{
       p.classList.toggle('active', p.dataset.cat===cat);
+    });
+    const row = $('subcat-row');
+    if(cat !== 'all' && SUBCATS[cat]) {
+      const subs = SUBCATS[cat];
+      row.innerHTML = `<div class="subcat-pill active" onclick="filterSubcat('all')">All</div>` +
+        subs.map(s=>`<div class="subcat-pill" onclick="filterSubcat('${s}')">${s}</div>`).join('');
+      row.classList.add('visible');
+    } else {
+      row.innerHTML = '';
+      row.classList.remove('visible');
+    }
+    renderNotes();
+  }
+
+  function filterSubcat(sub) {
+    currentSubcat = sub;
+    document.querySelectorAll('.subcat-pill').forEach(p=>{
+      p.classList.toggle('active', p.textContent===sub || (sub==='all' && p.textContent==='All'));
     });
     renderNotes();
   }
 
   function renderNotes() {
-    const filtered = currentCat==='all' ? allNotes : allNotes.filter(n=>n.category===currentCat);
+    let filtered = currentCat==='all' ? allNotes : allNotes.filter(n=>n.category===currentCat);
+    if(currentSubcat !== 'all') {
+      filtered = filtered.filter(n=> n.subcategory && n.subcategory.toLowerCase() === currentSubcat.toLowerCase());
+    }
     $('notes-count').textContent = `${filtered.length} note${filtered.length!==1?'s':''}`;
 
     if(!filtered.length) {
@@ -340,6 +378,8 @@
           </div>
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
+        ${n.subcategory?`<div class="note-subcat">${esc(n.subcategory)}</div>`:''}
+
         <div class="note-content">${n.content}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
