@@ -184,15 +184,16 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "One-sentence summary"},
-                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"],
-                                "description": "personal=personal life, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools"},
+                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle"],
+                                "description": "personal=inner world/feelings/journal, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values",
                                          "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools",
-                                         "Goals","Reflections","Events","Health","Finance"],
-                                "description": "Pick the subcategory that best fits. clinical→Conditions/Medications/Assessments/Treatments/Lab Values. study→DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools. personal→Goals/Reflections/Events/Health/Finance"},
+                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home"],
+                                "description": "Pick the subcategory. clinical→Conditions/Medications/Assessments/Treatments/Lab Values. study→DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -206,7 +207,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 10}
             },
             "required": ["query"]
@@ -230,7 +231,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 10},
-                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle", "all"], "default": "all"}
             }
         }
     },
@@ -246,8 +247,9 @@ TOOLS = [
                                          "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools",
-                                         "Goals","Reflections","Events","Health","Finance"]},
-                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources"]},
+                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home"]},
+                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
             },
@@ -265,7 +267,8 @@ Your user is a PMHNP (Psychiatric Mental Health Nurse Practitioner) who just fin
 - Managing contacts, resources, and her personal life
 
 CATEGORIES:
-- personal    → personal life, feelings, events (handle sensitively)
+- personal    → inner world: feelings, reflections, journal, mental health, relationships, gratitude (handle sensitively)
+- lifestyle   → outer world: diet/food logs, personal health, fitness, closet, travel, finance/bills, home
 - clinical    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols
 - business    → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
 - study       → board exam prep, mnemonics, practice questions, key concepts

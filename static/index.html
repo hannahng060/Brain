@@ -16,11 +16,12 @@
       --muted: #8a8a9a;
       --border: #e5e5ea;
       --radius: 14px;
-      --clinical: #1565c0; --clinical-bg: #e3f2fd;
-      --business: #2e7d32; --business-bg: #e8f5e9;
-      --study:    #f57f17; --study-bg:    #fff8e1;
-      --resources:#6a1b9a; --resources-bg:#f3e5f5;
-      --personal: #880e4f; --personal-bg: #fce4ec;
+      --clinical:  #1565c0; --clinical-bg:  #e3f2fd;
+      --business:  #2e7d32; --business-bg:  #e8f5e9;
+      --study:     #f57f17; --study-bg:     #fff8e1;
+      --resources: #6a1b9a; --resources-bg: #f3e5f5;
+      --personal:  #880e4f; --personal-bg:  #fce4ec;
+      --lifestyle: #00796b; --lifestyle-bg: #e0f2f1;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -103,6 +104,9 @@
     .cat-pill.study.active     { background:var(--study);     border-color:var(--study);    color:white; }
     .cat-pill.resources.active { background:var(--resources); border-color:var(--resources);color:white; }
     .cat-pill.personal.active  { background:var(--personal);  border-color:var(--personal); color:white; }
+    .cat-pill.lifestyle { border-color:var(--lifestyle); color:var(--lifestyle); }
+    .cat-pill.lifestyle.active { background:var(--lifestyle); border-color:var(--lifestyle); color:white; }
+    .badge.lifestyle { background:var(--lifestyle-bg); color:var(--lifestyle); }
     #subcat-row { display:none; gap:6px; padding:10px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #subcat-row::-webkit-scrollbar { display:none; }
     #subcat-row.visible { display:flex; }
@@ -223,6 +227,7 @@
       <div class="cat-pill business"  data-cat="business"  onclick="filterNotes('business')">Business</div>
       <div class="cat-pill resources" data-cat="resources" onclick="filterNotes('resources')">Resources</div>
       <div class="cat-pill personal"  data-cat="personal"  onclick="filterNotes('personal')">Personal</div>
+      <div class="cat-pill lifestyle" data-cat="lifestyle" onclick="filterNotes('lifestyle')">Lifestyle</div>
     </div>
     <div id="subcat-row"></div>
     <div id="notes-list"></div>
@@ -270,6 +275,7 @@
         <option value="business">Business</option>
         <option value="resources">Resources</option>
         <option value="personal">Personal</option>
+        <option value="lifestyle">Lifestyle</option>
       </select>
       <span class="edit-label">Subcategory</span>
       <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -297,7 +303,8 @@
     study:     ['DSM-5','Psychopharm','Psychotherapy','Neuroscience','Ethics & Law','Practice Questions'],
     business:  ['Licensing','Credentialing','Billing & Insurance','Marketing','Platforms','Legal'],
     resources: ['Contacts','URLs & Links','Books','Courses','Tools'],
-    personal:  ['Goals','Reflections','Events','Health','Finance']
+    personal:  ['Reflections','Goals','Mental Health','Gratitude','Journal','Relationships'],
+    lifestyle: ['Diet','Health','Fitness','Closet','Travel','Finance','Home']
   };
 
   // ── Auth ──────────────────────────────────────────────────────────────
