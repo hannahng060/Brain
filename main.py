@@ -127,9 +127,9 @@ def db_get_recent(limit: int = 10, category: str = "all") -> list:
     conn = get_db()
     cur = conn.cursor()
     if category == "all":
-        cur.execute("SELECT id, content, summary, category, tags, created_at FROM notes ORDER BY created_at DESC LIMIT %s", (limit,))
+        cur.execute("SELECT id, content, summary, category, subcategory, tags, created_at FROM notes ORDER BY created_at DESC LIMIT %s", (limit,))
     else:
-        cur.execute("SELECT id, content, summary, category, tags, created_at FROM notes WHERE category=%s ORDER BY created_at DESC LIMIT %s", (category, limit))
+        cur.execute("SELECT id, content, summary, category, subcategory, tags, created_at FROM notes WHERE category=%s ORDER BY created_at DESC LIMIT %s", (category, limit))
     rows = cur.fetchall()
     cur.close()
     conn.close()
