@@ -350,18 +350,62 @@ def run_agent(user_message: str) -> str:
     return final_text
 
 def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
-    instruction = (
-        f"The user uploaded a file: {file_label}\n"
-        + (f"Their note: {user_note}\n\n" if user_note else "\n")
-        + f"Content:\n{extracted}\n\n"
-        "You MUST call save_note now to save this content. Do not skip saving."
+    # Truncate very long documents to avoid token issues
+    max_chars = 6000
+    truncated = extracted[:max_chars] + ("\n\n[Document truncated — first portion saved]" if len(extracted) > max_chars else "")
+
+    # Ask Claude ONLY for metadata as JSON — bypass tool-use uncertainty entirely
+    meta_prompt = (
+        f"A file was uploaded: {file_label}\n"
+        + (f"User note: {user_note}\n" if user_note else "")
+        + f"\nContent:\n{truncated}\n\n"
+        "Return ONLY a JSON object with these fields:\n"
+        '{"summary": "one sentence", "category": "personal|clinical|business|study|resources|lifestyle", '
+        '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
+        "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home, "
+        "clinical=conditions/meds, business=clinic building, study=board prep, resources=contacts/URLs/tools.\n"
+        "Subcategories — clinical: Conditions/Medications/Assessments/Treatments/Lab Values. "
+        "study: DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. "
+        "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
+        "resources: Contacts/URLs & Links/Books/Courses/Tools. "
+        "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
+        "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home.\n"
+        "Return ONLY the JSON, no other text."
     )
-    messages = [{"role": "user", "content": instruction}]
-    final_text = run_agent_loop(messages, instruction)
-    if not final_text:
-        final_text = "File saved successfully."
-    db_add_message("assistant", final_text)
-    return final_text
+
+    meta_response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=512,
+        messages=[{"role": "user", "content": meta_prompt}]
+    )
+    meta_text = meta_response.content[0].text.strip() if meta_response.content else ""
+
+    try:
+        # Strip markdown code fences if present
+        if meta_text.startswith("```"):
+            meta_text = meta_text.split("```")[1]
+            if meta_text.startswith("json"):
+                meta_text = meta_text[4:]
+        meta = json.loads(meta_text)
+        summary     = meta.get("summary", file_label)
+        category    = meta.get("category", "resources")
+        subcategory = meta.get("subcategory")
+        tags        = meta.get("tags", [])
+        entities    = meta.get("entities", [])
+    except Exception:
+        summary, category, subcategory, tags, entities = file_label, "resources", None, [], []
+
+    # Save directly — no tool-use loop, guaranteed to save
+    db_save_note(f"[Uploaded {file_label}]", truncated, summary, category, subcategory, tags, entities)
+
+    reply = (
+        f"Saved! Filed under **{category}**"
+        + (f" → {subcategory}" if subcategory else "")
+        + f".\n\n**{summary}**"
+        + (f"\n\nTags: {', '.join(tags)}" if tags else "")
+    )
+    db_add_message("assistant", reply)
+    return reply
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 def is_authenticated(request: Request) -> bool:
