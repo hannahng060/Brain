@@ -629,30 +629,30 @@ async def start_quiz(body: QuizRequest, request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Fetch clinical/study notes directly — no agent search logic
+    # Fetch notes directly — always within clinical and study categories
     conn = get_db()
     cur = conn.cursor()
     if body.topic:
         words = [w.strip() for w in body.topic.split() if w.strip()]
-        conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s)"] * len(words))
+        conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s OR subcategory ILIKE %s)"] * len(words))
         params = []
         for w in words:
-            params.extend([f"%{w}%", f"%{w}%"])
+            params.extend([f"%{w}%", f"%{w}%", f"%{w}%"])
         params.append(30)
         cur.execute(
-            f"SELECT content, summary, subcategory FROM notes WHERE category IN ('clinical','study') AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN ('clinical','study') AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
             params
         )
     else:
         cur.execute(
-            "SELECT content, summary, subcategory FROM notes WHERE category IN ('clinical','study') ORDER BY created_at DESC LIMIT 30"
+            "SELECT content, summary, subcategory, category FROM notes WHERE category IN ('clinical','study') ORDER BY created_at DESC LIMIT 30"
         )
     notes = cur.fetchall()
     cur.close()
     conn.close()
 
     if not notes:
-        msg = "No clinical or study notes saved yet — add some and I'll quiz you."
+        msg = "No notes found on that topic yet — add some and I'll quiz you."
         db_add_message("assistant", msg)
         return {"reply": msg}
 
@@ -668,7 +668,9 @@ async def start_quiz(body: QuizRequest, request: Request):
         f"Topic requested: {topic_label}.\n\n"
         f"Here are her notes:\n{notes_text}\n\n"
         "Ask ONE quiz question based on these notes. "
-        "Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario. "
+        "Question types vary by topic — for medications: mechanism, indication, side effect, dosing; "
+        "for conditions: DSM criteria, symptoms, differential; for therapy: technique, indication, theory; "
+        "for any topic: definition or application scenario. "
         "Ask the question only — do not give the answer, do not give options, do not explain. "
         "End with 'Take your time!' on a new line."
     )
