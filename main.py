@@ -365,12 +365,14 @@ RULES:
     c. If not found: create a new diet note with save_note.
     d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis.
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
-    a. Call search_notes with the topic (or "clinical" if no topic given) to retrieve relevant notes.
-    b. Based on the retrieved notes, ask ONE clear question at a time. Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario.
-    c. Wait for the user's answer. Do NOT give the answer before they respond.
-    d. After their answer: say if they got it right or wrong, explain the correct answer using their own saved notes, then ask "Ready for the next one?"
-    e. Keep going until user says stop or pass.
-    f. At the end of a session, give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
+    a. Call search_notes with query=topic and category="clinical", limit=10. Also try a second search_notes call with query="medication" category="clinical" if the first returns little.
+    b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
+    c. If truly no notes found: say ONE sentence — "No [topic] notes saved yet — add some and I'll quiz you." Nothing more.
+    d. Ask ONE question at a time. Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario.
+    e. Wait for the user's answer. Do NOT give the answer before they respond.
+    f. After their answer: say if correct or not, give a brief explanation from their notes, then ask "Ready for the next one?"
+    g. Keep going until user says stop or pass.
+    h. At the end give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
