@@ -339,10 +339,18 @@
         <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
         <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
         <div class="fmt-divider"></div>
-        <select class="fmt-select" onchange="fmtSize(this.value)" title="Font size">
+        <select class="fmt-select" onchange="fmtFont(this.value); this.selectedIndex=0;" title="Font">
+          <option value="">Font</option>
+          <option value="-apple-system,sans-serif">Default</option>
+          <option value="Georgia,serif">Georgia</option>
+          <option value="'Times New Roman',serif">Times New Roman</option>
+          <option value="Arial,sans-serif">Arial</option>
+          <option value="'Courier New',monospace">Courier</option>
+        </select>
+        <select class="fmt-select" onchange="fmtSize(this.value); this.selectedIndex=0;" title="Font size">
           <option value="">Size</option>
-          <option value="2">Small</option>
-          <option value="3">Normal</option>
+          <option value="1">Small</option>
+          <option value="3">Default</option>
           <option value="4">Large</option>
           <option value="5">X-Large</option>
         </select>
@@ -617,6 +625,10 @@
   }
   function fmtSize(size) {
     if(size) document.execCommand('fontSize', false, size);
+    $('edit-content').focus();
+  }
+  function fmtFont(font) {
+    if(font) document.execCommand('fontName', false, font);
     $('edit-content').focus();
   }
 
