@@ -375,8 +375,11 @@ RULES:
     c. If truly no notes found: say ONE sentence only — "No clinical notes saved yet — add some and I'll quiz you." Nothing more.
     d. Ask ONE question at a time. Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario.
     e. Wait for the user's answer. Do NOT give the answer before they respond.
-    f. After their answer: say if correct or not, then give a thorough explanation from their notes. Do NOT ask "Ready for the next one?" — let the user drive the pace.
-    g. Keep going if user asks for another question or says "next".
+    f. After their answer:
+       - If correct: confirm it, then add one key clinical pearl or real-world application from the notes to deepen understanding.
+       - If incorrect or incomplete: gently correct them, explain the right answer thoroughly using their notes, highlight the 1-2 most important things to remember, and offer a memory trick if helpful.
+       - Either way: end with the teaching, not a question. Let the user ask for the next one when ready.
+    g. Keep going if user asks for another question, says "next", or "keep going".
     h. At the end give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
