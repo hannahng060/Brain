@@ -363,7 +363,14 @@ RULES:
     a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note
     b. If found: take the existing content, append the new meal, recalculate full daily totals (calories, protein, carbs, fat), add a short analysis vs the user's nutrition goals from their profile, then call update_note with the note_id and complete updated content. Do NOT create a new note.
     c. If not found: create a new diet note with save_note.
-    d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis."""
+    d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis.
+12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
+    a. Call search_notes with the topic (or "clinical" if no topic given) to retrieve relevant notes.
+    b. Based on the retrieved notes, ask ONE clear question at a time. Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario.
+    c. Wait for the user's answer. Do NOT give the answer before they respond.
+    d. After their answer: say if they got it right or wrong, explain the correct answer using their own saved notes, then ask "Ready for the next one?"
+    e. Keep going until user says stop or pass.
+    f. At the end of a session, give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
