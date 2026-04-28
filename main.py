@@ -346,7 +346,7 @@ CATEGORIES:
 - clinical    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols
 - business    → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
 - study       → board exam prep, mnemonics, practice questions, key concepts
-- resources   → contacts/networking, URLs, books, courses, tools, recommendations
+- resources   → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
 
 RULES:
 1. When user shares info → always call save_note. Never skip saving.
@@ -467,7 +467,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "Subcategories — clinical: Conditions/Medications/Assessments/Treatments/Lab Values. "
         "study: DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
-        "resources: Contacts/URLs & Links/Books/Courses/Tools. "
+        "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
         "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
