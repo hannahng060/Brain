@@ -326,7 +326,7 @@ TOOLS = [
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
-                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"]},
+                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
@@ -346,7 +346,7 @@ Your user is a PMHNP (Psychiatric Mental Health Nurse Practitioner) who just fin
 
 CATEGORIES:
 - personal      → inner world: feelings, reflections, journal, mental health, relationships, gratitude (handle sensitively)
-- lifestyle     → outer world: diet/food logs, personal health, fitness, closet, travel, finance/bills, home, gardening
+- lifestyle     → outer world: Daily Log (daily tracking), diet knowledge/recipes, health, fitness, closet, travel, finance, home, gardening
 - psychiatry    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols, neuroscience, ethics & law, board prep
 - psychotherapy → therapy modalities: CBT, DBT, ACT, Psychodynamic, Motivational Interviewing, Trauma-Focused, Family & Couples, Group Therapy, theory & foundations
 - icu           → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
@@ -369,6 +369,11 @@ RULES:
     b. If found: take the existing content, append the new meal, recalculate full daily totals (calories, protein, carbs, fat), add a short analysis vs the user's nutrition goals from their profile, then call update_note with the note_id and complete updated content. Do NOT create a new note.
     c. If not found: create a new diet note with save_note.
     d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis.
+13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine):
+    a. Call get_today_logs with category=lifestyle, subcategory=Daily Log to find today's note.
+    b. If found: append the new information to the existing note, keeping the structured format. Call update_note with the complete updated content.
+    c. If not found: create a new note with save_note under lifestyle → Daily Log with today's date as the heading.
+    d. Daily Log captures WHAT HAPPENED today. Diet subcategory is for recipes, nutrition knowledge, and reference material only — never today's meals.
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
@@ -479,7 +484,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
-        "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
+        "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
     )
 
