@@ -663,8 +663,8 @@
     $('input').value = '';
     $('input').style.height = 'auto';
     $('send-btn').disabled = true;
-    addMessage('user', topic ? `Quiz me on ${topic}` : 'Quiz me');
-    addMessage('assistant', '<em>Pulling your notes...</em>');
+    appendMessage('user', topic ? `Quiz me on ${topic}` : 'Quiz me');
+    showTyping();
     try {
       const r = await fetch('/quiz', {
         method: 'POST',
@@ -672,12 +672,20 @@
         body: JSON.stringify({topic})
       });
       const data = await r.json();
-      // Replace the loading message
-      const msgs = document.querySelectorAll('.msg.assistant');
-      msgs[msgs.length-1].querySelector('.bubble').innerHTML = renderContent(data.reply);
+      removeTyping();
+      const msgs = $('messages'), div = document.createElement('div');
+      div.className = 'msg brain';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = renderContent(data.reply);
+      const meta = document.createElement('div');
+      meta.className = 'msg-meta';
+      meta.textContent = `Brain · ${timeStr()}`;
+      div.appendChild(bubble); div.appendChild(meta);
+      msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
     } catch(e) {
-      const msgs = document.querySelectorAll('.msg.assistant');
-      msgs[msgs.length-1].querySelector('.bubble').textContent = 'Something went wrong — try again.';
+      removeTyping();
+      appendMessage('brain', 'Something went wrong — try again.');
     }
   }
 
