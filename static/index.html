@@ -433,7 +433,7 @@
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
 
-        <div class="note-content">${n.content}</div>
+        <div class="note-content">${renderContent(n.content)}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag" onclick="filterByTag('${esc(t)}',event)">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
     }).join('');
@@ -451,7 +451,7 @@
     $('modal-badge').textContent = n.category;
     $('modal-date').textContent = date;
     $('modal-title').textContent = n.summary || 'Note';
-    $('modal-body').innerHTML = n.content;
+    $('modal-body').innerHTML = renderContent(n.content);
     $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
@@ -492,7 +492,7 @@
     $('edit-category').value = _editingNote.category || 'clinical';
     updateSubcatOptions();
     $('edit-subcategory').value = _editingNote.subcategory || '';
-    $('edit-content').innerHTML = _editingNote.content || '';
+    $('edit-content').innerHTML = renderContent(_editingNote.content || '');
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
     $('edit-content').focus();
@@ -624,6 +624,20 @@
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
   function stripHtml(s){ const d=document.createElement('div'); d.innerHTML=s||''; return d.textContent||''; }
+
+  function renderContent(s) {
+    if(!s) return '';
+    // If already HTML (from rich text editor), return as-is
+    if(/<[a-z][\s\S]*>/i.test(s)) return s;
+    // Otherwise convert markdown to HTML
+    return s
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
+      .replace(/^[-•]\s+(.+)$/gm,'&bull; $1')
+      .replace(/\n/g,'<br>');
+  }
 </script>
 </body>
 </html>
