@@ -100,6 +100,9 @@
     #send-btn:disabled { opacity:.4; cursor:default; }
     #send-btn svg { fill:white; stroke:none; }
     #attach-btn { width:42px; height:42px; border-radius:50%; background:var(--bg); border:1.5px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
+    #quick-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .quick-btn { background:var(--primary-light); color:var(--primary); border:1.5px solid var(--primary); border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .quick-btn:hover { background:var(--primary); color:white; }
     #file-preview { display:none; align-items:center; gap:8px; background:var(--primary-light); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--primary); }
     #file-preview span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     #file-preview button { background:none; border:none; cursor:pointer; color:var(--primary); font-size:16px; padding:0; }
@@ -224,6 +227,9 @@
       <div id="file-preview">
         <span id="file-name"></span>
         <button onclick="clearFile()">✕</button>
+      </div>
+      <div id="quick-actions">
+        <button class="quick-btn" onclick="startQuiz()">🧠 Quiz Me</button>
       </div>
       <div id="input-row">
         <button id="attach-btn" onclick="$('file-input').click()" title="Attach file">📎</button>
@@ -650,6 +656,29 @@
     $('file-name').textContent = `📄 ${file.name}`;
     $('file-preview').style.display = 'flex';
     $('send-btn').disabled = false;
+  }
+
+  async function startQuiz() {
+    const topic = $('input').value.trim() || null;
+    $('input').value = '';
+    $('input').style.height = 'auto';
+    $('send-btn').disabled = true;
+    addMessage('user', topic ? `Quiz me on ${topic}` : 'Quiz me');
+    addMessage('assistant', '<em>Pulling your notes...</em>');
+    try {
+      const r = await fetch('/quiz', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({topic})
+      });
+      const data = await r.json();
+      // Replace the loading message
+      const msgs = document.querySelectorAll('.msg.assistant');
+      msgs[msgs.length-1].querySelector('.bubble').innerHTML = renderContent(data.reply);
+    } catch(e) {
+      const msgs = document.querySelectorAll('.msg.assistant');
+      msgs[msgs.length-1].querySelector('.bubble').textContent = 'Something went wrong — try again.';
+    }
   }
 
   function clearFile() {

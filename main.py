@@ -621,6 +621,70 @@ async def update_note(note_id: int, body: NoteUpdate, request: Request):
     conn.close()
     return {"ok": True}
 
+class QuizRequest(BaseModel):
+    topic: Optional[str] = None
+
+@app.post("/quiz")
+async def start_quiz(body: QuizRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Fetch clinical notes directly — no agent search logic
+    conn = get_db()
+    cur = conn.cursor()
+    if body.topic:
+        words = [w.strip() for w in body.topic.split() if w.strip()]
+        conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s)"] * len(words))
+        params = []
+        for w in words:
+            params.extend([f"%{w}%", f"%{w}%"])
+        params.append(30)
+        cur.execute(
+            f"SELECT content, summary, subcategory FROM notes WHERE category = 'clinical' AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
+            params
+        )
+    else:
+        cur.execute(
+            "SELECT content, summary, subcategory FROM notes WHERE category = 'clinical' ORDER BY created_at DESC LIMIT 30"
+        )
+    notes = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not notes:
+        msg = "No clinical notes saved yet — add some and I'll quiz you."
+        db_add_message("assistant", msg)
+        return {"reply": msg}
+
+    # Build context from notes
+    notes_text = "\n\n---\n\n".join(
+        f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{n['content']}"
+        for n in notes
+    )
+    topic_label = body.topic or "clinical knowledge"
+
+    quiz_prompt = (
+        f"You are quizzing a PMHNP student on her own saved notes. "
+        f"Topic requested: {topic_label}.\n\n"
+        f"Here are her notes:\n{notes_text}\n\n"
+        "Ask ONE quiz question based on these notes. "
+        "Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario. "
+        "Ask the question only — do not give the answer, do not give options, do not explain. "
+        "End with 'Take your time!' on a new line."
+    )
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=300,
+        messages=[{"role": "user", "content": quiz_prompt}]
+    )
+    question = response.content[0].text.strip() if response.content else "Could not generate a question."
+
+    # Inject into chat history so follow-up answers work naturally
+    db_add_message("user", f"Quiz me on {topic_label}")
+    db_add_message("assistant", question)
+    return {"reply": question}
+
 @app.delete("/notes/{note_id}")
 async def delete_note(note_id: int, request: Request):
     if not is_authenticated(request):
