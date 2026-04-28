@@ -629,7 +629,7 @@ async def start_quiz(body: QuizRequest, request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Fetch clinical notes directly — no agent search logic
+    # Fetch clinical/study notes directly — no agent search logic
     conn = get_db()
     cur = conn.cursor()
     if body.topic:
@@ -640,19 +640,19 @@ async def start_quiz(body: QuizRequest, request: Request):
             params.extend([f"%{w}%", f"%{w}%"])
         params.append(30)
         cur.execute(
-            f"SELECT content, summary, subcategory FROM notes WHERE category = 'clinical' AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
+            f"SELECT content, summary, subcategory FROM notes WHERE category IN ('clinical','study') AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
             params
         )
     else:
         cur.execute(
-            "SELECT content, summary, subcategory FROM notes WHERE category = 'clinical' ORDER BY created_at DESC LIMIT 30"
+            "SELECT content, summary, subcategory FROM notes WHERE category IN ('clinical','study') ORDER BY created_at DESC LIMIT 30"
         )
     notes = cur.fetchall()
     cur.close()
     conn.close()
 
     if not notes:
-        msg = "No clinical notes saved yet — add some and I'll quiz you."
+        msg = "No clinical or study notes saved yet — add some and I'll quiz you."
         db_add_message("assistant", msg)
         return {"reply": msg}
 
