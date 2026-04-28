@@ -339,7 +339,7 @@
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     $(`${tab}-page`).classList.add('active');
     document.querySelectorAll('.tab')[tab==='chat'?0:1].classList.add('active');
-    if(tab==='notes') loadNotes();
+    if(tab==='notes') { clearTagFilter(); loadNotes(); }
   }
 
   // ── Notes ─────────────────────────────────────────────────────────────
