@@ -422,14 +422,16 @@
       const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
       return `<div class="note-card" onclick="openNote(${i})">
         <div class="note-card-header">
-          <span class="badge ${n.category}">${n.category}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="badge ${n.category}">${n.category}</span>
+            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
+          </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="note-date">${date}</span>
             <button class="delete-btn" onclick="deleteNote(event,${n.id})" title="Delete">🗑</button>
           </div>
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
-        ${n.subcategory?`<div class="note-subcat">${esc(n.subcategory)}</div>`:''}
 
         <div class="note-content">${n.content}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag" onclick="filterByTag('${esc(t)}',event)">${esc(t)}</span>`).join('')}</div>`:''}
