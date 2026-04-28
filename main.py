@@ -183,7 +183,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
-                "summary":     {"type": "string", "description": "One-sentence summary"},
+                "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
                 "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle"],
                                 "description": "personal=inner world/feelings/journal, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
