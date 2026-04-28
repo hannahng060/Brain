@@ -347,6 +347,7 @@ CATEGORIES:
 - business    → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
 - study       → board exam prep, mnemonics, practice questions, key concepts
 - resources   → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
+- icu         → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
 
 RULES:
 1. When user shares info → always call save_note. Never skip saving.
@@ -468,6 +469,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "study: DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
+        "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
         "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
@@ -629,10 +631,16 @@ async def start_quiz(body: QuizRequest, request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Fetch notes directly — always within clinical and study categories
+    # Fetch notes directly — mental health (clinical+study) or icu
     conn = get_db()
     cur = conn.cursor()
-    if body.topic:
+    topic_lower = (body.topic or "").lower()
+    if topic_lower == "icu":
+        cats = "('icu')"
+    else:
+        cats = "('clinical','study')"
+
+    if body.topic and topic_lower != "icu":
         words = [w.strip() for w in body.topic.split() if w.strip()]
         conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s OR subcategory ILIKE %s)"] * len(words))
         params = []
@@ -640,12 +648,12 @@ async def start_quiz(body: QuizRequest, request: Request):
             params.extend([f"%{w}%", f"%{w}%", f"%{w}%"])
         params.append(30)
         cur.execute(
-            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN ('clinical','study') AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
             params
         )
     else:
         cur.execute(
-            "SELECT content, summary, subcategory, category FROM notes WHERE category IN ('clinical','study') ORDER BY created_at DESC LIMIT 30"
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} ORDER BY created_at DESC LIMIT 30"
         )
     notes = cur.fetchall()
     cur.close()

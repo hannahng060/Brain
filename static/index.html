@@ -17,6 +17,7 @@
       --border: #e5e5ea;
       --radius: 14px;
       --clinical:  #1565c0; --clinical-bg:  #e3f2fd;
+      --icu:       #b71c1c; --icu-bg:       #ffebee;
       --business:  #2e7d32; --business-bg:  #e8f5e9;
       --study:     #f57f17; --study-bg:     #fff8e1;
       --resources: #6a1b9a; --resources-bg: #f3e5f5;
@@ -126,6 +127,9 @@
     .cat-pill.lifestyle { border-color:var(--lifestyle); color:var(--lifestyle); }
     .cat-pill.lifestyle.active { background:var(--lifestyle); border-color:var(--lifestyle); color:white; }
     .badge.lifestyle { background:var(--lifestyle-bg); color:var(--lifestyle); }
+    .cat-pill.icu { border-color:var(--icu); color:var(--icu); }
+    .cat-pill.icu.active { background:var(--icu); border-color:var(--icu); color:white; }
+    .badge.icu { background:var(--icu-bg); color:var(--icu); }
     #subcat-row { display:none; gap:6px; padding:10px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #subcat-row::-webkit-scrollbar { display:none; }
     #subcat-row.visible { display:flex; }
@@ -229,7 +233,8 @@
         <button onclick="clearFile()">✕</button>
       </div>
       <div id="quick-actions">
-        <button class="quick-btn" onclick="startQuiz()">🧠 Quiz Me</button>
+        <button class="quick-btn" onclick="startQuiz()">🧠 Quiz: Mental Health</button>
+        <button class="quick-btn" onclick="startQuizICU()">🏥 Quiz: ICU</button>
       </div>
       <div id="input-row">
         <button id="attach-btn" onclick="$('file-input').click()" title="Attach file">📎</button>
@@ -256,6 +261,7 @@
       <div class="cat-pill resources" data-cat="resources" onclick="filterNotes('resources')">Resources</div>
       <div class="cat-pill personal"  data-cat="personal"  onclick="filterNotes('personal')">Personal</div>
       <div class="cat-pill lifestyle" data-cat="lifestyle" onclick="filterNotes('lifestyle')">Lifestyle</div>
+      <div class="cat-pill icu" data-cat="icu" onclick="filterNotes('icu')">ICU</div>
     </div>
     <div id="subcat-row"></div>
     <div id="tag-filter-bar">
@@ -321,6 +327,7 @@
         <option value="resources">Resources</option>
         <option value="personal">Personal</option>
         <option value="lifestyle">Lifestyle</option>
+        <option value="icu">ICU</option>
       </select>
       <span class="edit-label">Subcategory</span>
       <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -350,7 +357,8 @@
     business:  ['Licensing','Credentialing','Billing & Insurance','Marketing','Platforms','Legal'],
     resources: ['Contacts','URLs & Links','Books','Courses','Tools','Future Ideas'],
     personal:  ['Reflections','Goals','Mental Health','Gratitude','Journal','Relationships'],
-    lifestyle: ['Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening']
+    lifestyle: ['Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening'],
+    icu:       ['Neuro','Respiratory','Cardiac','GI','Renal','Hematology','Pharmacology','Procedures','Protocols & Guidelines']
   };
 
   // ── Profile ───────────────────────────────────────────────────────────
@@ -658,8 +666,10 @@
     $('send-btn').disabled = false;
   }
 
-  async function startQuiz() {
-    const topic = $('input').value.trim() || null;
+  async function startQuizICU() { await startQuiz('icu'); }
+
+  async function startQuiz(forceTopic) {
+    const topic = forceTopic || $('input').value.trim() || null;
     $('input').value = '';
     $('input').style.height = 'auto';
     $('send-btn').disabled = true;
