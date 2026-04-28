@@ -140,7 +140,7 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     cur.execute(
         """SELECT id, content, summary, category, subcategory, created_at
            FROM notes
-           WHERE category = %s AND subcategory ILIKE %s AND created_at >= CURRENT_DATE
+           WHERE category = %s AND subcategory ILIKE %s AND created_at >= NOW() - INTERVAL '30 hours'
            ORDER BY created_at ASC""",
         (category, f"%{subcategory}%")
     )
