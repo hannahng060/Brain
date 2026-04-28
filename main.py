@@ -52,6 +52,17 @@ def init_db():
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS profile (
+            section    TEXT PRIMARY KEY,
+            content    TEXT NOT NULL DEFAULT '',
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    # Seed default empty sections
+    sections = ['about','health','nutrition','fitness','career','personal','routines']
+    for s in sections:
+        cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
     conn.commit()
     cur.close()
     conn.close()
@@ -157,6 +168,42 @@ def db_update_note(note_id: int, fields: dict) -> dict:
     cur.close()
     conn.close()
     return {"status": "updated", "note_id": note_id, "fields": list(updates.keys())}
+
+def db_get_profile() -> dict:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT section, content FROM profile ORDER BY section")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return {r["section"]: r["content"] for r in rows}
+
+def db_update_profile_section(section: str, content: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE profile SET content = %s, updated_at = NOW() WHERE section = %s", (content, section))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def build_profile_context() -> str:
+    profile = db_get_profile()
+    filled = {k: v for k, v in profile.items() if v.strip()}
+    if not filled:
+        return ""
+    labels = {
+        "about": "About Me",
+        "health": "Health & Medical",
+        "nutrition": "Nutrition Goals",
+        "fitness": "Fitness & Activity",
+        "career": "Career & Business",
+        "personal": "Personal Values & Goals",
+        "routines": "Daily Routines"
+    }
+    lines = ["USER PROFILE (always use this context when responding):"]
+    for k, v in filled.items():
+        lines.append(f"[{labels.get(k, k)}]: {v}")
+    return "\n".join(lines)
 
 def db_clear_messages():
     conn = get_db()
@@ -346,6 +393,13 @@ def run_agent_loop(messages: list, raw: str) -> str:
 def run_agent(user_message: str) -> str:
     db_add_message("user", user_message)
     messages = db_get_history(20)
+    # Prepend profile as first user/assistant exchange so Brain always has context
+    profile_context = build_profile_context()
+    if profile_context:
+        messages = [
+            {"role": "user", "content": profile_context},
+            {"role": "assistant", "content": "Got it, I have your profile and will use it as context for all responses."}
+        ] + messages
     final_text = run_agent_loop(messages, user_message)
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
@@ -479,6 +533,23 @@ async def test():
 async def reset():
     db_clear_messages()
     return {"ok": True, "message": "Chat history cleared. Go back to Brain and try again!"}
+
+@app.get("/profile")
+async def get_profile(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return db_get_profile()
+
+class ProfileUpdate(BaseModel):
+    section: str
+    content: str
+
+@app.put("/profile")
+async def update_profile(body: ProfileUpdate, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    db_update_profile_section(body.section, body.content)
+    return {"ok": True}
 
 @app.get("/notes")
 async def list_notes(request: Request, category: str = "all", limit: int = 20):
