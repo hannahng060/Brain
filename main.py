@@ -134,6 +134,21 @@ def db_get_person(name: str) -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def db_get_today_logs(category: str, subcategory: str) -> list:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, content, summary, category, subcategory, created_at
+           FROM notes
+           WHERE category = %s AND subcategory ILIKE %s AND created_at >= CURRENT_DATE
+           ORDER BY created_at ASC""",
+        (category, f"%{subcategory}%")
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
 def db_get_recent(limit: int = 10, category: str = "all") -> list:
     conn = get_db()
     cur = conn.cursor()
@@ -283,6 +298,18 @@ TOOLS = [
         }
     },
     {
+        "name": "get_today_logs",
+        "description": "Get all notes logged today for a specific category and subcategory. Use this to find today's diet log, health log, fitness log, etc. before updating them.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category":    {"type": "string", "enum": ["lifestyle","personal","clinical","business","study","resources"]},
+                "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness"}
+            },
+            "required": ["category", "subcategory"]
+        }
+    },
+    {
         "name": "update_note",
         "description": "Update an existing note's subcategory, category, content, or summary. Use this to reorganize or correct existing notes.",
         "input_schema": {
@@ -331,7 +358,12 @@ RULES:
 7. For clinical notes, structure them: drug class / mechanism / indications / dosing / side effects.
 8. For people, always include their name in entities[].
 9. Be warm and concise. After retrieving notes, show the summary and end with "Want to add anything?" at most — nothing more. You are a note assistant, not a therapist or journal coach. No bullet-point questions, no prompts about feelings.
-10. If you are unsure of category, pick the best fit and mention it."""
+10. If you are unsure of category, pick the best fit and mention it.
+11. DIET LOG UPDATES: When user wants to add a meal to today's diet log:
+    a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note
+    b. If found: take the existing content, append the new meal, recalculate full daily totals (calories, protein, carbs, fat), add a short analysis vs the user's nutrition goals from their profile, then call update_note with the note_id and complete updated content. Do NOT create a new note.
+    c. If not found: create a new diet note with save_note.
+    d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
@@ -344,6 +376,8 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_get_person(args["name"])
     elif name == "get_recent_notes":
         return db_get_recent(args.get("limit", 10), args.get("category", "all"))
+    elif name == "get_today_logs":
+        return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
     elif name == "update_note":
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
