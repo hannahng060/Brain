@@ -371,9 +371,11 @@ RULES:
     d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis.
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine):
     a. Call get_today_logs with category=lifestyle, subcategory=Daily Log to find today's note.
-    b. If found: append the new information to the existing note, keeping the structured format. Call update_note with the complete updated content.
-    c. If not found: create a new note with save_note under lifestyle → Daily Log with today's date as the heading.
-    d. Daily Log captures WHAT HAPPENED today. Diet subcategory is for recipes, nutrition knowledge, and reference material only — never today's meals.
+    b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
+    c. If not found: create a new note with save_note under lifestyle → Daily Log. Use a meaningful heading (e.g. "Graduation Day — April 27" or "Monday April 28") not just a date.
+    d. Always use this consistent section structure — fill in what the user reported, leave others as blank or "—" rather than skipping them:
+       OURA RING METRICS | MEDICATIONS & SUPPLEMENTS | MORNING ROUTINE | MOOD | ENERGY | MEALS | ACTIVITIES | SPIRITUAL/LEARNING | EVENING ROUTINE | ANALYSIS
+    e. Daily Log captures WHAT HAPPENED today. Diet subcategory is for recipes, nutrition knowledge, and reference material only — never log today's meals under Diet.
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
