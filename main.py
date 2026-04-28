@@ -63,6 +63,8 @@ def init_db():
     sections = ['about','health','nutrition','fitness','career','personal','routines']
     for s in sections:
         cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
+    # Migrate old category names to new ones
+    cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
     conn.commit()
     cur.close()
     conn.close()
@@ -246,16 +248,17 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle"],
-                                "description": "personal=inner world/feelings/journal, clinical=conditions/meds/treatments, business=clinic building, study=board prep, resources=contacts/URLs/tools, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"],
+                                "description": "personal=inner world/feelings/journal, psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
-                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values",
-                                         "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
+                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
+                                         "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
+                                         "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
-                                         "Contacts","URLs & Links","Books","Courses","Tools",
+                                         "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
                                          "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
-                                "description": "Pick the subcategory. clinical→Conditions/Medications/Assessments/Treatments/Lab Values. study→DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home"},
+                                "description": "Pick the subcategory. psychiatry→Conditions/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -269,7 +272,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 10}
             },
             "required": ["query"]
@@ -293,7 +296,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 10},
-                "category": {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"}
             }
         }
     },
@@ -303,7 +306,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","clinical","business","study","resources"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","business","resources"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness"}
             },
             "required": ["category", "subcategory"]
@@ -317,13 +320,14 @@ TOOLS = [
             "properties": {
                 "note_id":     {"type": "integer", "description": "The id of the note to update"},
                 "subcategory": {"type": "string",
-                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values",
-                                         "DSM-5","Psychopharm","Psychotherapy","Neuroscience","Ethics & Law","Practice Questions",
+                                "enum": ["Conditions","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
+                                         "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
+                                         "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
-                                         "Contacts","URLs & Links","Books","Courses","Tools",
+                                         "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
-                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home"]},
-                "category":    {"type": "string", "enum": ["personal", "clinical", "business", "study", "resources", "lifestyle"]},
+                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"]},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
             },
@@ -341,13 +345,13 @@ Your user is a PMHNP (Psychiatric Mental Health Nurse Practitioner) who just fin
 - Managing contacts, resources, and her personal life
 
 CATEGORIES:
-- personal    → inner world: feelings, reflections, journal, mental health, relationships, gratitude (handle sensitively)
-- lifestyle   → outer world: diet/food logs, personal health, fitness, closet, travel, finance/bills, home
-- clinical    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols
-- business    → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
-- study       → board exam prep, mnemonics, practice questions, key concepts
-- resources   → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
-- icu         → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
+- personal      → inner world: feelings, reflections, journal, mental health, relationships, gratitude (handle sensitively)
+- lifestyle     → outer world: diet/food logs, personal health, fitness, closet, travel, finance/bills, home, gardening
+- psychiatry    → psychiatric conditions, medications, DSM criteria, pharmacology, assessment tools, treatment protocols, neuroscience, ethics & law, board prep
+- psychotherapy → therapy modalities: CBT, DBT, ACT, Psychodynamic, Motivational Interviewing, Trauma-Focused, Family & Couples, Group Therapy, theory & foundations
+- icu           → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
+- business      → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
+- resources     → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
 
 RULES:
 1. When user shares info → always call save_note. Never skip saving.
@@ -461,15 +465,16 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         + (f"User note: {user_note}\n" if user_note else "")
         + f"\nContent:\n{truncated}\n\n"
         "Return ONLY a JSON object with these fields:\n"
-        '{"summary": "one sentence", "category": "personal|clinical|business|study|resources|lifestyle", '
+        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|business|resources|lifestyle", '
         '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
-        "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home, "
-        "clinical=conditions/meds, business=clinic building, study=board prep, resources=contacts/URLs/tools.\n"
-        "Subcategories — clinical: Conditions/Medications/Assessments/Treatments/Lab Values. "
-        "study: DSM-5/Psychopharm/Psychotherapy/Neuroscience/Ethics & Law/Practice Questions. "
+        "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness, "
+        "psychiatry=psychiatric conditions/meds/assessments/board prep, psychotherapy=therapy modalities, "
+        "icu=ICU nursing/medical, business=clinic building, resources=contacts/URLs/tools/future ideas.\n"
+        "Subcategories — psychiatry: Conditions/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. "
+        "psychotherapy: CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. "
+        "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
-        "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
         "lifestyle: Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
@@ -631,16 +636,18 @@ async def start_quiz(body: QuizRequest, request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Fetch notes directly — mental health (clinical+study) or icu
+    # Fetch notes directly — psychiatry, psychotherapy, or icu
     conn = get_db()
     cur = conn.cursor()
     topic_lower = (body.topic or "").lower()
     if topic_lower == "icu":
         cats = "('icu')"
+    elif topic_lower == "psychotherapy":
+        cats = "('psychotherapy')"
     else:
-        cats = "('clinical','study')"
+        cats = "('psychiatry','clinical','study')"  # include old category names for backwards compat
 
-    if body.topic and topic_lower != "icu":
+    if body.topic and topic_lower not in ("icu", "psychiatry", "psychotherapy"):
         words = [w.strip() for w in body.topic.split() if w.strip()]
         conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s OR subcategory ILIKE %s)"] * len(words))
         params = []

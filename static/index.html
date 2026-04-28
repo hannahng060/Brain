@@ -16,13 +16,13 @@
       --muted: #8a8a9a;
       --border: #e5e5ea;
       --radius: 14px;
-      --clinical:  #1565c0; --clinical-bg:  #e3f2fd;
-      --icu:       #b71c1c; --icu-bg:       #ffebee;
-      --business:  #2e7d32; --business-bg:  #e8f5e9;
-      --study:     #f57f17; --study-bg:     #fff8e1;
-      --resources: #6a1b9a; --resources-bg: #f3e5f5;
-      --personal:  #880e4f; --personal-bg:  #fce4ec;
-      --lifestyle: #00796b; --lifestyle-bg: #e0f2f1;
+      --psychiatry:    #1565c0; --psychiatry-bg:    #e3f2fd;
+      --psychotherapy: #4527a0; --psychotherapy-bg: #ede7f6;
+      --icu:           #b71c1c; --icu-bg:           #ffebee;
+      --business:      #2e7d32; --business-bg:      #e8f5e9;
+      --resources:     #6a1b9a; --resources-bg:     #f3e5f5;
+      --personal:      #880e4f; --personal-bg:      #fce4ec;
+      --lifestyle:     #00796b; --lifestyle-bg:     #e0f2f1;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -114,16 +114,16 @@
     .category-scroll::-webkit-scrollbar { display:none; }
     .cat-pill { padding:7px 14px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; border:1.5px solid transparent; background:var(--bg); color:var(--muted); }
     .cat-pill.active { background:var(--primary); color:white; }
-    .cat-pill.clinical  { border-color:var(--clinical);  color:var(--clinical); }
-    .cat-pill.business  { border-color:var(--business);  color:var(--business); }
-    .cat-pill.study     { border-color:var(--study);     color:var(--study); }
-    .cat-pill.resources { border-color:var(--resources); color:var(--resources); }
-    .cat-pill.personal  { border-color:var(--personal);  color:var(--personal); }
-    .cat-pill.clinical.active  { background:var(--clinical);  border-color:var(--clinical); color:white; }
-    .cat-pill.business.active  { background:var(--business);  border-color:var(--business); color:white; }
-    .cat-pill.study.active     { background:var(--study);     border-color:var(--study);    color:white; }
-    .cat-pill.resources.active { background:var(--resources); border-color:var(--resources);color:white; }
-    .cat-pill.personal.active  { background:var(--personal);  border-color:var(--personal); color:white; }
+    .cat-pill.psychiatry    { border-color:var(--psychiatry);    color:var(--psychiatry); }
+    .cat-pill.psychotherapy { border-color:var(--psychotherapy); color:var(--psychotherapy); }
+    .cat-pill.business      { border-color:var(--business);      color:var(--business); }
+    .cat-pill.resources     { border-color:var(--resources);     color:var(--resources); }
+    .cat-pill.personal      { border-color:var(--personal);      color:var(--personal); }
+    .cat-pill.psychiatry.active    { background:var(--psychiatry);    border-color:var(--psychiatry);    color:white; }
+    .cat-pill.psychotherapy.active { background:var(--psychotherapy); border-color:var(--psychotherapy); color:white; }
+    .cat-pill.business.active      { background:var(--business);      border-color:var(--business);      color:white; }
+    .cat-pill.resources.active     { background:var(--resources);     border-color:var(--resources);     color:white; }
+    .cat-pill.personal.active      { background:var(--personal);      border-color:var(--personal);      color:white; }
     .cat-pill.lifestyle { border-color:var(--lifestyle); color:var(--lifestyle); }
     .cat-pill.lifestyle.active { background:var(--lifestyle); border-color:var(--lifestyle); color:white; }
     .badge.lifestyle { background:var(--lifestyle-bg); color:var(--lifestyle); }
@@ -149,11 +149,11 @@
     .delete-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--muted); font-size:16px; line-height:1; }
     .delete-btn:hover { background:#fce4ec; color:#c62828; }
     .badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
-    .badge.clinical  { background:var(--clinical-bg);  color:var(--clinical); }
-    .badge.business  { background:var(--business-bg);  color:var(--business); }
-    .badge.study     { background:var(--study-bg);     color:var(--study); }
-    .badge.resources { background:var(--resources-bg); color:var(--resources); }
-    .badge.personal  { background:var(--personal-bg);  color:var(--personal); }
+    .badge.psychiatry    { background:var(--psychiatry-bg);    color:var(--psychiatry); }
+    .badge.psychotherapy { background:var(--psychotherapy-bg); color:var(--psychotherapy); }
+    .badge.business      { background:var(--business-bg);      color:var(--business); }
+    .badge.resources     { background:var(--resources-bg);     color:var(--resources); }
+    .badge.personal      { background:var(--personal-bg);      color:var(--personal); }
     .note-date { font-size:11px; color:var(--muted); }
     .note-summary { font-size:15px; font-weight:600; margin-bottom:6px; line-height:1.4; }
     .note-content { font-size:13px; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
@@ -233,8 +233,9 @@
         <button onclick="clearFile()">✕</button>
       </div>
       <div id="quick-actions">
-        <button class="quick-btn" onclick="startQuiz()">🧠 Quiz: Mental Health</button>
-        <button class="quick-btn" onclick="startQuizICU()">🏥 Quiz: ICU</button>
+        <button class="quick-btn" onclick="startQuiz('psychiatry')">🧠 Quiz: Psychiatry</button>
+        <button class="quick-btn" onclick="startQuiz('psychotherapy')">💬 Quiz: Psychotherapy</button>
+        <button class="quick-btn" onclick="startQuiz('icu')">🏥 Quiz: ICU</button>
       </div>
       <div id="input-row">
         <button id="attach-btn" onclick="$('file-input').click()" title="Attach file">📎</button>
@@ -255,13 +256,13 @@
     </div>
     <div class="category-scroll">
       <div class="cat-pill active" data-cat="all" onclick="filterNotes('all')">All</div>
-      <div class="cat-pill clinical"  data-cat="clinical"  onclick="filterNotes('clinical')">Clinical</div>
-      <div class="cat-pill study"     data-cat="study"     onclick="filterNotes('study')">Study</div>
-      <div class="cat-pill business"  data-cat="business"  onclick="filterNotes('business')">Business</div>
-      <div class="cat-pill resources" data-cat="resources" onclick="filterNotes('resources')">Resources</div>
-      <div class="cat-pill personal"  data-cat="personal"  onclick="filterNotes('personal')">Personal</div>
-      <div class="cat-pill lifestyle" data-cat="lifestyle" onclick="filterNotes('lifestyle')">Lifestyle</div>
-      <div class="cat-pill icu" data-cat="icu" onclick="filterNotes('icu')">ICU</div>
+      <div class="cat-pill psychiatry"    data-cat="psychiatry"    onclick="filterNotes('psychiatry')">Psychiatry</div>
+      <div class="cat-pill psychotherapy" data-cat="psychotherapy" onclick="filterNotes('psychotherapy')">Psychotherapy</div>
+      <div class="cat-pill icu"           data-cat="icu"           onclick="filterNotes('icu')">ICU</div>
+      <div class="cat-pill business"      data-cat="business"      onclick="filterNotes('business')">Business</div>
+      <div class="cat-pill resources"     data-cat="resources"     onclick="filterNotes('resources')">Resources</div>
+      <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">Personal</div>
+      <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">Lifestyle</div>
     </div>
     <div id="subcat-row"></div>
     <div id="tag-filter-bar">
@@ -321,13 +322,13 @@
       <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text" placeholder="Short, catchy heading (3-6 words)">
       <span class="edit-label">Category</span>
       <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions()">
-        <option value="clinical">Clinical</option>
-        <option value="study">Study</option>
+        <option value="psychiatry">Psychiatry</option>
+        <option value="psychotherapy">Psychotherapy</option>
+        <option value="icu">ICU</option>
         <option value="business">Business</option>
         <option value="resources">Resources</option>
         <option value="personal">Personal</option>
         <option value="lifestyle">Lifestyle</option>
-        <option value="icu">ICU</option>
       </select>
       <span class="edit-label">Subcategory</span>
       <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -352,13 +353,13 @@
   let currentTag = null;
 
   const SUBCATS = {
-    clinical:  ['Conditions','Medications','Assessments','Treatments','Lab Values'],
-    study:     ['DSM-5','Psychopharm','Psychotherapy','Neuroscience','Ethics & Law','Practice Questions'],
-    business:  ['Licensing','Credentialing','Billing & Insurance','Marketing','Platforms','Legal'],
-    resources: ['Contacts','URLs & Links','Books','Courses','Tools','Future Ideas'],
-    personal:  ['Reflections','Goals','Mental Health','Gratitude','Journal','Relationships'],
-    lifestyle: ['Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening'],
-    icu:       ['Neuro','Respiratory','Cardiac','GI','Renal','Hematology','Pharmacology','Procedures','Protocols & Guidelines']
+    psychiatry:    ['Conditions','Medications','Assessments','Treatments','Lab Values','Neuroscience','Ethics & Law','Board Prep'],
+    psychotherapy: ['CBT','DBT','ACT','Psychodynamic','Motivational Interviewing','Trauma-Focused','Family & Couples','Group Therapy','Theory & Foundations'],
+    icu:           ['Neuro','Respiratory','Cardiac','GI','Renal','Hematology','Pharmacology','Procedures','Protocols & Guidelines'],
+    business:      ['Licensing','Credentialing','Billing & Insurance','Marketing','Platforms','Legal'],
+    resources:     ['Contacts','URLs & Links','Books','Courses','Tools','Future Ideas'],
+    personal:      ['Reflections','Goals','Mental Health','Gratitude','Journal','Relationships'],
+    lifestyle:     ['Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening']
   };
 
   // ── Profile ───────────────────────────────────────────────────────────
@@ -666,14 +667,13 @@
     $('send-btn').disabled = false;
   }
 
-  async function startQuizICU() { await startQuiz('icu'); }
-
   async function startQuiz(forceTopic) {
     const topic = forceTopic || $('input').value.trim() || null;
     $('input').value = '';
     $('input').style.height = 'auto';
     $('send-btn').disabled = true;
-    appendMessage('user', topic ? `Quiz me on ${topic}` : 'Quiz me');
+    const label = forceTopic ? `Quiz me on ${forceTopic}` : (topic ? `Quiz me on ${topic}` : 'Quiz me');
+    appendMessage('user', label);
     showTyping();
     try {
       const r = await fetch('/quiz', {
