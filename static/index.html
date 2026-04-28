@@ -181,12 +181,14 @@
     .edit-field { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; resize:vertical; min-height:120px; outline:none; margin-top:8px; }
     .edit-field:focus { border-color:var(--primary); }
     .edit-label { font-size:13px; font-weight:600; color:var(--muted); margin-top:14px; display:block; }
-    .format-toolbar { display:flex; gap:6px; margin-top:8px; }
-    .fmt-btn { padding:6px 14px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:14px; cursor:pointer; font-family:inherit; }
+    .format-toolbar { display:flex; gap:5px; margin-top:8px; flex-wrap:wrap; }
+    .fmt-btn { padding:5px 11px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; cursor:pointer; font-family:inherit; }
     .fmt-btn.bold { font-weight:700; }
     .fmt-btn.underline { text-decoration:underline; }
-    .fmt-btn.highlight { background:#fff176; border-color:#f9a825; }
     .fmt-btn:active { opacity:0.7; }
+    .fmt-divider { width:1px; background:var(--border); margin:2px 2px; }
+    .color-dot { display:inline-block; width:14px; height:14px; border-radius:50%; border:1.5px solid rgba(0,0,0,0.15); vertical-align:middle; }
+    .fmt-select { padding:5px 6px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; cursor:pointer; font-family:inherit; }
     #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:160px; outline:none; margin-top:8px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; color:var(--text); }
     #edit-content:focus { border-color:var(--primary); }
   </style>
@@ -336,7 +338,27 @@
       <div class="format-toolbar">
         <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
         <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
-        <button class="fmt-btn highlight" onclick="fmt('highlight')" title="Highlight">▐ Highlight</button>
+        <div class="fmt-divider"></div>
+        <select class="fmt-select" onchange="fmtSize(this.value)" title="Font size">
+          <option value="">Size</option>
+          <option value="2">Small</option>
+          <option value="3">Normal</option>
+          <option value="4">Large</option>
+          <option value="5">X-Large</option>
+        </select>
+        <div class="fmt-divider"></div>
+        <button class="fmt-btn" onclick="fmtColor('#1a1a2e')" title="Black"><span class="color-dot" style="background:#1a1a2e"></span></button>
+        <button class="fmt-btn" onclick="fmtColor('#1565c0')" title="Blue"><span class="color-dot" style="background:#1565c0"></span></button>
+        <button class="fmt-btn" onclick="fmtColor('#2e7d32')" title="Green"><span class="color-dot" style="background:#2e7d32"></span></button>
+        <button class="fmt-btn" onclick="fmtColor('#b71c1c')" title="Red"><span class="color-dot" style="background:#b71c1c"></span></button>
+        <button class="fmt-btn" onclick="fmtColor('#6a1b9a')" title="Purple"><span class="color-dot" style="background:#6a1b9a"></span></button>
+        <div class="fmt-divider"></div>
+        <button class="fmt-btn" onclick="fmtHighlight('#fff176')" title="Yellow highlight"><span class="color-dot" style="background:#fff176"></span></button>
+        <button class="fmt-btn" onclick="fmtHighlight('#b9f6ca')" title="Green highlight"><span class="color-dot" style="background:#b9f6ca"></span></button>
+        <button class="fmt-btn" onclick="fmtHighlight('#bbdefb')" title="Blue highlight"><span class="color-dot" style="background:#bbdefb"></span></button>
+        <button class="fmt-btn" onclick="fmtHighlight('#f8bbd0')" title="Pink highlight"><span class="color-dot" style="background:#f8bbd0"></span></button>
+        <button class="fmt-btn" onclick="fmtHighlight('#ffe0b2')" title="Orange highlight"><span class="color-dot" style="background:#ffe0b2"></span></button>
+        <button class="fmt-btn" onclick="fmtHighlight('transparent')" title="Remove highlight">✕HL</button>
       </div>
       <div id="edit-content" contenteditable="true"></div>
       <button class="modal-save-btn" onclick="saveEdit()">Save Changes</button>
@@ -582,13 +604,28 @@
   }
 
   function fmt(type) {
-    if(type === 'highlight') {
-      document.execCommand('backColor', false, '#fff176');
-    } else {
-      document.execCommand(type);
-    }
+    document.execCommand(type);
     $('edit-content').focus();
   }
+  function fmtColor(color) {
+    document.execCommand('foreColor', false, color);
+    $('edit-content').focus();
+  }
+  function fmtHighlight(color) {
+    document.execCommand('hiliteColor', false, color);
+    $('edit-content').focus();
+  }
+  function fmtSize(size) {
+    if(size) document.execCommand('fontSize', false, size);
+    $('edit-content').focus();
+  }
+
+  // Strip external formatting on paste — keep plain text only
+  $('edit-content').addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
 
   let _editingNote = null;
   function startEdit() {
