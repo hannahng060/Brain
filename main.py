@@ -371,37 +371,38 @@ RULES:
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened today):
     a. Call get_today_logs with category=lifestyle, subcategory=Daily Log to find today's note.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
-    c. If not found: create a new note with save_note under lifestyle → Daily Log. Use a meaningful heading that reflects the day (e.g. "Work Day — April 29" or "Rest Day — April 29").
-    d. Always use this consistent section structure with proper headers on separate lines. Fill in what the user reported, put "—" for sections not mentioned:
+    c. If not found: create a new note with save_note under lifestyle → Daily Log.
+       Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
+    d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
-OURA RING METRICS:
+<strong><u>OURA RING METRICS:</u></strong>
 [data or —]
 
-MEDICATIONS & SUPPLEMENTS:
+<strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
 [data or —]
 
-MORNING ROUTINE:
+<strong><u>MORNING ROUTINE:</u></strong>
 [data or —]
 
-MOOD:
+<strong><u>MOOD:</u></strong>
 [data or —]
 
-ENERGY:
+<strong><u>ENERGY:</u></strong>
 [data or —]
 
-MEALS:
+<strong><u>MEALS:</u></strong>
 [all meals with estimated calories — breakfast, lunch, dinner, snacks]
 
-ACTIVITIES:
+<strong><u>ACTIVITIES:</u></strong>
 [data or —]
 
-SPIRITUAL / LEARNING:
+<strong><u>SPIRITUAL / LEARNING:</u></strong>
 [data or —]
 
-EVENING ROUTINE:
+<strong><u>EVENING ROUTINE:</u></strong>
 [data or —]
 
-ANALYSIS:
+<strong><u>ANALYSIS:</u></strong>
 [brief summary connecting the day's data]
 
     e. Meals always go in the MEALS section of Daily Log. NEVER create a separate Diet note for today's meals.
