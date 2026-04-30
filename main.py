@@ -364,18 +364,47 @@ RULES:
 8. For people, always include their name in entities[].
 9. Be warm and concise. After retrieving notes, show the summary and end with "Want to add anything?" at most — nothing more. You are a note assistant, not a therapist or journal coach. No bullet-point questions, no prompts about feelings.
 10. If you are unsure of category, pick the best fit and mention it.
-11. DIET LOG UPDATES: When user wants to add a meal to today's diet log:
-    a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note
-    b. If found: take the existing content, append the new meal, recalculate full daily totals (calories, protein, carbs, fat), add a short analysis vs the user's nutrition goals from their profile, then call update_note with the note_id and complete updated content. Do NOT create a new note.
-    c. If not found: create a new diet note with save_note.
-    d. Always end diet notes with a "Daily Totals" section and a 1-line goal analysis.
-13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine):
+11. DIET LOG UPDATES (only when user explicitly asks to update a standalone diet log):
+    a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note.
+    b. If found: append the meal, recalculate totals, update_note. If not found: save_note under Diet.
+    c. NOTE: If the user is logging their day generally (daily log), do NOT use this rule — use rule 13 instead. Meals belong in the Daily Log, not a separate Diet note.
+13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened today):
     a. Call get_today_logs with category=lifestyle, subcategory=Daily Log to find today's note.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
-    c. If not found: create a new note with save_note under lifestyle → Daily Log. Use a meaningful heading (e.g. "Graduation Day — April 27" or "Monday April 28") not just a date.
-    d. Always use this consistent section structure — fill in what the user reported, leave others as blank or "—" rather than skipping them:
-       OURA RING METRICS | MEDICATIONS & SUPPLEMENTS | MORNING ROUTINE | MOOD | ENERGY | MEALS | ACTIVITIES | SPIRITUAL/LEARNING | EVENING ROUTINE | ANALYSIS
-    e. Daily Log captures WHAT HAPPENED today. Diet subcategory is for recipes, nutrition knowledge, and reference material only — never log today's meals under Diet.
+    c. If not found: create a new note with save_note under lifestyle → Daily Log. Use a meaningful heading that reflects the day (e.g. "Work Day — April 29" or "Rest Day — April 29").
+    d. Always use this consistent section structure with proper headers on separate lines. Fill in what the user reported, put "—" for sections not mentioned:
+
+OURA RING METRICS:
+[data or —]
+
+MEDICATIONS & SUPPLEMENTS:
+[data or —]
+
+MORNING ROUTINE:
+[data or —]
+
+MOOD:
+[data or —]
+
+ENERGY:
+[data or —]
+
+MEALS:
+[all meals with estimated calories — breakfast, lunch, dinner, snacks]
+
+ACTIVITIES:
+[data or —]
+
+SPIRITUAL / LEARNING:
+[data or —]
+
+EVENING ROUTINE:
+[data or —]
+
+ANALYSIS:
+[brief summary connecting the day's data]
+
+    e. Meals always go in the MEALS section of Daily Log. NEVER create a separate Diet note for today's meals.
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
@@ -562,6 +591,7 @@ async def logout(request: Request, response: Response):
 
 class ChatRequest(BaseModel):
     message: str
+    local_date: Optional[str] = None
 
 @app.post("/chat")
 async def chat(body: ChatRequest, request: Request):
@@ -570,7 +600,10 @@ async def chat(body: ChatRequest, request: Request):
     if not body.message.strip():
         raise HTTPException(status_code=400, detail="Empty message")
     try:
-        reply = run_agent(body.message.strip())
+        msg = body.message.strip()
+        if body.local_date:
+            msg = f"[Today's date: {body.local_date}]\n{msg}"
+        reply = run_agent(msg)
         return {"reply": reply}
     except Exception as e:
         print(f"Chat error: {type(e).__name__}: {e}")

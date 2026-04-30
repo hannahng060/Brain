@@ -791,7 +791,8 @@
         res = await fetch('/upload', {method:'POST', body: form});
         clearFile();
       } else {
-        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text})});
+        const localDate = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, local_date: localDate})});
       }
       removeTyping();
       if(res.status === 401) { location.reload(); return; }
