@@ -445,7 +445,8 @@ def content_to_dict(block) -> dict:
         return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
     return {}
 
-def run_agent_loop(messages: list, raw: str) -> str:
+def run_agent_loop(messages: list, raw: str) -> tuple:
+    saves_made = []
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2048,
@@ -460,6 +461,8 @@ def run_agent_loop(messages: list, raw: str) -> str:
             if block.type != "tool_use":
                 continue
             result = execute_tool(block.name, block.input, raw)
+            if block.name in ("save_note", "update_note") and "id" in result:
+                saves_made.append({"id": result["id"], "tool": block.name})
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
@@ -476,23 +479,23 @@ def run_agent_loop(messages: list, raw: str) -> str:
             tools=TOOLS,
             messages=messages
         )
-    return "".join(b.text for b in response.content if hasattr(b, "text"))
+    text = "".join(b.text for b in response.content if hasattr(b, "text"))
+    return text, saves_made
 
-def run_agent(user_message: str) -> str:
+def run_agent(user_message: str) -> dict:
     db_add_message("user", user_message)
     messages = db_get_history(20)
-    # Prepend profile as first user/assistant exchange so Brain always has context
     profile_context = build_profile_context()
     if profile_context:
         messages = [
             {"role": "user", "content": profile_context},
             {"role": "assistant", "content": "Got it, I have your profile and will use it as context for all responses."}
         ] + messages
-    final_text = run_agent_loop(messages, user_message)
+    final_text, saves_made = run_agent_loop(messages, user_message)
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
     db_add_message("assistant", final_text)
-    return final_text
+    return {"reply": final_text, "saves": saves_made}
 
 def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
     # Truncate very long documents to avoid token issues
@@ -604,8 +607,8 @@ async def chat(body: ChatRequest, request: Request):
         msg = body.message.strip()
         if body.local_date:
             msg = f"[Today's date: {body.local_date}]\n{msg}"
-        reply = run_agent(msg)
-        return {"reply": reply}
+        result = run_agent(msg)
+        return result
     except Exception as e:
         print(f"Chat error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
