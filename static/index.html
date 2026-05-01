@@ -97,8 +97,10 @@
     .stat-chip span { font-size:14px; }
     .stat-chip.all { border-color:var(--primary); color:var(--primary); }
     .stat-chip.all span { color:var(--primary); }
-    .quote-card { background:var(--primary-light); border-radius:12px; padding:12px 14px; font-size:13px; color:#444; line-height:1.6; font-style:italic; border-left:3px solid var(--primary); transition:opacity .15s; }
+    .quote-card { background:var(--primary-light); border-radius:12px; padding:12px 14px; font-size:13px; color:#444; line-height:1.6; border-left:3px solid var(--primary); transition:opacity .15s; }
     .quote-card:hover { opacity:.75; }
+    .quote-text { font-style:italic; font-weight:500; }
+    .quote-insight { margin-top:8px; font-size:12px; color:#666; font-style:normal; padding-top:8px; border-top:1px solid rgba(91,91,214,0.15); }
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
     #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
     #input-row { display:flex; align-items:flex-end; gap:10px; }
@@ -492,23 +494,35 @@
       if(!r2.ok) return;
       const notes = await r2.json();
 
-      // Extract highlighted phrases (text inside elements with background-color)
-      const highlights = [];
-      const hlRegex = /<(?:span|font)[^>]+background-color[^>]*>([^<]{10,})<\/(?:span|font)>/gi;
+      // Extract yellow (quote) and green (insight) highlights per note
+      const yellowColor = ['fff176','ffff00','ffeb3b'];
+      const greenColor  = ['b9f6ca','c8e6c9','a5d6a7','00e676'];
+      function isYellow(style) { return yellowColor.some(c => style.includes(c)); }
+      function isGreen(style)  { return greenColor.some(c => style.includes(c)); }
+
+      const pairs = []; // {quote, insight, note} — insight optional
+      const hlRegex = /<(?:span|font)([^>]*)>([^<]{5,})<\/(?:span|font)>/gi;
+
       for(const note of notes) {
         if(!note.content) continue;
+        const yellows = [], greens = [];
         let m;
         while((m = hlRegex.exec(note.content)) !== null) {
-          const t = m[1].replace(/&[a-z]+;/g,' ').trim();
-          if(t.length >= 10) highlights.push({text: t, note});
+          const attrs = m[1], text = m[2].replace(/&[a-z]+;/g,' ').trim();
+          if(text.length < 5) continue;
+          if(isYellow(attrs)) yellows.push(text);
+          else if(isGreen(attrs)) greens.push(text);
         }
         hlRegex.lastIndex = 0;
+        for(let i = 0; i < yellows.length; i++) {
+          pairs.push({quote: yellows[i], insight: greens[i] || null, note});
+        }
       }
 
-      let pick, sourceNote;
-      if(highlights.length > 0) {
-        const h = highlights[Math.floor(Math.random() * highlights.length)];
-        pick = h.text; sourceNote = h.note;
+      let quote, insight, sourceNote;
+      if(pairs.length > 0) {
+        const p = pairs[Math.floor(Math.random() * pairs.length)];
+        quote = p.quote; insight = p.insight; sourceNote = p.note;
       } else {
         // Fallback: meaningful sentences from personal notes
         const personalNotes = notes.filter(n => n.category === 'personal');
@@ -524,10 +538,11 @@
         }
         if(sentences.length === 0) return;
         const s = sentences[Math.floor(Math.random() * sentences.length)];
-        pick = s.text; sourceNote = s.note;
+        quote = s.text; insight = null; sourceNote = s.note;
       }
 
-      $('dash-quote').textContent = `"${pick}"`;
+      $('dash-quote').innerHTML = `<div class="quote-text">"${quote}"</div>` +
+        (insight ? `<div class="quote-insight">💡 ${insight}</div>` : '');
       $('dash-quote').style.display = 'block';
       $('dash-quote').style.cursor = 'pointer';
       $('dash-quote').onclick = () => openNoteDirectly(sourceNote);
