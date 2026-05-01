@@ -500,41 +500,67 @@
       if(!r2.ok) return;
       const notes = await r2.json();
 
-      function isYellow(style) {
-        return style.includes('fff176') || style.includes('ffff00') || style.includes('ffeb3b') ||
-               style.includes('255, 241, 118') || style.includes('255, 255, 0') || style.includes('255, 235, 59');
+      function isYellow(s) {
+        return s.includes('fff176')||s.includes('ffff00')||s.includes('ffeb3b')||
+               s.includes('255, 241, 118')||s.includes('255, 255, 0')||s.includes('255, 235, 59');
       }
-      function isGreen(style) {
-        return style.includes('b9f6ca') || style.includes('c8e6c9') || style.includes('a5d6a7') ||
-               style.includes('185, 246, 202') || style.includes('200, 230, 201') || style.includes('165, 214, 167');
+      function isGreen(s) {
+        return s.includes('b9f6ca')||s.includes('c8e6c9')||s.includes('a5d6a7')||
+               s.includes('185, 246, 202')||s.includes('200, 230, 201')||s.includes('165, 214, 167');
+      }
+      function isBlue(s) {
+        return s.includes('bbdefb')||s.includes('90caf9')||s.includes('64b5f6')||
+               s.includes('187, 222, 251')||s.includes('144, 202, 249')||s.includes('100, 181, 246');
       }
 
       function extractPairs(noteList) {
-        const pairs = [];
+        const items = [];
         const hlRegex = /<(?:span|font)([^>]*)>([\s\S]*?)<\/(?:span|font)>/gi;
         for(const note of noteList) {
           if(!note.content) continue;
-          const yellows = [], greens = [];
+          // Process highlights in document order
+          const ordered = [];
           let m;
           while((m = hlRegex.exec(note.content)) !== null) {
             const attrs = m[1], text = m[2].replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ').trim();
             if(text.length < 3) continue;
-            if(isYellow(attrs)) yellows.push(text);
-            else if(isGreen(attrs)) greens.push(text);
+            if(isYellow(attrs)) ordered.push({type:'yellow', text});
+            else if(isGreen(attrs)) ordered.push({type:'green', text});
+            else if(isBlue(attrs)) ordered.push({type:'blue', text});
           }
           hlRegex.lastIndex = 0;
-          for(let i = 0; i < yellows.length; i++) {
-            pairs.push({quote: yellows[i], insight: greens[i] || null, note});
+          // Build items: blue=standalone, yellow+following greens=grouped
+          let i = 0;
+          while(i < ordered.length) {
+            const h = ordered[i];
+            if(h.type === 'blue') {
+              items.push({quote: h.text, insights: [], isBlue: true, note});
+              i++;
+            } else if(h.type === 'yellow') {
+              const insights = [];
+              let j = i + 1;
+              while(j < ordered.length && ordered[j].type === 'green') {
+                insights.push(ordered[j].text);
+                j++;
+              }
+              items.push({quote: h.text, insights, isBlue: false, note});
+              i = j;
+            } else {
+              i++; // skip orphan greens
+            }
           }
         }
-        return pairs;
+        return items;
       }
 
-      function renderBanner(el, pairs, icon) {
-        if(pairs.length === 0) { el.style.display = 'none'; return; }
-        const p = pairs[Math.floor(Math.random() * pairs.length)];
-        el.innerHTML = `${icon} <span class="quote-text">${p.quote}</span>` +
-          (p.insight ? ` <span class="quote-insight">— ${p.insight}</span>` : '');
+      function renderBanner(el, items, icon) {
+        if(items.length === 0) { el.style.display = 'none'; return; }
+        const p = items[Math.floor(Math.random() * items.length)];
+        let html = `${icon} <span class="quote-text">${p.quote}</span>`;
+        if(!p.isBlue && p.insights.length > 0) {
+          html += ` <span class="quote-insight">— ${p.insights.join(' · ')}</span>`;
+        }
+        el.innerHTML = html;
         el.style.display = 'block';
         el.style.cursor = 'pointer';
         el.onclick = () => openNoteDirectly(p.note);
