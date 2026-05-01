@@ -530,6 +530,26 @@
     filterNotes(cat);
   }
 
+  function scheduleQuoteRefresh() {
+    const now = new Date();
+    const targets = [5, 17]; // 5 AM and 5 PM
+    let next = null;
+    for(const hour of targets) {
+      const t = new Date(now);
+      t.setHours(hour, 0, 0, 0);
+      if(t > now) { next = t; break; }
+    }
+    if(!next) {
+      // Both passed today — schedule for 5 AM tomorrow
+      next = new Date(now);
+      next.setDate(next.getDate() + 1);
+      next.setHours(5, 0, 0, 0);
+    }
+    const ms = next - now;
+    setTimeout(() => { loadDashboard(); scheduleQuoteRefresh(); }, ms);
+  }
+  scheduleQuoteRefresh();
+
   // ── Tabs ──────────────────────────────────────────────────────────────
   function showTab(tab) {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
