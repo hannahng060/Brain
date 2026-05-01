@@ -225,7 +225,10 @@
         <span style="font-size:22px">🧠</span>
         <div><div style="font-size:18px;font-weight:700">Brain</div><div class="subtitle">Your AI note team</div></div>
       </div>
-      <button class="sign-out" onclick="doLogout()">Sign out</button>
+      <div style="display:flex;gap:8px">
+        <button class="sign-out" onclick="loadDashboard()" title="Refresh quote">↻ Quote</button>
+        <button class="sign-out" onclick="doLogout()">Sign out</button>
+      </div>
     </div>
     <div id="messages">
       <div class="dashboard" id="dashboard">
