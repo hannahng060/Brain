@@ -88,10 +88,12 @@
     .dot:nth-child(2) { animation-delay:.2s; }
     .dot:nth-child(3) { animation-delay:.4s; }
     @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-    .welcome { background:var(--primary-light); border-radius:16px; padding:20px; margin:8px 0; }
-    .welcome h2 { font-size:17px; font-weight:700; margin-bottom:6px; color:var(--primary); }
-    .welcome p { font-size:14px; color:#444; line-height:1.5; }
-    .welcome ul { font-size:14px; color:#444; line-height:1.8; padding-left:18px; margin-top:8px; }
+    .dashboard { background:var(--surface); border-radius:16px; padding:16px 18px; margin:8px 0; border:1px solid var(--border); }
+    .dashboard-date { font-size:13px; color:var(--muted); margin-bottom:10px; }
+    .dashboard-greeting { font-size:17px; font-weight:700; color:var(--text); margin-bottom:12px; }
+    .stats-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .stat-chip { background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--muted); }
+    .stat-chip span { color:var(--primary); font-size:14px; }
     #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
     #input-row { display:flex; align-items:flex-end; gap:10px; }
     #input { flex:1; border:1.5px solid var(--border); border-radius:20px; padding:10px 16px; font-size:16px; font-family:inherit; resize:none; outline:none; max-height:120px; line-height:1.4; background:var(--bg); }
@@ -218,15 +220,10 @@
       <button class="sign-out" onclick="doLogout()">Sign out</button>
     </div>
     <div id="messages">
-      <div class="welcome">
-        <h2>Hey! I'm Brain 👋</h2>
-        <p>Tell me anything — I'll save it, organize it, and remember it for you. Check the <b>Notes tab</b> to browse everything.</p>
-        <ul>
-          <li>💊 <b>Clinical</b> — "sertraline 50mg is first-line for MDD"</li>
-          <li>📋 <b>Contact</b> — "met Dr. Lee at conference, telehealth in CA"</li>
-          <li>📚 <b>Boards</b> — "PHQ-9 cutoff is 10 for moderate depression"</li>
-          <li>🔍 <b>Find it</b> — "what do I know about SSRIs?"</li>
-        </ul>
+      <div class="dashboard" id="dashboard">
+        <div class="dashboard-date" id="dash-date"></div>
+        <div class="dashboard-greeting">Good to see you, Hannah 👋</div>
+        <div class="stats-row" id="dash-stats"><div class="stat-chip">Loading...</div></div>
       </div>
     </div>
     <div id="input-bar">
@@ -457,14 +454,30 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
     await fetch('/logout', {method:'POST'}); location.reload();
   }
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();}})();
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();}})();
+
+  async function loadDashboard() {
+    const now = new Date();
+    $('dash-date').textContent = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    try {
+      const r = await fetch('/stats');
+      if(!r.ok) return;
+      const data = await r.json();
+      const catLabels = {psychiatry:'Psychiatry', psychotherapy:'Psychotherapy', icu:'ICU', business:'Business', resources:'Resources', personal:'Personal', lifestyle:'Lifestyle'};
+      const chips = data.by_category
+        .filter(c => c.category in catLabels)
+        .map(c => `<div class="stat-chip"><span>${c.count}</span> ${catLabels[c.category]}</div>`)
+        .join('');
+      $('dash-stats').innerHTML = `<div class="stat-chip"><span>${data.total}</span> total notes</div>` + chips;
+    } catch(e) { $('dash-stats').innerHTML = ''; }
+  }
 
   // ── Tabs ──────────────────────────────────────────────────────────────
   function showTab(tab) {

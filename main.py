@@ -628,6 +628,20 @@ async def reset():
     db_clear_messages()
     return {"ok": True, "message": "Chat history cleared. Go back to Brain and try again!"}
 
+@app.get("/stats")
+async def get_stats(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT category, COUNT(*) as count FROM notes GROUP BY category ORDER BY count DESC")
+    rows = cur.fetchall()
+    cur.execute("SELECT COUNT(*) as total FROM notes")
+    total = cur.fetchone()["total"]
+    cur.close()
+    conn.close()
+    return {"total": total, "by_category": [dict(r) for r in rows]}
+
 @app.get("/profile")
 async def get_profile(request: Request):
     if not is_authenticated(request):
