@@ -512,14 +512,11 @@
         $('dash-quote').style.display = 'block';
         $('dash-quote').style.cursor = 'pointer';
         $('dash-quote').onclick = () => {
-          // Find the note this sentence came from and open it
           for(const note of notes) {
             if(!note.content) continue;
             const plain = note.content.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');
             if(plain.includes(pick)) {
-              window._openNote = note;
-              showTab('notes');
-              setTimeout(() => openNote(note), 100);
+              openNoteDirectly(note);
               break;
             }
           }
@@ -646,6 +643,21 @@
 
   function openNote(i) {
     const n = window._filteredNotes[i];
+    window._openNote = n;
+    const tags = tryParse(n.tags);
+    const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+    $('modal-badge').className = `badge ${n.category}`;
+    $('modal-badge').textContent = n.category;
+    $('modal-date').textContent = date;
+    $('modal-title').textContent = n.summary || 'Note';
+    $('modal-body').innerHTML = renderContent(n.content);
+    $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    $('modal-view').style.display = 'block';
+    $('modal-edit').style.display = 'none';
+    $('note-modal').classList.add('open');
+  }
+
+  function openNoteDirectly(n) {
     window._openNote = n;
     const tags = tryParse(n.tags);
     const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
