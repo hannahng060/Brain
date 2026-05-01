@@ -486,43 +486,51 @@
       $('dash-stats').innerHTML = `<div class="stat-chip all" onclick="jumpToCategory('all')"><span>${data.total}</span> total notes</div>` + chips;
     } catch(e) { $('dash-stats').innerHTML = ''; }
 
-    // Load rotating quote from personal notes
+    // Load rotating quote — prefer highlighted text from any note
     try {
-      const r2 = await fetch('/notes?category=personal&limit=50');
+      const r2 = await fetch('/notes?category=all&limit=100');
       if(!r2.ok) return;
       const notes = await r2.json();
-      // Collect all meaningful sentences across all personal notes
-      const sentences = [];
+
+      // Extract highlighted phrases (text inside elements with background-color)
+      const highlights = [];
+      const hlRegex = /<(?:span|font)[^>]+background-color[^>]*>([^<]{10,})<\/(?:span|font)>/gi;
       for(const note of notes) {
         if(!note.content) continue;
-        const plain = note.content.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');
-        const lines = plain.split(/[\n.•\-]/);
-        for(const line of lines) {
-          const t = line.trim();
-          // Skip headings (end with :), short lines, or lines with just numbers/symbols
-          if(t.length < 30) continue;
-          if(t.endsWith(':')) continue;
-          if(/^[\d\s\W]+$/.test(t)) continue;
-          sentences.push(t);
+        let m;
+        while((m = hlRegex.exec(note.content)) !== null) {
+          const t = m[1].replace(/&[a-z]+;/g,' ').trim();
+          if(t.length >= 10) highlights.push({text: t, note});
         }
+        hlRegex.lastIndex = 0;
       }
-      if(sentences.length > 0) {
-        const idx = Math.floor(Math.random() * sentences.length);
-        const pick = sentences[idx];
-        $('dash-quote').textContent = `"${pick}"`;
-        $('dash-quote').style.display = 'block';
-        $('dash-quote').style.cursor = 'pointer';
-        $('dash-quote').onclick = () => {
-          for(const note of notes) {
-            if(!note.content) continue;
-            const plain = note.content.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');
-            if(plain.includes(pick)) {
-              openNoteDirectly(note);
-              break;
-            }
+
+      let pick, sourceNote;
+      if(highlights.length > 0) {
+        const h = highlights[Math.floor(Math.random() * highlights.length)];
+        pick = h.text; sourceNote = h.note;
+      } else {
+        // Fallback: meaningful sentences from personal notes
+        const personalNotes = notes.filter(n => n.category === 'personal');
+        const sentences = [];
+        for(const note of personalNotes) {
+          if(!note.content) continue;
+          const plain = note.content.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');
+          for(const line of plain.split(/[\n.•\-]/)) {
+            const t = line.trim();
+            if(t.length < 30 || t.endsWith(':') || /^[\d\s\W]+$/.test(t)) continue;
+            sentences.push({text: t, note});
           }
-        };
+        }
+        if(sentences.length === 0) return;
+        const s = sentences[Math.floor(Math.random() * sentences.length)];
+        pick = s.text; sourceNote = s.note;
       }
+
+      $('dash-quote').textContent = `"${pick}"`;
+      $('dash-quote').style.display = 'block';
+      $('dash-quote').style.cursor = 'pointer';
+      $('dash-quote').onclick = () => openNoteDirectly(sourceNote);
     } catch(e) {}
   }
 
