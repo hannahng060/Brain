@@ -489,15 +489,25 @@
       const r2 = await fetch('/notes?category=personal&limit=50');
       if(!r2.ok) return;
       const notes = await r2.json();
-      const quoteNotes = notes.filter(n => n.content && n.content.length > 20);
-      if(quoteNotes.length > 0) {
-        const pick = quoteNotes[Math.floor(Math.random() * quoteNotes.length)];
-        // Extract first meaningful sentence
-        const text = pick.content.replace(/<[^>]+>/g,'').split(/[.\n]/)[0].trim();
-        if(text.length > 15) {
-          $('dash-quote').textContent = `"${text}"`;
-          $('dash-quote').style.display = 'block';
+      // Collect all meaningful sentences across all personal notes
+      const sentences = [];
+      for(const note of notes) {
+        if(!note.content) continue;
+        const plain = note.content.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');
+        const lines = plain.split(/[\n.•\-]/);
+        for(const line of lines) {
+          const t = line.trim();
+          // Skip headings (end with :), short lines, or lines with just numbers/symbols
+          if(t.length < 30) continue;
+          if(t.endsWith(':')) continue;
+          if(/^[\d\s\W]+$/.test(t)) continue;
+          sentences.push(t);
         }
+      }
+      if(sentences.length > 0) {
+        const pick = sentences[Math.floor(Math.random() * sentences.length)];
+        $('dash-quote').textContent = `"${pick}"`;
+        $('dash-quote').style.display = 'block';
       }
     } catch(e) {}
   }
