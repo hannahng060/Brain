@@ -256,7 +256,7 @@ TOOLS = [
                                          "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
-                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Reflections","Goals","Mental Health","Gratitude","Relationships",
                                          "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
                                 "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
@@ -325,7 +325,7 @@ TOOLS = [
                                          "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
-                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Reflections","Goals","Mental Health","Gratitude","Relationships",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
@@ -515,7 +515,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
-        "personal: Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. "
+        "personal: Reflections/Goals/Mental Health/Gratitude/Relationships. "
         "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
     )
