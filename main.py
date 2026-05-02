@@ -333,6 +333,15 @@ TOOLS = [
             },
             "required": ["note_id"]
         }
+    },
+    {
+        "name": "no_save",
+        "description": "Use ONLY when the message is purely conversational with zero new information — e.g. 'thanks', 'ok', 'got it', 'that makes sense'. Do NOT use this if the user mentions any fact, experience, plan, knowledge, or detail, no matter how small.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
     }
 ]
 
@@ -354,10 +363,14 @@ CATEGORIES:
 - resources     → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
 
 CRITICAL RULE — READ THIS FIRST:
-You are a NOTE-SAVING agent. Saving is your #1 job. Every single message that contains ANY new information MUST result in a save_note or update_note call. No exceptions. Even if you are mid-conversation. Even if it feels like a follow-up. Even if you already saved something earlier in this conversation. If the user shares something new → SAVE IT.
+You MUST call a tool on EVERY single message. No exceptions. Choose exactly one:
+- save_note → if the message contains ANY new information (facts, plans, experiences, knowledge — anything)
+- search_notes or get_recent_notes → if the message is asking a question about saved notes
+- no_save → ONLY if the message is pure conversation with zero information (e.g. "thanks", "ok", "got it")
+When in doubt: SAVE IT. It is always better to save than to skip.
 
 RULES:
-1. SAVE EVERY MESSAGE. When user shares info → always call save_note immediately. Never skip. Never assume it was already saved. If in doubt, save it.
+1. SAVE EVERY MESSAGE THAT CONTAINS INFO. Call save_note immediately. Never skip. Never assume it was already saved.
 2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note.
 3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
 4. For journal entries → capture people present in entities[], emotions, milestones, events separately from food.
@@ -428,11 +441,13 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_save_note(raw, args["content"], args["summary"], args["category"],
                             args.get("subcategory"), args.get("tags", []), args.get("entities", []))
     elif name == "search_notes":
-        return db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 10))
+        return db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 30))
     elif name == "get_person":
         return db_get_person(args["name"])
     elif name == "get_recent_notes":
-        return db_get_recent(args.get("limit", 10), args.get("category", "all"))
+        return db_get_recent(args.get("limit", 30), args.get("category", "all"))
+    elif name == "no_save":
+        return {"status": "ok"}
     elif name == "get_today_logs":
         return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
     elif name == "update_note":
@@ -450,21 +465,15 @@ def content_to_dict(block) -> dict:
 
 def run_agent_loop(messages: list, raw: str) -> tuple:
     saves_made = []
-    # Inject a save reminder into the last user message at inference time only
-    # (not stored to DB — purely to keep the model on-task in longer conversations)
     infer_messages = list(messages)
-    if infer_messages and infer_messages[-1]["role"] == "user":
-        last = infer_messages[-1]
-        if isinstance(last["content"], str):
-            infer_messages[-1] = {
-                "role": "user",
-                "content": last["content"] + "\n\n[REMINDER: If this message contains any new information, call save_note before replying.]"
-            }
+    # Force tool_choice=any on first call — Brain MUST call a tool (save_note, search, or no_save)
+    # This makes saving impossible to skip; Brain can no longer "forget" to call a tool
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2048,
         system=SYSTEM_PROMPT,
         tools=TOOLS,
+        tool_choice={"type": "any"},
         messages=infer_messages
     )
     while response.stop_reason == "tool_use":
