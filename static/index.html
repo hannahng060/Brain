@@ -560,23 +560,25 @@
                s.includes('187, 222, 251')||s.includes('144, 202, 249')||s.includes('100, 181, 246');
       }
 
+      // Use DOM parser — far more reliable than regex for nested/complex note HTML
+      const _parseDiv = document.createElement('div');
       function extractPairs(noteList) {
         const items = [];
-        const hlRegex = /<(?:span|font)([^>]*)>([\s\S]*?)<\/(?:span|font)>/gi;
         for(const note of noteList) {
           if(!note.content) continue;
-          // Process highlights in document order
+          _parseDiv.innerHTML = note.content;
+          // Walk all elements in document order, pick highlighted ones
           const ordered = [];
-          let m;
-          while((m = hlRegex.exec(note.content)) !== null) {
-            const attrs = m[1], text = m[2].replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ').trim();
-            if(text.length < 3) continue;
-            if(isYellow(attrs)) ordered.push({type:'yellow', text});
-            else if(isGreen(attrs)) ordered.push({type:'green', text});
-            else if(isBlue(attrs)) ordered.push({type:'blue', text});
-          }
-          hlRegex.lastIndex = 0;
-          // Build items: blue=standalone, yellow+following greens=grouped
+          _parseDiv.querySelectorAll('*').forEach(el => {
+            const style = el.getAttribute('style') || '';
+            if(!style.includes('background')) return;
+            const text = el.textContent.trim();
+            if(text.length < 3) return;
+            if(isYellow(style))      ordered.push({type:'yellow', text});
+            else if(isGreen(style))  ordered.push({type:'green',  text});
+            else if(isBlue(style))   ordered.push({type:'blue',   text});
+          });
+          // Build items: blue = standalone; yellow + all following greens = grouped pair
           let i = 0;
           while(i < ordered.length) {
             const h = ordered[i];
@@ -590,7 +592,10 @@
                 insights.push(ordered[j].text);
                 j++;
               }
-              items.push({quote: h.text, insights, isBlue: false, note});
+              // Only include yellow if it has paired greens OR is long enough to stand alone
+              if(insights.length > 0 || h.text.length > 15) {
+                items.push({quote: h.text, insights, isBlue: false, note});
+              }
               i = j;
             } else {
               i++; // skip orphan greens
