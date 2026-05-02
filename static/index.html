@@ -1063,17 +1063,35 @@
   }
 
   // ── Quick Capture ─────────────────────────────────────────────────────
+  let _qcOpen = false;
+
+  function resetQC() {
+    $('qc-input').value       = '';
+    $('qc-input').disabled    = false;
+    $('qc-input').placeholder = "What's on your mind?";
+    $('qc-btn').disabled      = true;
+    $('qc-btn').textContent   = 'Save it';
+  }
   function openQC() {
+    resetQC();
     $('qc-overlay').style.display = 'block';
     $('qc-sheet').style.display   = 'flex';
-    $('qc-input').value = '';
-    $('qc-btn').disabled = true;
+    _qcOpen = true;
     setTimeout(() => $('qc-input').focus(), 50);
   }
   function closeQC() {
     $('qc-overlay').style.display = 'none';
     $('qc-sheet').style.display   = 'none';
+    _qcOpen = false;
+    resetQC();
   }
+  // Cmd+Enter on document level so it works regardless of focus
+  document.addEventListener('keydown', e => {
+    if(_qcOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      submitQC();
+    }
+  });
   function qcCheckBtn() {
     $('qc-btn').disabled = !$('qc-input').value.trim();
   }
@@ -1081,17 +1099,14 @@
   $('qc-input').addEventListener('keyup',   qcCheckBtn);
   $('qc-input').addEventListener('change',  qcCheckBtn);
   $('qc-input').addEventListener('paste',   () => setTimeout(qcCheckBtn, 50));
-  $('qc-input').addEventListener('keydown', e => {
-    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submitQC(); }
-  });
+
   async function submitQC() {
     const text = $('qc-input').value.trim();
-    if(!text) return;
-    $('qc-btn').disabled = true;
+    if(!text || $('qc-btn').disabled) return;
+    $('qc-btn').disabled    = true;
     $('qc-btn').textContent = 'Saving…';
     try {
       const localDate = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      // Prefix forces Brain to always save — never treat Quick Capture as casual chat
       const message = `[QUICK CAPTURE — MUST SAVE] ${text}`;
       const res = await fetch('/chat', {
         method:'POST',
@@ -1099,18 +1114,15 @@
         body: JSON.stringify({message, local_date: localDate})
       });
       const data = await res.json();
-      // Show Brain's reply (tells user where it was saved) then close
       const reply = (data.reply || '').replace(/\[QUICK CAPTURE[^\]]*\]\s*/gi, '').trim();
-      $('qc-btn').textContent = 'Saved ✓';
-      $('qc-input').disabled = true;
-      if(reply) {
-        $('qc-input').value = '';
-        $('qc-input').placeholder = reply;
-      }
+      $('qc-btn').textContent   = 'Saved ✓';
+      $('qc-input').disabled    = true;
+      $('qc-input').value       = '';
+      $('qc-input').placeholder = reply || 'Saved!';
       loadNotes();
-      setTimeout(() => { closeQC(); $('qc-input').disabled = false; $('qc-input').placeholder = "What's on your mind?"; }, 2500);
+      setTimeout(() => closeQC(), 2500);
     } catch(e) {
-      $('qc-btn').disabled = false;
+      $('qc-btn').disabled    = false;
       $('qc-btn').textContent = 'Save it';
       showToast('Something went wrong — try again');
     }
