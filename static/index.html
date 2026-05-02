@@ -502,6 +502,26 @@
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();}})();
 
+  function shuffle(arr) {
+    const a = [...arr];
+    for(let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function makeDeck(items) {
+    return { queue: shuffle(items), idx: 0, all: items };
+  }
+  function dealNext(deck) {
+    if(!deck.all.length) return null;
+    if(deck.idx >= deck.queue.length) {
+      deck.queue = shuffle(deck.all);
+      deck.idx = 0;
+    }
+    return deck.queue[deck.idx++];
+  }
+
   async function loadDashboard() {
     const now = new Date();
     $('dash-date').textContent = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
@@ -580,9 +600,11 @@
         return items;
       }
 
-      function renderBanner(el, wrap, items, icon) {
-        if(items.length === 0) { wrap.style.display = 'none'; return; }
-        const p = items[Math.floor(Math.random() * items.length)];
+
+      function renderBanner(el, wrap, deck, icon) {
+        if(!deck.all.length) { wrap.style.display = 'none'; return; }
+        const p = dealNext(deck);
+        if(!p) return;
         let html = `${icon} <span class="quote-text">${p.quote}</span>`;
         if(!p.isBlue && p.insights.length > 0) {
           html += ` <span class="quote-insight">— ${p.insights.join(' · ')}</span>`;
@@ -596,13 +618,13 @@
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy'].includes(n.category));
 
-      window._bannerItems = {
-        quote:     { items: extractPairs(personalNotes), icon: '💡' },
-        knowledge: { items: extractPairs(clinicalNotes), icon: '🧠' }
+      window._bannerDecks = {
+        quote:     { deck: makeDeck(extractPairs(personalNotes)), icon: '💡' },
+        knowledge: { deck: makeDeck(extractPairs(clinicalNotes)), icon: '🧠' }
       };
 
-      renderBanner($('dash-quote'),     $('wrap-quote'),     window._bannerItems.quote.items,     '💡');
-      renderBanner($('dash-knowledge'), $('wrap-knowledge'), window._bannerItems.knowledge.items, '🧠');
+      renderBanner($('dash-quote'),     $('wrap-quote'),     window._bannerDecks.quote.deck,     '💡');
+      renderBanner($('dash-knowledge'), $('wrap-knowledge'), window._bannerDecks.knowledge.deck, '🧠');
     } catch(e) {}
   }
 
@@ -632,17 +654,12 @@
   scheduleQuoteRefresh();
 
   function refreshBanner(which) {
-    if(!window._bannerItems || !window._bannerItems[which]) return;
-    const { items, icon } = window._bannerItems[which];
+    if(!window._bannerDecks || !window._bannerDecks[which]) return;
+    const { deck, icon } = window._bannerDecks[which];
     const elMap = { quote: 'dash-quote', knowledge: 'dash-knowledge' };
-    const wrapMap = { quote: 'wrap-quote', knowledge: 'wrap-knowledge' };
-    const el = $(elMap[which]), wrap = $(wrapMap[which]);
-    if(!items.length) return;
-    // Pick a different item than the one currently showing
-    const currentText = el.querySelector('.quote-text')?.textContent || '';
-    let candidates = items.filter(p => p.quote !== currentText);
-    if(!candidates.length) candidates = items;
-    const p = candidates[Math.floor(Math.random() * candidates.length)];
+    const el = $(elMap[which]);
+    const p = dealNext(deck);
+    if(!p) return;
     let html = `${icon} <span class="quote-text">${p.quote}</span>`;
     if(!p.isBlue && p.insights.length > 0) {
       html += ` <span class="quote-insight">— ${p.insights.join(' · ')}</span>`;
