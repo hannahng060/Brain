@@ -100,6 +100,10 @@
     .stat-chip span { font-size:14px; }
     .stat-chip.all { border-color:var(--primary); color:var(--primary); }
     .stat-chip.all span { color:var(--primary); }
+    .banner-wrap { position:relative; display:flex; align-items:flex-start; gap:6px; }
+    .banner-wrap .quote-card { flex:1; }
+    .banner-refresh { flex-shrink:0; background:none; border:1.5px solid var(--border); border-radius:8px; width:28px; height:28px; font-size:15px; cursor:pointer; color:var(--muted); display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all .15s; }
+    .banner-refresh:hover { border-color:var(--primary); color:var(--primary); transform:rotate(45deg); }
     .quote-card { background:var(--primary-light); border-radius:12px; padding:12px 14px; font-size:13px; color:#444; line-height:1.6; border-left:3px solid var(--primary); transition:opacity .15s; }
     .quote-card:hover { opacity:.75; }
     .quote-text { font-style:italic; font-weight:500; }
@@ -244,8 +248,14 @@
         <div class="dashboard-date" id="dash-date"></div>
         <div class="dashboard-greeting">Good to see you, Hannah 👋</div>
         <div class="stats-row" id="dash-stats"><div class="stat-chip">Loading...</div></div>
-        <div class="quote-card" id="dash-quote" style="display:none"></div>
-        <div class="quote-card" id="dash-knowledge" style="display:none;margin-top:8px;border-left-color:var(--psychiatry)"></div>
+        <div class="banner-wrap" id="wrap-quote" style="display:none">
+          <div class="quote-card" id="dash-quote"></div>
+          <button class="banner-refresh" onclick="refreshBanner('quote')" title="New quote">↻</button>
+        </div>
+        <div class="banner-wrap" id="wrap-knowledge" style="display:none;margin-top:8px">
+          <div class="quote-card" id="dash-knowledge" style="border-left-color:var(--psychiatry)"></div>
+          <button class="banner-refresh" onclick="refreshBanner('knowledge')" title="New insight">↻</button>
+        </div>
       </div>
     </div>
     <div id="input-bar">
@@ -570,24 +580,29 @@
         return items;
       }
 
-      function renderBanner(el, items, icon) {
-        if(items.length === 0) { el.style.display = 'none'; return; }
+      function renderBanner(el, wrap, items, icon) {
+        if(items.length === 0) { wrap.style.display = 'none'; return; }
         const p = items[Math.floor(Math.random() * items.length)];
         let html = `${icon} <span class="quote-text">${p.quote}</span>`;
         if(!p.isBlue && p.insights.length > 0) {
           html += ` <span class="quote-insight">— ${p.insights.join(' · ')}</span>`;
         }
         el.innerHTML = html;
-        el.style.display = 'block';
         el.style.cursor = 'pointer';
         el.onclick = () => openNoteDirectly(p.note);
+        wrap.style.display = 'flex';
       }
 
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy'].includes(n.category));
 
-      renderBanner($('dash-quote'),     extractPairs(personalNotes), '💡');
-      renderBanner($('dash-knowledge'), extractPairs(clinicalNotes), '🧠');
+      window._bannerItems = {
+        quote:     { items: extractPairs(personalNotes), icon: '💡' },
+        knowledge: { items: extractPairs(clinicalNotes), icon: '🧠' }
+      };
+
+      renderBanner($('dash-quote'),     $('wrap-quote'),     window._bannerItems.quote.items,     '💡');
+      renderBanner($('dash-knowledge'), $('wrap-knowledge'), window._bannerItems.knowledge.items, '🧠');
     } catch(e) {}
   }
 
@@ -615,6 +630,26 @@
     setTimeout(() => { loadDashboard(); scheduleQuoteRefresh(); }, ms);
   }
   scheduleQuoteRefresh();
+
+  function refreshBanner(which) {
+    if(!window._bannerItems || !window._bannerItems[which]) return;
+    const { items, icon } = window._bannerItems[which];
+    const elMap = { quote: 'dash-quote', knowledge: 'dash-knowledge' };
+    const wrapMap = { quote: 'wrap-quote', knowledge: 'wrap-knowledge' };
+    const el = $(elMap[which]), wrap = $(wrapMap[which]);
+    if(!items.length) return;
+    // Pick a different item than the one currently showing
+    const currentText = el.querySelector('.quote-text')?.textContent || '';
+    let candidates = items.filter(p => p.quote !== currentText);
+    if(!candidates.length) candidates = items;
+    const p = candidates[Math.floor(Math.random() * candidates.length)];
+    let html = `${icon} <span class="quote-text">${p.quote}</span>`;
+    if(!p.isBlue && p.insights.length > 0) {
+      html += ` <span class="quote-insight">— ${p.insights.join(' · ')}</span>`;
+    }
+    el.innerHTML = html;
+    el.onclick = () => openNoteDirectly(p.note);
+  }
 
   // ── Tabs ──────────────────────────────────────────────────────────────
   function showTab(tab) {
