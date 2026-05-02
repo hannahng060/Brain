@@ -498,9 +498,12 @@
       const data = await r.json();
       const catLabels = {psychiatry:'Psychiatry', psychotherapy:'Psychotherapy', icu:'ICU', business:'Business', resources:'Resources', personal:'Personal', lifestyle:'Lifestyle'};
       const catColors = {psychiatry:'var(--psychiatry)', psychotherapy:'var(--psychotherapy)', icu:'var(--icu)', business:'var(--business)', resources:'var(--resources)', personal:'var(--personal)', lifestyle:'var(--lifestyle)'};
-      const chips = data.by_category
-        .filter(c => c.category in catLabels)
-        .map(c => `<div class="stat-chip" onclick="jumpToCategory('${c.category}')" style="border-color:${catColors[c.category]};color:${catColors[c.category]}"><span style="color:${catColors[c.category]}">${c.count}</span> ${catLabels[c.category]}</div>`)
+      const catOrder = ['psychiatry','psychotherapy','icu','business','resources','personal','lifestyle'];
+      const countMap = {};
+      data.by_category.forEach(c => { countMap[c.category] = c.count; });
+      const chips = catOrder
+        .filter(cat => countMap[cat] > 0)
+        .map(cat => `<div class="stat-chip" onclick="jumpToCategory('${cat}')" style="border-color:${catColors[cat]};color:${catColors[cat]}"><span style="color:${catColors[cat]}">${countMap[cat]}</span> ${catLabels[cat]}</div>`)
         .join('');
       $('dash-stats').innerHTML = `<div class="stat-chip all" onclick="jumpToCategory('all')"><span>${data.total}</span> total notes</div>` + chips;
     } catch(e) { $('dash-stats').innerHTML = ''; }
