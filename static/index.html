@@ -1074,9 +1074,13 @@
     $('qc-overlay').style.display = 'none';
     $('qc-sheet').style.display   = 'none';
   }
-  $('qc-input').addEventListener('input', () => {
+  function qcCheckBtn() {
     $('qc-btn').disabled = !$('qc-input').value.trim();
-  });
+  }
+  $('qc-input').addEventListener('input',   qcCheckBtn);
+  $('qc-input').addEventListener('keyup',   qcCheckBtn);
+  $('qc-input').addEventListener('change',  qcCheckBtn);
+  $('qc-input').addEventListener('paste',   () => setTimeout(qcCheckBtn, 50));
   $('qc-input').addEventListener('keydown', e => {
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitQC();
   });
@@ -1134,7 +1138,7 @@
 <div id="qc-sheet">
   <h3>⚡ Quick Capture</h3>
   <p>Just type — Brain will figure out where to save it.</p>
-  <textarea id="qc-input" placeholder="What's on your mind?"></textarea>
+  <textarea id="qc-input" placeholder="What's on your mind?" oninput="qcCheckBtn()"></textarea>
   <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
 </div>
 </body>
