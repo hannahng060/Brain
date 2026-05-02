@@ -93,7 +93,7 @@ def db_save_note(raw_input: str, content: str, summary: str,
     conn.close()
     return {"status": "saved", "category": category, "summary": summary}
 
-def db_search_notes(query: str, category: str = "all", limit: int = 10) -> list:
+def db_search_notes(query: str, category: str = "all", limit: int = 30) -> list:
     conn = get_db()
     cur = conn.cursor()
     # Search for each word independently so "happiness quote" finds notes with either word
@@ -151,7 +151,7 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     conn.close()
     return [dict(r) for r in rows]
 
-def db_get_recent(limit: int = 10, category: str = "all") -> list:
+def db_get_recent(limit: int = 30, category: str = "all") -> list:
     conn = get_db()
     cur = conn.cursor()
     if category == "all":
@@ -273,7 +273,7 @@ TOOLS = [
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
                 "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"},
-                "limit":    {"type": "integer", "default": 10}
+                "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
         }
@@ -295,7 +295,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "limit":    {"type": "integer", "default": 10},
+                "limit":    {"type": "integer", "default": 30},
                 "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"}
             }
         }
@@ -497,7 +497,7 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
 
 def run_agent(user_message: str) -> dict:
     db_add_message("user", user_message)
-    messages = db_get_history(20)
+    messages = db_get_history(10)
     profile_context = build_profile_context()
     if profile_context:
         messages = [
@@ -676,7 +676,7 @@ async def update_profile(body: ProfileUpdate, request: Request):
     return {"ok": True}
 
 @app.get("/notes")
-async def list_notes(request: Request, category: str = "all", limit: int = 20):
+async def list_notes(request: Request, category: str = "all", limit: int = 500):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_recent(limit, category)
@@ -727,14 +727,14 @@ async def start_quiz(body: QuizRequest, request: Request):
         params = []
         for w in words:
             params.extend([f"%{w}%", f"%{w}%", f"%{w}%"])
-        params.append(30)
+        params.append(50)
         cur.execute(
             f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
             params
         )
     else:
         cur.execute(
-            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} ORDER BY created_at DESC LIMIT 30"
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} ORDER BY created_at DESC LIMIT 50"
         )
     notes = cur.fetchall()
     cur.close()

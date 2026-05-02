@@ -513,7 +513,7 @@
 
     // Load both inspiration banners
     try {
-      const r2 = await fetch('/notes?category=all&limit=200');
+      const r2 = await fetch('/notes?category=all&limit=500');
       if(!r2.ok) return;
       const notes = await r2.json();
 
@@ -631,7 +631,7 @@
   async function loadNotes() {
     $('notes-list').innerHTML = '<div class="loading-notes">Loading your notes...</div>';
     try {
-      const res = await fetch('/notes?limit=200');
+      const res = await fetch('/notes?limit=500');
       if(res.status===401){location.reload();return;}
       allNotes = await res.json();
       renderNotes();
@@ -977,7 +977,7 @@
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
       }
-      fetch('/notes?limit=200').then(r=>r.json()).then(n=>{allNotes=n;});
+      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{allNotes=n;});
     } catch(e) {
       removeTyping();
       appendMessage('brain', 'Something went wrong. Please try again.');
