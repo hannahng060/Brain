@@ -177,9 +177,15 @@
     /* ── Note detail modal ── */
     #note-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:flex-end; }
     #note-modal.open { display:flex; }
-    .modal-sheet { background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-height:80dvh; overflow-y:auto; padding:20px; }
+    .modal-sheet { background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-height:80dvh; display:flex; flex-direction:row; overflow:hidden; }
+    .modal-content { flex:1; overflow-y:auto; padding:20px; }
+    .modal-sidebar { width:64px; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 8px; border-left:1px solid var(--border); background:var(--bg); flex-shrink:0; }
+    .sidebar-btn { width:48px; padding:10px 4px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); font-size:11px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
+    .sidebar-btn.primary { background:var(--primary-light); color:var(--primary); border-color:var(--primary); }
+    .sidebar-btn.save { background:var(--primary); color:white; border-color:var(--primary); }
+    .sidebar-btn:hover { opacity:.8; }
     .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
-    .modal-badge-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; position:sticky; top:0; background:var(--surface); z-index:10; padding:8px 0; border-bottom:1px solid var(--border); }
+    .modal-badge-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
     .modal-date { font-size:12px; color:var(--muted); }
     .modal-title { font-size:18px; font-weight:700; margin-bottom:12px; }
     .modal-body { font-size:15px; line-height:1.6; white-space:pre-wrap; color:var(--text); word-break:break-word; }
@@ -313,76 +319,81 @@
 <!-- Note Detail Modal -->
 <div id="note-modal">
   <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-badge-row">
-      <span class="badge" id="modal-badge"></span>
-      <span class="modal-date" id="modal-date"></span>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="modal-edit-btn" onclick="startEdit()" style="width:auto;margin:0;padding:7px 16px;font-size:14px">Edit</button>
-        <button class="modal-close" onclick="closeModal()" style="width:auto;margin:0;padding:7px 16px;font-size:14px">Close</button>
+    <!-- Scrollable content -->
+    <div class="modal-content">
+      <div class="modal-handle"></div>
+      <div class="modal-badge-row">
+        <span class="badge" id="modal-badge"></span>
+        <span class="modal-date" id="modal-date"></span>
+      </div>
+
+      <!-- View mode -->
+      <div id="modal-view">
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-tags" id="modal-tags"></div>
+      </div>
+
+      <!-- Edit mode -->
+      <div id="modal-edit" style="display:none">
+        <span class="edit-label">Heading</span>
+        <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text" placeholder="Short, catchy heading (3-6 words)">
+        <span class="edit-label">Category</span>
+        <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions()">
+          <option value="psychiatry">Psychiatry</option>
+          <option value="psychotherapy">Psychotherapy</option>
+          <option value="icu">ICU</option>
+          <option value="business">Business</option>
+          <option value="resources">Resources</option>
+          <option value="personal">Personal</option>
+          <option value="lifestyle">Lifestyle</option>
+        </select>
+        <span class="edit-label">Subcategory</span>
+        <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
+        <span class="edit-label">Content</span>
+        <div class="format-toolbar">
+          <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
+          <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
+          <div class="fmt-divider"></div>
+          <select class="fmt-select" onchange="fmtFont(this.value); this.selectedIndex=0;" title="Font">
+            <option value="">Font</option>
+            <option value="-apple-system,sans-serif">Default</option>
+            <option value="Georgia,serif">Georgia</option>
+            <option value="'Times New Roman',serif">Times New Roman</option>
+            <option value="Arial,sans-serif">Arial</option>
+            <option value="'Courier New',monospace">Courier</option>
+          </select>
+          <select class="fmt-select" onchange="fmtSize(this.value); this.selectedIndex=0;" title="Font size">
+            <option value="">Size</option>
+            <option value="1">Small</option>
+            <option value="3">Default</option>
+            <option value="4">Large</option>
+            <option value="5">X-Large</option>
+          </select>
+          <div class="fmt-divider"></div>
+          <button class="fmt-btn" onclick="fmtColor('#1a1a2e')" title="Black"><span class="color-dot" style="background:#1a1a2e"></span></button>
+          <button class="fmt-btn" onclick="fmtColor('#1565c0')" title="Blue"><span class="color-dot" style="background:#1565c0"></span></button>
+          <button class="fmt-btn" onclick="fmtColor('#2e7d32')" title="Green"><span class="color-dot" style="background:#2e7d32"></span></button>
+          <button class="fmt-btn" onclick="fmtColor('#b71c1c')" title="Red"><span class="color-dot" style="background:#b71c1c"></span></button>
+          <button class="fmt-btn" onclick="fmtColor('#6a1b9a')" title="Purple"><span class="color-dot" style="background:#6a1b9a"></span></button>
+          <div class="fmt-divider"></div>
+          <button class="fmt-btn" onclick="fmtHighlight('#fff176')" title="Yellow highlight"><span class="color-dot" style="background:#fff176"></span></button>
+          <button class="fmt-btn" onclick="fmtHighlight('#b9f6ca')" title="Green highlight"><span class="color-dot" style="background:#b9f6ca"></span></button>
+          <button class="fmt-btn" onclick="fmtHighlight('#bbdefb')" title="Blue highlight"><span class="color-dot" style="background:#bbdefb"></span></button>
+          <button class="fmt-btn" onclick="fmtHighlight('#f8bbd0')" title="Pink highlight"><span class="color-dot" style="background:#f8bbd0"></span></button>
+          <button class="fmt-btn" onclick="fmtHighlight('#ffe0b2')" title="Orange highlight"><span class="color-dot" style="background:#ffe0b2"></span></button>
+          <button class="fmt-btn" onclick="fmtHighlight('transparent')" title="Remove highlight">✕HL</button>
+        </div>
+        <div id="edit-content" contenteditable="true"></div>
       </div>
     </div>
 
-    <!-- View mode -->
-    <div id="modal-view">
-      <div class="modal-title" id="modal-title"></div>
-      <div class="modal-body" id="modal-body"></div>
-      <div class="modal-tags" id="modal-tags"></div>
-    </div>
-
-    <!-- Edit mode -->
-    <div id="modal-edit" style="display:none">
-      <span class="edit-label">Heading</span>
-      <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text" placeholder="Short, catchy heading (3-6 words)">
-      <span class="edit-label">Category</span>
-      <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions()">
-        <option value="psychiatry">Psychiatry</option>
-        <option value="psychotherapy">Psychotherapy</option>
-        <option value="icu">ICU</option>
-        <option value="business">Business</option>
-        <option value="resources">Resources</option>
-        <option value="personal">Personal</option>
-        <option value="lifestyle">Lifestyle</option>
-      </select>
-      <span class="edit-label">Subcategory</span>
-      <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
-      <span class="edit-label">Content</span>
-      <div class="format-toolbar">
-        <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
-        <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
-        <div class="fmt-divider"></div>
-        <select class="fmt-select" onchange="fmtFont(this.value); this.selectedIndex=0;" title="Font">
-          <option value="">Font</option>
-          <option value="-apple-system,sans-serif">Default</option>
-          <option value="Georgia,serif">Georgia</option>
-          <option value="'Times New Roman',serif">Times New Roman</option>
-          <option value="Arial,sans-serif">Arial</option>
-          <option value="'Courier New',monospace">Courier</option>
-        </select>
-        <select class="fmt-select" onchange="fmtSize(this.value); this.selectedIndex=0;" title="Font size">
-          <option value="">Size</option>
-          <option value="1">Small</option>
-          <option value="3">Default</option>
-          <option value="4">Large</option>
-          <option value="5">X-Large</option>
-        </select>
-        <div class="fmt-divider"></div>
-        <button class="fmt-btn" onclick="fmtColor('#1a1a2e')" title="Black"><span class="color-dot" style="background:#1a1a2e"></span></button>
-        <button class="fmt-btn" onclick="fmtColor('#1565c0')" title="Blue"><span class="color-dot" style="background:#1565c0"></span></button>
-        <button class="fmt-btn" onclick="fmtColor('#2e7d32')" title="Green"><span class="color-dot" style="background:#2e7d32"></span></button>
-        <button class="fmt-btn" onclick="fmtColor('#b71c1c')" title="Red"><span class="color-dot" style="background:#b71c1c"></span></button>
-        <button class="fmt-btn" onclick="fmtColor('#6a1b9a')" title="Purple"><span class="color-dot" style="background:#6a1b9a"></span></button>
-        <div class="fmt-divider"></div>
-        <button class="fmt-btn" onclick="fmtHighlight('#fff176')" title="Yellow highlight"><span class="color-dot" style="background:#fff176"></span></button>
-        <button class="fmt-btn" onclick="fmtHighlight('#b9f6ca')" title="Green highlight"><span class="color-dot" style="background:#b9f6ca"></span></button>
-        <button class="fmt-btn" onclick="fmtHighlight('#bbdefb')" title="Blue highlight"><span class="color-dot" style="background:#bbdefb"></span></button>
-        <button class="fmt-btn" onclick="fmtHighlight('#f8bbd0')" title="Pink highlight"><span class="color-dot" style="background:#f8bbd0"></span></button>
-        <button class="fmt-btn" onclick="fmtHighlight('#ffe0b2')" title="Orange highlight"><span class="color-dot" style="background:#ffe0b2"></span></button>
-        <button class="fmt-btn" onclick="fmtHighlight('transparent')" title="Remove highlight">✕HL</button>
-      </div>
-      <div id="edit-content" contenteditable="true"></div>
-      <button class="modal-save-btn" onclick="saveEdit()">Save Changes</button>
-      <button class="modal-cancel-btn" onclick="cancelEdit()">Cancel</button>
+    <!-- Fixed right sidebar buttons -->
+    <div class="modal-sidebar">
+      <button class="sidebar-btn primary" id="sidebar-edit" onclick="startEdit()">✏️<br>Edit</button>
+      <button class="sidebar-btn save" id="sidebar-save" onclick="saveEdit()" style="display:none">💾<br>Save</button>
+      <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
+      <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
     </div>
   </div>
 </div>
@@ -723,6 +734,7 @@
     $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
+    setSidebarMode('view');
     $('note-modal').classList.add('open');
   }
 
@@ -738,6 +750,7 @@
     $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
+    setSidebarMode('view');
     $('note-modal').classList.add('open');
   }
 
@@ -788,20 +801,27 @@
   });
 
   let _editingNote = null;
+  function setSidebarMode(mode) {
+    $('sidebar-edit').style.display   = mode === 'view' ? 'block' : 'none';
+    $('sidebar-save').style.display   = mode === 'edit' ? 'block' : 'none';
+    $('sidebar-cancel').style.display = mode === 'edit' ? 'block' : 'none';
+  }
   function startEdit() {
     _editingNote = window._openNote;
     $('edit-summary').value = _editingNote.summary || '';
-    $('edit-category').value = _editingNote.category || 'clinical';
+    $('edit-category').value = _editingNote.category || 'psychiatry';
     updateSubcatOptions();
     $('edit-subcategory').value = _editingNote.subcategory || '';
     $('edit-content').innerHTML = renderContent(_editingNote.content || '');
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
+    setSidebarMode('edit');
     $('edit-content').focus();
   }
   function cancelEdit() {
     $('modal-edit').style.display = 'none';
     $('modal-view').style.display = 'block';
+    setSidebarMode('view');
   }
   async function saveEdit() {
     const summary = $('edit-summary').value.trim();
@@ -815,6 +835,7 @@
       body: JSON.stringify({summary, content, category, subcategory})
     });
     if(res.ok) {
+      setSidebarMode('view');
       closeModal();
       loadNotes();
     } else {
