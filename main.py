@@ -336,7 +336,7 @@ TOOLS = [
     },
     {
         "name": "no_save",
-        "description": "Use ONLY when the message is purely conversational with zero new information — e.g. 'thanks', 'ok', 'got it', 'that makes sense'. Do NOT use this if the user mentions any fact, experience, plan, knowledge, or detail, no matter how small.",
+        "description": "Use ONLY as your very first action when the message is purely conversational with zero new information — e.g. 'thanks', 'ok', 'got it'. NEVER call this after already calling save_note or update_note. Do NOT use this if the user mentions any fact, experience, plan, or knowledge.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -368,6 +368,8 @@ You MUST call a tool on EVERY single message. No exceptions. Choose exactly one:
 - search_notes or get_recent_notes → if the message is asking a question about saved notes
 - no_save → ONLY if the message is pure conversation with zero information (e.g. "thanks", "ok", "got it")
 When in doubt: SAVE IT. It is always better to save than to skip.
+
+After calling save_note or update_note, you MUST follow up with a warm, brief text response: confirm what was saved, where it was filed, and add one short encouraging or clinically relevant comment. Do NOT call no_save or any other tool after saving — go straight to your text reply.
 
 RULES:
 1. SAVE EVERY MESSAGE THAT CONTAINS INFO. Call save_note immediately. Never skip. Never assume it was already saved.
