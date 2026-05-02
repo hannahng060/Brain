@@ -109,6 +109,18 @@
     .quote-text { font-style:italic; font-weight:500; }
     .quote-insight { display:inline; font-style:normal; color:#666; }
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+
+    /* ── Quick Capture ── */
+    #qc-fab { position:fixed; bottom:80px; right:18px; width:52px; height:52px; border-radius:50%; background:var(--primary); color:white; border:none; font-size:24px; cursor:pointer; box-shadow:0 4px 16px rgba(91,91,214,.45); z-index:200; display:none; align-items:center; justify-content:center; transition:transform .15s; }
+    #qc-fab:active { transform:scale(.92); }
+    #qc-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:300; }
+    #qc-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:301; display:none; flex-direction:column; gap:12px; }
+    #qc-sheet h3 { font-size:16px; font-weight:700; color:var(--text); }
+    #qc-sheet p  { font-size:12px; color:var(--muted); margin-top:-6px; }
+    #qc-input { width:100%; min-height:100px; max-height:220px; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; font-family:inherit; resize:none; outline:none; background:var(--bg); line-height:1.5; }
+    #qc-input:focus { border-color:var(--primary); }
+    #qc-btn { background:var(--primary); color:white; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
+    #qc-btn:disabled { opacity:.5; cursor:default; }
     #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
     #input-row { display:flex; align-items:flex-end; gap:10px; }
     #input { flex:1; border:1.5px solid var(--border); border-radius:20px; padding:10px 16px; font-size:16px; font-family:inherit; resize:none; outline:none; max-height:120px; line-height:1.4; background:var(--bg); }
@@ -493,7 +505,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; $('qc-fab').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -621,7 +633,7 @@
       }
 
       const personalNotes = notes.filter(n => n.category === 'personal');
-      const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy'].includes(n.category));
+      const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
 
       window._bannerDecks = {
         quote:     { deck: makeDeck(extractPairs(personalNotes)), icon: '💡' },
@@ -1050,6 +1062,51 @@
     setTimeout(() => { t.style.opacity = '0'; }, 3000);
   }
 
+  // ── Quick Capture ─────────────────────────────────────────────────────
+  function openQC() {
+    $('qc-overlay').style.display = 'block';
+    $('qc-sheet').style.display   = 'flex';
+    $('qc-input').value = '';
+    $('qc-btn').disabled = true;
+    setTimeout(() => $('qc-input').focus(), 50);
+  }
+  function closeQC() {
+    $('qc-overlay').style.display = 'none';
+    $('qc-sheet').style.display   = 'none';
+  }
+  $('qc-input').addEventListener('input', () => {
+    $('qc-btn').disabled = !$('qc-input').value.trim();
+  });
+  $('qc-input').addEventListener('keydown', e => {
+    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitQC();
+  });
+  async function submitQC() {
+    const text = $('qc-input').value.trim();
+    if(!text) return;
+    $('qc-btn').disabled = true;
+    $('qc-btn').textContent = 'Saving…';
+    try {
+      const localDate = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      const res = await fetch('/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: text, local_date: localDate})
+      });
+      const data = await res.json();
+      closeQC();
+      if(data.saves && data.saves.length > 0) {
+        showToast('✅ Captured & saved!');
+        loadNotes();
+      } else {
+        showToast('💬 Brain got it!');
+      }
+    } catch(e) {
+      $('qc-btn').disabled = false;
+      $('qc-btn').textContent = 'Save it';
+      showToast('Something went wrong — try again');
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1070,5 +1127,15 @@
   }
 </script>
 <div id="toast"></div>
+
+<!-- Quick Capture FAB -->
+<button id="qc-fab" onclick="openQC()" title="Quick capture">⚡</button>
+<div id="qc-overlay" onclick="closeQC()"></div>
+<div id="qc-sheet">
+  <h3>⚡ Quick Capture</h3>
+  <p>Just type — Brain will figure out where to save it.</p>
+  <textarea id="qc-input" placeholder="What's on your mind?"></textarea>
+  <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
+</div>
 </body>
 </html>
