@@ -136,6 +136,23 @@ def db_get_person(name: str) -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def db_get_log_by_date(date_str: str) -> list:
+    """Find a Daily Log note by searching for a date string in the summary/content."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, content, summary, category, subcategory, created_at
+           FROM notes
+           WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%'
+           AND (summary ILIKE %s OR content ILIKE %s)
+           ORDER BY created_at DESC LIMIT 3""",
+        (f"%{date_str}%", f"%{date_str}%")
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
 def db_get_today_logs(category: str, subcategory: str) -> list:
     conn = get_db()
     cur = conn.cursor()
@@ -302,14 +319,25 @@ TOOLS = [
     },
     {
         "name": "get_today_logs",
-        "description": "Get all notes logged today for a specific category and subcategory. Use this to find today's diet log, health log, fitness log, etc. before updating them.",
+        "description": "Get notes logged in the last 48 hours for a specific category and subcategory. Use this to find today's or yesterday's daily log before updating.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","business","resources"]},
-                "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness"}
+                "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
+        }
+    },
+    {
+        "name": "get_log_by_date",
+        "description": "Find a Daily Log note by a specific date. Use when the user mentions a specific date like '4/28', 'April 28', '4.28.26', or 'last Tuesday'. Returns matching daily log notes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "date_str": {"type": "string", "description": "The date to search for, e.g. '4/28', '4.28', 'April 28', 'May 1'"}
+            },
+            "required": ["date_str"]
         }
     },
     {
@@ -399,10 +427,12 @@ RULES:
     b. If found: append the meal, recalculate totals, update_note. If not found: save_note under Diet.
     c. NOTE: If the user is logging their day generally (daily log), do NOT use this rule — use rule 13 instead. Meals belong in the Daily Log, not a separate Diet note.
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened):
-    a. Call get_today_logs with category=lifestyle, subcategory=Daily Log. This returns logs from the last 48 hours (covers today AND yesterday).
-       - If user says "today" or no time reference → use the most recent note.
-       - If user says "yesterday" → use the older note (or the one whose heading matches yesterday's date).
-       - If no note found for the relevant day → create one with save_note.
+    a. Find the right daily log:
+       - If user mentions a specific date (e.g. "4/28", "April 28", "May 1st") → call get_log_by_date with that date string.
+       - If user says "today" or no time reference → call get_today_logs (category=lifestyle, subcategory=Daily Log), use the most recent result.
+       - If user says "yesterday" → call get_today_logs, use the older result (or match heading date).
+       - If no note found → create one with save_note.
+    b. If found: update the relevant sections. Call update_note with complete updated content.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
     c. If not found: create a new note with save_note under lifestyle → Daily Log.
        Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
@@ -471,6 +501,8 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return {"status": "ok"}
     elif name == "get_today_logs":
         return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
+    elif name == "get_log_by_date":
+        return db_get_log_by_date(args.get("date_str",""))
     elif name == "update_note":
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
