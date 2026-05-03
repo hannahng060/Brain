@@ -192,6 +192,40 @@ def db_get_recent(limit: int = 30, category: str = "all") -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def db_append_to_section(note_id: int, section: str, text: str) -> dict:
+    """Append text to a named section in a Daily Log note without rewriting the whole thing."""
+    import re
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT content FROM notes WHERE id = %s", (note_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return {"status": "error", "message": "Note not found"}
+    content = row["content"]
+    # Build the section header pattern (matches bold+underline HTML header)
+    section_upper = section.upper().rstrip(':') + ':'
+    # Find the section header in the content
+    header_pattern = re.compile(
+        r'(<strong><u>' + re.escape(section_upper) + r'<\/u><\/strong>)(.*?)(?=<strong><u>|\Z)',
+        re.IGNORECASE | re.DOTALL
+    )
+    match = header_pattern.search(content)
+    if not match:
+        cur.close(); conn.close()
+        return {"status": "error", "message": f"Section '{section}' not found in note"}
+    existing = match.group(2).strip()
+    # Append: if section has real content (not just — or empty), add with separator
+    if existing and existing != '—' and existing != '-':
+        new_section_body = existing + '; ' + text
+    else:
+        new_section_body = text
+    new_content = content[:match.start(2)] + '\n' + new_section_body + '\n\n' + content[match.end(2):]
+    cur.execute("UPDATE notes SET content = %s WHERE id = %s", (new_content, note_id))
+    conn.commit()
+    cur.close(); conn.close()
+    return {"status": "updated", "id": note_id, "section": section}
+
 def db_get_history(limit: int = 20) -> list:
     conn = get_db()
     cur = conn.cursor()
@@ -353,8 +387,21 @@ TOOLS = [
         }
     },
     {
+        "name": "append_to_section",
+        "description": "Append new text to a specific section of a Daily Log note (e.g. ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS). Use this instead of update_note when adding to a Daily Log — it's more reliable for long notes because you only provide the new text, not the entire note.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "note_id": {"type": "integer", "description": "The id of the Daily Log note to update"},
+                "section": {"type": "string", "description": "Section name exactly as it appears in the log: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL / LEARNING, OURA RING METRICS, ANALYSIS"},
+                "text":    {"type": "string", "description": "The new text to append to that section"}
+            },
+            "required": ["note_id", "section", "text"]
+        }
+    },
+    {
         "name": "update_note",
-        "description": "Update an existing note's subcategory, category, content, or summary. Use this to reorganize or correct existing notes.",
+        "description": "Update an existing note's subcategory, category, content, or summary. Use this to reorganize or correct existing notes. For Daily Log section updates, prefer append_to_section instead.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -420,7 +467,7 @@ RULES:
 1. SAVE EVERY MESSAGE THAT CONTAINS INFO. Call save_note immediately. Never skip. Never assume it was already saved.
 2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note. EXCEPTION: if the user explicitly says "add to my daily log" or "update my log for [date]", ALL described details go into that one Daily Log entry — do not split into separate notes.
 3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
-4. Personal messages about the day → ALWAYS update today's Daily Log. NEVER create a separate Personal note. Follow this exact sequence: (1) call get_today_logs with category=lifestyle, subcategory=Daily Log; (2) if found → read the full note content, locate the correct section, APPEND the new item to whatever is already there (do not replace existing content — add to it, separated by "; " or a new line), then call update_note with the complete updated content; (3) if not found → create a new Daily Log note with save_note using the full template. Never skip step 1. Route to the correct section:
+4. Personal messages about the day → ALWAYS update today's Daily Log. NEVER create a separate Personal note. Follow this exact sequence: (1) call get_today_logs (or get_log_by_date for a specific date) to find the note and get its id; (2) if found → call append_to_section with the note_id, the correct section name, and ONLY the new text to add (do NOT rewrite the whole note); (3) if not found → create a new Daily Log note with save_note. Never skip step 1. Always use append_to_section for Daily Log updates — never update_note. Route to the correct section:
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
    - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
@@ -444,7 +491,7 @@ RULES:
        - If user says "today" or no time reference → call get_today_logs (category=lifestyle, subcategory=Daily Log), use the most recent result.
        - If user says "yesterday" → call get_today_logs, use the older result (or match heading date).
        - If no note found → create one with save_note.
-    b. If found: update the relevant sections. Call update_note with complete updated content.
+    b. If found: call append_to_section with the note id, the correct section name, and only the new text. NEVER call update_note for Daily Log section updates — it rewrites the whole note and fails on long notes.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
     c. If not found: create a new note with save_note under lifestyle → Daily Log.
        Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
@@ -515,6 +562,8 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
     elif name == "get_log_by_date":
         return db_get_log_by_date(args.get("date_str",""))
+    elif name == "append_to_section":
+        return db_append_to_section(args["note_id"], args["section"], args["text"])
     elif name == "update_note":
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
@@ -548,7 +597,7 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
             if block.type != "tool_use":
                 continue
             result = execute_tool(block.name, block.input, raw)
-            if block.name in ("save_note", "update_note") and "id" in result:
+            if block.name in ("save_note", "update_note", "append_to_section") and "id" in result:
                 saves_made.append({"id": result["id"], "tool": block.name})
             tool_results.append({
                 "type": "tool_result",
