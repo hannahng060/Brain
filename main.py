@@ -142,7 +142,7 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     cur.execute(
         """SELECT id, content, summary, category, subcategory, created_at
            FROM notes
-           WHERE category = %s AND subcategory ILIKE %s AND created_at >= NOW() - INTERVAL '30 hours'
+           WHERE category = %s AND subcategory ILIKE %s AND created_at >= NOW() - INTERVAL '48 hours'
            ORDER BY created_at ASC""",
         (category, f"%{subcategory}%")
     )
@@ -398,8 +398,11 @@ RULES:
     a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note.
     b. If found: append the meal, recalculate totals, update_note. If not found: save_note under Diet.
     c. NOTE: If the user is logging their day generally (daily log), do NOT use this rule — use rule 13 instead. Meals belong in the Daily Log, not a separate Diet note.
-13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened today):
-    a. Call get_today_logs with category=lifestyle, subcategory=Daily Log to find today's note.
+13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened):
+    a. Call get_today_logs with category=lifestyle, subcategory=Daily Log. This returns logs from the last 48 hours (covers today AND yesterday).
+       - If user says "today" or no time reference → use the most recent note.
+       - If user says "yesterday" → use the older note (or the one whose heading matches yesterday's date).
+       - If no note found for the relevant day → create one with save_note.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
     c. If not found: create a new note with save_note under lifestyle → Daily Log.
        Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
