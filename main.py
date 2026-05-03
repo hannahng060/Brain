@@ -137,16 +137,28 @@ def db_get_person(name: str) -> list:
     return [dict(r) for r in rows]
 
 def db_get_log_by_date(date_str: str) -> list:
-    """Find a Daily Log note by searching for a date string in the summary/content."""
+    """Find a Daily Log note by date. Normalizes separators so 5-1, 5/1, 5.1 all match."""
+    import re
+    # Normalize separators → try multiple variants so 5-26, 5/26, 5.26 all find "5.01.26"
+    normalized = re.sub(r'[-/]', '.', date_str.strip())
+    variants = list({date_str.strip(), normalized,
+                     re.sub(r'[-/.]', '-', date_str.strip()),
+                     re.sub(r'[-/.]', '/', date_str.strip())})
     conn = get_db()
     cur = conn.cursor()
+    conditions = " OR ".join(
+        ["(summary ILIKE %s OR content ILIKE %s)"] * len(variants)
+    )
+    params = []
+    for v in variants:
+        params.extend([f"%{v}%", f"%{v}%"])
     cur.execute(
-        """SELECT id, content, summary, category, subcategory, created_at
+        f"""SELECT id, content, summary, category, subcategory, created_at
            FROM notes
            WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%'
-           AND (summary ILIKE %s OR content ILIKE %s)
+           AND ({conditions})
            ORDER BY created_at DESC LIMIT 3""",
-        (f"%{date_str}%", f"%{date_str}%")
+        params
     )
     rows = cur.fetchall()
     cur.close()
@@ -406,7 +418,7 @@ After calling save_note or update_note, you MUST follow up with a warm, brief te
 
 RULES:
 1. SAVE EVERY MESSAGE THAT CONTAINS INFO. Call save_note immediately. Never skip. Never assume it was already saved.
-2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note.
+2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note. EXCEPTION: if the user explicitly says "add to my daily log" or "update my log for [date]", ALL described details go into that one Daily Log entry — do not split into separate notes.
 3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
 4. Personal messages about the day → ALWAYS update today's Daily Log. NEVER create a separate Personal note. Follow this exact sequence: (1) call get_today_logs with category=lifestyle, subcategory=Daily Log; (2) if found → read the full note content, locate the correct section, APPEND the new item to whatever is already there (do not replace existing content — add to it, separated by "; " or a new line), then call update_note with the complete updated content; (3) if not found → create a new Daily Log note with save_note using the full template. Never skip step 1. Route to the correct section:
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
