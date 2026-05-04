@@ -861,15 +861,14 @@
       const data = await res.json();
       $('sidebar-analyze').innerHTML = '↻<br>Re-analyze';
       $('sidebar-analyze').disabled = false;
-      // Reload the note and update the modal body in place — analysis lives in the note now
+      // Reload notes quietly and update the open modal — don't touch the notes list filter
       fetch('/notes?limit=500').then(r=>r.json()).then(notes => {
         allNotes = notes;
-        renderNotes();
         const updated = notes.find(n => n.id === note.id);
         if(updated) {
           window._openNote = updated;
           $('modal-body').innerHTML = renderContent(updated.content);
-          // Scroll to the ANALYSIS section within the modal
+          // Scroll to ANALYSIS section
           const headers = $('modal-body').querySelectorAll('u');
           for(const el of headers) {
             if(el.textContent.toUpperCase().includes('ANALYSIS')) {

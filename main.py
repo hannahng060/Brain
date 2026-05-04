@@ -975,10 +975,19 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
     )
     analysis = response.content[0].text.strip() if response.content else "Could not generate analysis."
 
-    # Save analysis back to the ANALYSIS section of the note
+    # Convert markdown formatting to HTML before saving into the note
+    def md_to_html(text: str) -> str:
+        # Bold: **text** → <strong>text</strong>
+        text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+        # Italic: *text* → <em>text</em>
+        text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
+        # Paragraphs separated by blank lines
+        paras = [p.strip() for p in text.split('\n\n') if p.strip()]
+        return '<br><br>'.join(p.replace('\n', '<br>') for p in paras)
+
     analyzed_at = datetime.now().strftime("%-m/%-d/%y %-I:%M %p")
-    analysis_with_stamp = f"[{analyzed_at}]\n\n{analysis}"
-    db_update_section_by_id(note["id"], "ANALYSIS", analysis_with_stamp)
+    analysis_html = f"<em style='font-size:12px;color:#888'>{analyzed_at}</em><br><br>{md_to_html(analysis)}"
+    db_update_section_by_id(note["id"], "ANALYSIS", analysis_html)
 
     return {"analysis": analysis, "summary": log_date, "saved": True}
 
