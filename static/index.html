@@ -247,6 +247,13 @@
     .fmt-select { padding:5px 6px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; cursor:pointer; font-family:inherit; }
     #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:160px; outline:none; margin-top:8px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; color:var(--text); }
     #edit-content:focus { border-color:var(--primary); }
+
+    /* ── Daily Log Analyze ── */
+    #modal-analyze-panel { margin-top:20px; }
+    #modal-analyze-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--primary) 0%,#7c4dff 100%); color:white; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; letter-spacing:.01em; }
+    #modal-analyze-btn:disabled { opacity:.6; cursor:default; }
+    #modal-analysis-result { margin-top:14px; background:var(--primary-light); border-radius:12px; padding:16px 18px; font-size:14px; line-height:1.75; color:var(--text); border-left:3px solid var(--primary); white-space:pre-wrap; }
+    .analysis-heading { font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
   </style>
 </head>
 <body>
@@ -378,6 +385,11 @@
         <div class="modal-title" id="modal-title"></div>
         <div class="modal-body" id="modal-body"></div>
         <div class="modal-tags" id="modal-tags"></div>
+        <!-- Daily Log analyze panel -->
+        <div id="modal-analyze-panel" style="display:none">
+          <button id="modal-analyze-btn" onclick="analyzeLog()">✨ Analyze my day</button>
+          <div id="modal-analysis-result" style="display:none"></div>
+        </div>
       </div>
 
       <!-- Edit mode -->
@@ -817,8 +829,7 @@
     window._filteredNotes = filtered;
   }
 
-  function openNote(i) {
-    const n = window._filteredNotes[i];
+  function _setupModal(n) {
     window._openNote = n;
     const tags = tryParse(n.tags);
     const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
@@ -831,23 +842,45 @@
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
     setSidebarMode('view');
+    // Show analyze button only for Daily Log notes
+    const isDailyLog = n.subcategory && n.subcategory.toLowerCase().includes('daily log');
+    $('modal-analyze-panel').style.display = isDailyLog ? 'block' : 'none';
+    $('modal-analysis-result').style.display = 'none';
+    $('modal-analysis-result').innerHTML = '';
+    $('modal-analyze-btn').disabled = false;
+    $('modal-analyze-btn').textContent = '✨ Analyze my day';
     $('note-modal').classList.add('open');
   }
+  function openNote(i)         { _setupModal(window._filteredNotes[i]); }
+  function openNoteDirectly(n) { _setupModal(n); }
 
-  function openNoteDirectly(n) {
-    window._openNote = n;
-    const tags = tryParse(n.tags);
-    const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
-    $('modal-badge').className = `badge ${n.category}`;
-    $('modal-badge').textContent = n.category;
-    $('modal-date').textContent = date;
-    $('modal-title').textContent = n.summary || 'Note';
-    $('modal-body').innerHTML = renderContent(n.content);
-    $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
-    $('modal-view').style.display = 'block';
-    $('modal-edit').style.display = 'none';
-    setSidebarMode('view');
-    $('note-modal').classList.add('open');
+  async function analyzeLog() {
+    const note = window._openNote;
+    if(!note) return;
+    $('modal-analyze-btn').disabled = true;
+    $('modal-analyze-btn').textContent = '✨ Analyzing…';
+    $('modal-analysis-result').style.display = 'none';
+    try {
+      const res = await fetch('/log-analyze', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({note_id: note.id})
+      });
+      if(!res.ok) throw new Error('Server error');
+      const data = await res.json();
+      $('modal-analysis-result').innerHTML =
+        `<div class="analysis-heading">✨ Brain's reflection — ${esc(data.summary)}</div>` +
+        renderContent(data.analysis);
+      $('modal-analysis-result').style.display = 'block';
+      $('modal-analyze-btn').textContent = '↻ Re-analyze';
+      $('modal-analyze-btn').disabled = false;
+      // Scroll to analysis
+      $('modal-analysis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
+    } catch(e) {
+      $('modal-analyze-btn').textContent = '✨ Analyze my day';
+      $('modal-analyze-btn').disabled = false;
+      showToast('Could not analyze — try again');
+    }
   }
 
   function closeModal() { $('note-modal').classList.remove('open'); }

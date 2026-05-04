@@ -862,6 +862,17 @@ async def update_note(note_id: int, body: NoteUpdate, request: Request):
     conn.close()
     return {"ok": True}
 
+def strip_html(html: str) -> str:
+    """Convert HTML to readable plain text for AI analysis."""
+    html = re.sub(r'<br\s*/?>', '\n', html, flags=re.IGNORECASE)
+    html = re.sub(r'</(p|div|li|tr|h[1-6]|strong|u)>', ' ', html, flags=re.IGNORECASE)
+    html = re.sub(r'<[^>]+>', '', html)
+    html = html.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>') \
+               .replace('&nbsp;', ' ').replace('&#39;', "'").replace('&quot;', '"')
+    html = re.sub(r'[ \t]{2,}', ' ', html)
+    html = re.sub(r'\n{3,}', '\n\n', html)
+    return html.strip()
+
 class LogAppendRequest(BaseModel):
     date_ref: str
     section: str
@@ -881,6 +892,49 @@ async def log_append(body: LogAppendRequest, request: Request):
     if result.get("status") == "error":
         raise HTTPException(status_code=404, detail=result["message"])
     return result
+
+class LogAnalyzeRequest(BaseModel):
+    note_id: int
+
+@app.post("/log-analyze")
+async def log_analyze(body: LogAnalyzeRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id, content, summary, created_at FROM notes WHERE id = %s", (body.note_id,))
+    note = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    profile_text = build_profile_context()
+    log_plain = strip_html(note["content"])
+    log_date  = note["summary"] or "today"
+
+    analyze_prompt = f"""You are Brain, Hannah's personal AI assistant. She has asked you to analyze her daily log and give honest, grounded feedback.
+
+{profile_text}
+
+Daily log — {log_date}:
+{log_plain}
+
+Reflect on her day with these lenses:
+1. Overall alignment — based on her goals and values, was this a good day? Be honest, not just encouraging.
+2. What she did well — specific things that moved her forward or reflect who she's becoming.
+3. What drifted — anything that was off-track, low-value, or inconsistent with her goals. Be direct but kind.
+4. One thing to carry forward — a single concrete focus for tomorrow based on today's data.
+
+Write like a thoughtful coach who knows her deeply. Be specific to what she actually logged — never generic. 3-4 short paragraphs, no bullet points. Warm but real."""
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=700,
+        messages=[{"role": "user", "content": analyze_prompt}]
+    )
+    analysis = response.content[0].text.strip() if response.content else "Could not generate analysis."
+    return {"analysis": analysis, "summary": log_date}
 
 class QuizRequest(BaseModel):
     topic: Optional[str] = None
