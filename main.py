@@ -266,7 +266,19 @@ def db_get_history(limit: int = 20) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+    msgs = [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+    # Sanitize: ensure messages alternate user/assistant (no consecutive same-role)
+    # Drop orphaned messages that would break the Anthropic API
+    sanitized = []
+    for msg in msgs:
+        if sanitized and sanitized[-1]["role"] == msg["role"]:
+            # Same role back-to-back — drop the earlier one
+            sanitized.pop()
+        sanitized.append(msg)
+    # Must start with user message
+    while sanitized and sanitized[0]["role"] != "user":
+        sanitized.pop(0)
+    return sanitized
 
 def db_update_note(note_id: int, fields: dict) -> dict:
     conn = get_db()

@@ -1094,6 +1094,11 @@
       }
       removeTyping();
       if(res.status === 401) { location.reload(); return; }
+      if(!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        appendMessage('brain', '⚠️ ' + (err.detail || `Server error ${res.status}. Try /reset to clear history.`));
+        sending = false; input.focus(); return;
+      }
       data = await res.json();
       appendMessage('brain', data.reply);
       if(data.saves && data.saves.length > 0) {
