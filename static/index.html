@@ -115,12 +115,33 @@
     #qc-fab:active { transform:scale(.92); }
     #qc-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:300; }
     #qc-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:301; display:none; flex-direction:column; gap:12px; }
-    #qc-sheet h3 { font-size:16px; font-weight:700; color:var(--text); }
-    #qc-sheet p  { font-size:12px; color:var(--muted); margin-top:-6px; }
+    /* Mode toggle */
+    #qc-mode-toggle { display:flex; gap:3px; background:var(--bg); border-radius:10px; padding:3px; }
+    .qc-mode-btn { flex:1; padding:8px 12px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted); transition:all .15s; }
+    .qc-mode-btn.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
+    /* Brain mode */
+    #qc-brain-content { display:flex; flex-direction:column; gap:12px; }
+    #qc-brain-content h3 { font-size:16px; font-weight:700; color:var(--text); }
+    #qc-brain-content p  { font-size:12px; color:var(--muted); margin-top:-6px; }
     #qc-input { width:100%; min-height:100px; max-height:220px; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; font-family:inherit; resize:none; outline:none; background:var(--bg); line-height:1.5; }
     #qc-input:focus { border-color:var(--primary); }
     #qc-btn { background:var(--primary); color:white; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
     #qc-btn:disabled { opacity:.5; cursor:default; }
+    /* Log mode */
+    #qc-log-content { display:none; flex-direction:column; gap:12px; }
+    #qc-log-content h3 { font-size:16px; font-weight:700; color:var(--text); }
+    #qc-log-content p  { font-size:12px; color:var(--muted); margin-top:-6px; }
+    #qc-log-date-row { display:flex; gap:8px; }
+    #qc-log-date-select { flex:1; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; color:var(--text); }
+    #qc-log-date-custom { flex:1; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; display:none; color:var(--text); }
+    #qc-log-date-custom:focus, #qc-log-date-select:focus { border-color:var(--lifestyle); }
+    #qc-log-section { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; color:var(--text); }
+    #qc-log-section:focus { border-color:var(--lifestyle); }
+    #qc-log-text { width:100%; min-height:90px; max-height:180px; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; font-family:inherit; resize:none; outline:none; background:var(--bg); line-height:1.5; }
+    #qc-log-text:focus { border-color:var(--lifestyle); }
+    #qc-log-btn { background:var(--lifestyle); color:white; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
+    #qc-log-btn:disabled { opacity:.5; cursor:default; }
+    #qc-log-status { font-size:13px; color:var(--lifestyle); font-weight:600; text-align:center; display:none; }
     #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
     #input-row { display:flex; align-items:flex-end; gap:10px; }
     #input { flex:1; border:1.5px solid var(--border); border-radius:20px; padding:10px 16px; font-size:16px; font-family:inherit; resize:none; outline:none; max-height:120px; line-height:1.4; background:var(--bg); }
@@ -512,7 +533,7 @@
     await fetch('/logout', {method:'POST'}); location.reload();
   }
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();}})();
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';$('qc-fab').style.display='flex';loadNotes();loadProfile();loadDashboard();}})();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -1064,20 +1085,52 @@
 
   // ── Quick Capture ─────────────────────────────────────────────────────
   let _qcOpen = false;
+  let _qcMode = 'brain'; // 'brain' or 'log'
+
+  function switchQCMode(mode) {
+    _qcMode = mode;
+    $('qc-mode-brain').classList.toggle('active', mode === 'brain');
+    $('qc-mode-log').classList.toggle('active',   mode === 'log');
+    $('qc-brain-content').style.display = mode === 'brain' ? 'flex' : 'none';
+    $('qc-log-content').style.display   = mode === 'log'   ? 'flex' : 'none';
+    setTimeout(() => {
+      if(mode === 'brain') $('qc-input').focus();
+      else $('qc-log-text').focus();
+    }, 50);
+  }
 
   function resetQC() {
+    // Brain mode
     $('qc-input').value       = '';
     $('qc-input').disabled    = false;
     $('qc-input').placeholder = "What's on your mind?";
     $('qc-btn').disabled      = true;
     $('qc-btn').textContent   = 'Save it';
+    // Log mode
+    $('qc-log-text').value       = '';
+    $('qc-log-text').disabled    = false;
+    $('qc-log-text').placeholder = 'Add your entry here…';
+    $('qc-log-btn').disabled     = true;
+    $('qc-log-btn').textContent  = 'Add to Log';
+    $('qc-log-date-select').value = 'today';
+    $('qc-log-date-custom').style.display = 'none';
+    $('qc-log-date-custom').value = '';
+    $('qc-log-status').style.display = 'none';
+    $('qc-log-status').textContent   = '';
   }
+
   function openQC() {
     resetQC();
     $('qc-overlay').style.display = 'block';
     $('qc-sheet').style.display   = 'flex';
     _qcOpen = true;
-    setTimeout(() => $('qc-input').focus(), 50);
+    // Show the currently active mode panel
+    $('qc-brain-content').style.display = _qcMode === 'brain' ? 'flex' : 'none';
+    $('qc-log-content').style.display   = _qcMode === 'log'   ? 'flex' : 'none';
+    setTimeout(() => {
+      if(_qcMode === 'brain') $('qc-input').focus();
+      else $('qc-log-text').focus();
+    }, 50);
   }
   function closeQC() {
     $('qc-overlay').style.display = 'none';
@@ -1085,16 +1138,18 @@
     _qcOpen = false;
     resetQC();
   }
-  // Cmd+Enter on document level so it works regardless of focus
+
+  // Cmd+Enter on document level — routes to whichever mode is active
   document.addEventListener('keydown', e => {
     if(_qcOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      submitQC();
+      if(_qcMode === 'brain') submitQC();
+      else submitQCLog();
     }
   });
-  function qcCheckBtn() {
-    $('qc-btn').disabled = !$('qc-input').value.trim();
-  }
+
+  // ── Brain mode helpers ─────────────────────────────────────────────────
+  function qcCheckBtn() { $('qc-btn').disabled = !$('qc-input').value.trim(); }
   $('qc-input').addEventListener('input',   qcCheckBtn);
   $('qc-input').addEventListener('keyup',   qcCheckBtn);
   $('qc-input').addEventListener('change',  qcCheckBtn);
@@ -1128,6 +1183,66 @@
     }
   }
 
+  // ── Log mode helpers ───────────────────────────────────────────────────
+  function qcLogDateChange() {
+    const val = $('qc-log-date-select').value;
+    $('qc-log-date-custom').style.display = val === 'custom' ? 'block' : 'none';
+    if(val === 'custom') $('qc-log-date-custom').focus();
+  }
+  function qcLogCheckBtn() { $('qc-log-btn').disabled = !$('qc-log-text').value.trim(); }
+  $('qc-log-text').addEventListener('input',   qcLogCheckBtn);
+  $('qc-log-text').addEventListener('keyup',   qcLogCheckBtn);
+  $('qc-log-text').addEventListener('change',  qcLogCheckBtn);
+  $('qc-log-text').addEventListener('paste',   () => setTimeout(qcLogCheckBtn, 50));
+
+  async function submitQCLog() {
+    const logText = $('qc-log-text').value.trim();
+    if(!logText || $('qc-log-btn').disabled) return;
+
+    let dateRef = $('qc-log-date-select').value;
+    if(dateRef === 'custom') {
+      dateRef = $('qc-log-date-custom').value.trim() || 'today';
+    }
+    const section = $('qc-log-section').value;
+    const sectionLabel = $('qc-log-section').options[$('qc-log-section').selectedIndex].text.replace(/^[^\w]+/, '').trim();
+
+    $('qc-log-btn').disabled    = true;
+    $('qc-log-btn').textContent = 'Saving…';
+    $('qc-log-status').style.display   = 'none';
+
+    try {
+      const res = await fetch('/log-append', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({date_ref: dateRef, section, text: logText})
+      });
+
+      if(!res.ok) {
+        const err = await res.json().catch(() => ({detail:'Unknown error'}));
+        $('qc-log-btn').disabled    = false;
+        $('qc-log-btn').textContent = 'Add to Log';
+        $('qc-log-status').textContent   = '⚠️ ' + (err.detail || 'Could not update — check the date');
+        $('qc-log-status').style.color   = '#c62828';
+        $('qc-log-status').style.display = 'block';
+        return;
+      }
+
+      $('qc-log-btn').textContent          = 'Added ✓';
+      $('qc-log-status').textContent       = `✓ Added to ${sectionLabel} (${dateRef})`;
+      $('qc-log-status').style.color       = 'var(--lifestyle)';
+      $('qc-log-status').style.display     = 'block';
+      $('qc-log-text').disabled            = true;
+      $('qc-log-text').value               = '';
+      $('qc-log-text').placeholder         = `Added to ${sectionLabel}!`;
+      loadNotes();
+      setTimeout(() => closeQC(), 2200);
+    } catch(e) {
+      $('qc-log-btn').disabled    = false;
+      $('qc-log-btn').textContent = 'Add to Log';
+      showToast('Something went wrong — try again');
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1153,10 +1268,49 @@
 <button id="qc-fab" onclick="openQC()" title="Quick capture">⚡</button>
 <div id="qc-overlay" onclick="closeQC()"></div>
 <div id="qc-sheet">
-  <h3>⚡ Quick Capture</h3>
-  <p>Just type — Brain will figure out where to save it.</p>
-  <textarea id="qc-input" placeholder="What's on your mind?" oninput="qcCheckBtn()"></textarea>
-  <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
+  <!-- Mode toggle -->
+  <div id="qc-mode-toggle">
+    <button id="qc-mode-brain" class="qc-mode-btn active" onclick="switchQCMode('brain')">⚡ Brain</button>
+    <button id="qc-mode-log"   class="qc-mode-btn"        onclick="switchQCMode('log')">📅 Daily Log</button>
+  </div>
+
+  <!-- Brain mode -->
+  <div id="qc-brain-content">
+    <h3>⚡ Quick Capture</h3>
+    <p>Just type — Brain will figure out where to save it.</p>
+    <textarea id="qc-input" placeholder="What's on your mind?" oninput="qcCheckBtn()"></textarea>
+    <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
+  </div>
+
+  <!-- Log mode — bypasses Brain entirely, 100% reliable -->
+  <div id="qc-log-content">
+    <h3>📅 Daily Log</h3>
+    <p>Direct update — no AI involved, goes straight to the note.</p>
+    <div id="qc-log-date-row">
+      <select id="qc-log-date-select" onchange="qcLogDateChange()">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="custom">Specific date…</option>
+      </select>
+      <input id="qc-log-date-custom" type="text" placeholder="e.g. 5/1 or 4.28.26">
+    </div>
+    <select id="qc-log-section">
+      <option value="ACTIVITIES">🏃 Activities</option>
+      <option value="REFLECTIONS">💭 Reflections</option>
+      <option value="MEALS">🍽 Meals</option>
+      <option value="MEDICATIONS & SUPPLEMENTS">💊 Medications &amp; Supplements</option>
+      <option value="MOOD">🌤 Mood</option>
+      <option value="ENERGY">⚡ Energy</option>
+      <option value="MORNING ROUTINE">🌅 Morning Routine</option>
+      <option value="EVENING ROUTINE">🌙 Evening Routine</option>
+      <option value="SPIRITUAL / LEARNING">✝️ Spiritual / Learning</option>
+      <option value="OURA RING METRICS">💍 Oura Ring Metrics</option>
+      <option value="ANALYSIS">📊 Analysis</option>
+    </select>
+    <textarea id="qc-log-text" placeholder="Add your entry here…" oninput="qcLogCheckBtn()"></textarea>
+    <div id="qc-log-status"></div>
+    <button id="qc-log-btn" onclick="submitQCLog()" disabled>Add to Log</button>
+  </div>
 </div>
 </body>
 </html>

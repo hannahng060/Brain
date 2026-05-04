@@ -862,6 +862,26 @@ async def update_note(note_id: int, body: NoteUpdate, request: Request):
     conn.close()
     return {"ok": True}
 
+class LogAppendRequest(BaseModel):
+    date_ref: str
+    section: str
+    text: str
+
+@app.post("/log-append")
+async def log_append(body: LogAppendRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not body.date_ref.strip():
+        raise HTTPException(status_code=400, detail="date_ref is required")
+    if not body.section.strip():
+        raise HTTPException(status_code=400, detail="section is required")
+    if not body.text.strip():
+        raise HTTPException(status_code=400, detail="text is required")
+    result = db_update_daily_log_section(body.date_ref.strip(), body.section.strip(), body.text.strip())
+    if result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result["message"])
+    return result
+
 class QuizRequest(BaseModel):
     topic: Optional[str] = None
 
