@@ -249,11 +249,7 @@
     #edit-content:focus { border-color:var(--primary); }
 
     /* ── Daily Log Analyze ── */
-    #modal-analyze-panel { margin-top:20px; }
-    #modal-analyze-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--primary) 0%,#7c4dff 100%); color:white; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; letter-spacing:.01em; }
-    #modal-analyze-btn:disabled { opacity:.6; cursor:default; }
-    #modal-analysis-result { margin-top:14px; background:var(--primary-light); border-radius:12px; padding:16px 18px; font-size:14px; line-height:1.75; color:var(--text); border-left:3px solid var(--primary); white-space:pre-wrap; }
-    .analysis-heading { font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    #sidebar-analyze:disabled { opacity:.6; cursor:default; }
   </style>
 </head>
 <body>
@@ -385,7 +381,6 @@
         <div class="modal-title" id="modal-title"></div>
         <div class="modal-body" id="modal-body"></div>
         <div class="modal-tags" id="modal-tags"></div>
-        <div id="modal-analysis-result" style="display:none;margin-top:16px"></div>
       </div>
 
       <!-- Edit mode -->
@@ -856,7 +851,6 @@
     if(!note) return;
     $('sidebar-analyze').disabled = true;
     $('sidebar-analyze').innerHTML = '⏳<br>…';
-    $('modal-analysis-result').style.display = 'none';
     try {
       const res = await fetch('/log-analyze', {
         method: 'POST',
@@ -865,21 +859,25 @@
       });
       if(!res.ok) throw new Error('Server error');
       const data = await res.json();
-      $('modal-analysis-result').innerHTML =
-        `<div class="analysis-heading">✨ Brain's reflection — ${esc(data.summary)}</div>` +
-        renderContent(data.analysis) +
-        `<div style="margin-top:10px;font-size:11px;color:var(--primary);opacity:.7">Saved to your daily log ✓</div>`;
-      $('modal-analysis-result').style.display = 'block';
       $('sidebar-analyze').innerHTML = '↻<br>Re-analyze';
       $('sidebar-analyze').disabled = false;
-      $('modal-analysis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
-      // Reload notes so the saved analysis appears immediately on next open
+      // Reload the note and update the modal body in place — analysis lives in the note now
       fetch('/notes?limit=500').then(r=>r.json()).then(notes => {
         allNotes = notes;
         renderNotes();
-        // Update the open note object so re-opening reflects saved content
         const updated = notes.find(n => n.id === note.id);
-        if(updated) { window._openNote = updated; $('modal-body').innerHTML = renderContent(updated.content); }
+        if(updated) {
+          window._openNote = updated;
+          $('modal-body').innerHTML = renderContent(updated.content);
+          // Scroll to the ANALYSIS section within the modal
+          const headers = $('modal-body').querySelectorAll('u');
+          for(const el of headers) {
+            if(el.textContent.toUpperCase().includes('ANALYSIS')) {
+              el.scrollIntoView({behavior:'smooth', block:'start'});
+              break;
+            }
+          }
+        }
       });
     } catch(e) {
       $('sidebar-analyze').innerHTML = '✨<br>Analyze';
