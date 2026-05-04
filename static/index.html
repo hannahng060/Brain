@@ -839,8 +839,6 @@
     $('sidebar-analyze').style.display = isDailyLog ? 'block' : 'none';
     $('sidebar-analyze').disabled = false;
     $('sidebar-analyze').innerHTML = '✨<br>Analyze';
-    $('modal-analysis-result').style.display = 'none';
-    $('modal-analysis-result').innerHTML = '';
     $('note-modal').classList.add('open');
   }
   function openNote(i)         { _setupModal(window._filteredNotes[i]); }
