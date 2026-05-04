@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import secrets
 import base64
@@ -138,7 +139,6 @@ def db_get_person(name: str) -> list:
 
 def db_get_log_by_date(date_str: str) -> list:
     """Find a Daily Log note by date. Normalizes separators so 5-1, 5/1, 5.1 all match."""
-    import re
     # Normalize separators → try multiple variants so 5-26, 5/26, 5.26 all find "5.01.26"
     normalized = re.sub(r'[-/]', '.', date_str.strip())
     variants = list({date_str.strip(), normalized,
@@ -194,7 +194,6 @@ def db_get_recent(limit: int = 30, category: str = "all") -> list:
 
 def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
     """Find a daily log by date reference and append text to a section — all in one step."""
-    import re
     conn = get_db()
     cur = conn.cursor()
 
@@ -597,7 +596,11 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
     elif name == "get_log_by_date":
         return db_get_log_by_date(args.get("date_str",""))
     elif name == "update_daily_log":
-        return db_update_daily_log_section(args.get("date_ref","today"), args["section"], args["text"])
+        return db_update_daily_log_section(
+            args.get("date_ref", "today"),
+            args.get("section", "REFLECTIONS"),
+            args.get("text", "")
+        )
     elif name == "update_note":
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
