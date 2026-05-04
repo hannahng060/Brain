@@ -870,12 +870,15 @@
       const data = await res.json();
       $('modal-analysis-result').innerHTML =
         `<div class="analysis-heading">✨ Brain's reflection — ${esc(data.summary)}</div>` +
-        renderContent(data.analysis);
+        renderContent(data.analysis) +
+        `<div style="margin-top:10px;font-size:11px;color:var(--primary);opacity:.7">Saved to your daily log ✓</div>`;
       $('modal-analysis-result').style.display = 'block';
       $('modal-analyze-btn').textContent = '↻ Re-analyze';
       $('modal-analyze-btn').disabled = false;
       // Scroll to analysis
       $('modal-analysis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
+      // Refresh notes in background so the saved analysis appears next time
+      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{ allNotes=n; });
     } catch(e) {
       $('modal-analyze-btn').textContent = '✨ Analyze my day';
       $('modal-analyze-btn').disabled = false;

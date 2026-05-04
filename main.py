@@ -192,6 +192,32 @@ def db_get_recent(limit: int = 30, category: str = "all") -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def db_update_section_by_id(note_id: int, section: str, text: str) -> dict:
+    """Replace a section's content in a note by its ID (used for analysis overwrites)."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT content FROM notes WHERE id = %s", (note_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return {"status": "error", "message": f"Note {note_id} not found"}
+    content = row["content"]
+    section_upper = section.upper().rstrip(':') + ':'
+    header_pattern = re.compile(
+        r'(<strong><u>' + re.escape(section_upper) + r'<\/u><\/strong>)(.*?)(?=<strong><u>|\Z)',
+        re.IGNORECASE | re.DOTALL
+    )
+    match = header_pattern.search(content)
+    if not match:
+        cur.close(); conn.close()
+        return {"status": "error", "message": f"Section '{section}' not found in note {note_id}"}
+    # Replace (not append) so re-analyzing overwrites the previous analysis
+    new_content = content[:match.start(2)] + '\n' + text + '\n\n' + content[match.end(2):]
+    cur.execute("UPDATE notes SET content = %s WHERE id = %s", (new_content, note_id))
+    conn.commit()
+    cur.close(); conn.close()
+    return {"status": "updated", "id": note_id, "section": section}
+
 def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
     """Find a daily log by date reference and append text to a section — all in one step."""
     conn = get_db()
@@ -946,7 +972,13 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
         messages=[{"role": "user", "content": analyze_prompt}]
     )
     analysis = response.content[0].text.strip() if response.content else "Could not generate analysis."
-    return {"analysis": analysis, "summary": log_date}
+
+    # Save analysis back to the ANALYSIS section of the note
+    analyzed_at = datetime.now().strftime("%-m/%-d/%y %-I:%M %p")
+    analysis_with_stamp = f"[{analyzed_at}]\n\n{analysis}"
+    db_update_section_by_id(note["id"], "ANALYSIS", analysis_with_stamp)
+
+    return {"analysis": analysis, "summary": log_date, "saved": True}
 
 class QuizRequest(BaseModel):
     topic: Optional[str] = None
