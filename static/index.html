@@ -873,7 +873,14 @@
       $('sidebar-analyze').innerHTML = '↻<br>Re-analyze';
       $('sidebar-analyze').disabled = false;
       $('modal-analysis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
-      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{ allNotes=n; });
+      // Reload notes so the saved analysis appears immediately on next open
+      fetch('/notes?limit=500').then(r=>r.json()).then(notes => {
+        allNotes = notes;
+        renderNotes();
+        // Update the open note object so re-opening reflects saved content
+        const updated = notes.find(n => n.id === note.id);
+        if(updated) { window._openNote = updated; $('modal-body').innerHTML = renderContent(updated.content); }
+      });
     } catch(e) {
       $('sidebar-analyze').innerHTML = '✨<br>Analyze';
       $('sidebar-analyze').disabled = false;

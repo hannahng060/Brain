@@ -209,10 +209,12 @@ def db_update_section_by_id(note_id: int, section: str, text: str) -> dict:
     )
     match = header_pattern.search(content)
     if not match:
-        cur.close(); conn.close()
-        return {"status": "error", "message": f"Section '{section}' not found in note {note_id}"}
-    # Replace (not append) so re-analyzing overwrites the previous analysis
-    new_content = content[:match.start(2)] + '\n' + text + '\n\n' + content[match.end(2):]
+        # Section not found — append it to the end of the note
+        new_section = f'\n\n<strong><u>{section_upper}</u></strong>\n{text}\n'
+        new_content = content.rstrip() + new_section
+    else:
+        # Replace existing section content
+        new_content = content[:match.start(2)] + '\n' + text + '\n\n' + content[match.end(2):]
     cur.execute("UPDATE notes SET content = %s WHERE id = %s", (new_content, note_id))
     conn.commit()
     cur.close(); conn.close()
