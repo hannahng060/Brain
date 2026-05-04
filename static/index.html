@@ -385,11 +385,7 @@
         <div class="modal-title" id="modal-title"></div>
         <div class="modal-body" id="modal-body"></div>
         <div class="modal-tags" id="modal-tags"></div>
-        <!-- Daily Log analyze panel -->
-        <div id="modal-analyze-panel" style="display:none">
-          <button id="modal-analyze-btn" onclick="analyzeLog()">✨ Analyze my day</button>
-          <div id="modal-analysis-result" style="display:none"></div>
-        </div>
+        <div id="modal-analysis-result" style="display:none;margin-top:16px"></div>
       </div>
 
       <!-- Edit mode -->
@@ -451,6 +447,7 @@
       <button class="sidebar-btn primary" id="sidebar-edit" onclick="startEdit()">✏️<br>Edit</button>
       <button class="sidebar-btn save" id="sidebar-save" onclick="saveEdit()" style="display:none">💾<br>Save</button>
       <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
+      <button class="sidebar-btn" id="sidebar-analyze" onclick="analyzeLog()" style="display:none;background:linear-gradient(135deg,var(--primary),#7c4dff);color:white;border-color:var(--primary)">✨<br>Analyze</button>
       <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
     </div>
   </div>
@@ -844,11 +841,11 @@
     setSidebarMode('view');
     // Show analyze button only for Daily Log notes
     const isDailyLog = n.subcategory && n.subcategory.toLowerCase().includes('daily log');
-    $('modal-analyze-panel').style.display = isDailyLog ? 'block' : 'none';
+    $('sidebar-analyze').style.display = isDailyLog ? 'block' : 'none';
+    $('sidebar-analyze').disabled = false;
+    $('sidebar-analyze').innerHTML = '✨<br>Analyze';
     $('modal-analysis-result').style.display = 'none';
     $('modal-analysis-result').innerHTML = '';
-    $('modal-analyze-btn').disabled = false;
-    $('modal-analyze-btn').textContent = '✨ Analyze my day';
     $('note-modal').classList.add('open');
   }
   function openNote(i)         { _setupModal(window._filteredNotes[i]); }
@@ -857,8 +854,8 @@
   async function analyzeLog() {
     const note = window._openNote;
     if(!note) return;
-    $('modal-analyze-btn').disabled = true;
-    $('modal-analyze-btn').textContent = '✨ Analyzing…';
+    $('sidebar-analyze').disabled = true;
+    $('sidebar-analyze').innerHTML = '⏳<br>…';
     $('modal-analysis-result').style.display = 'none';
     try {
       const res = await fetch('/log-analyze', {
@@ -873,15 +870,13 @@
         renderContent(data.analysis) +
         `<div style="margin-top:10px;font-size:11px;color:var(--primary);opacity:.7">Saved to your daily log ✓</div>`;
       $('modal-analysis-result').style.display = 'block';
-      $('modal-analyze-btn').textContent = '↻ Re-analyze';
-      $('modal-analyze-btn').disabled = false;
-      // Scroll to analysis
+      $('sidebar-analyze').innerHTML = '↻<br>Re-analyze';
+      $('sidebar-analyze').disabled = false;
       $('modal-analysis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
-      // Refresh notes in background so the saved analysis appears next time
       fetch('/notes?limit=500').then(r=>r.json()).then(n=>{ allNotes=n; });
     } catch(e) {
-      $('modal-analyze-btn').textContent = '✨ Analyze my day';
-      $('modal-analyze-btn').disabled = false;
+      $('sidebar-analyze').innerHTML = '✨<br>Analyze';
+      $('sidebar-analyze').disabled = false;
       showToast('Could not analyze — try again');
     }
   }
