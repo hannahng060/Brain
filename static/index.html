@@ -812,7 +812,7 @@
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
 
-        <div class="note-content">${renderContent(n.content)}</div>
+        <div class="note-content">${esc(stripHtml(n.content))}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag" onclick="filterByTag('${esc(t)}',event)">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
     }).join('');
