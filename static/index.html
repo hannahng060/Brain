@@ -181,6 +181,13 @@
     .cat-pill.icu { border-color:var(--icu); color:var(--icu); }
     .cat-pill.icu.active { background:var(--icu); border-color:var(--icu); color:white; }
     .badge.icu { background:var(--icu-bg); color:var(--icu); }
+    #quiz-row { display:flex; gap:8px; padding:8px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    #quiz-row::-webkit-scrollbar { display:none; }
+    .quiz-pill { padding:5px 13px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; border:none; }
+    .quiz-pill.psychiatry    { background:var(--psychiatry-bg);    color:var(--psychiatry); }
+    .quiz-pill.psychotherapy { background:var(--psychotherapy-bg); color:var(--psychotherapy); }
+    .quiz-pill.icu           { background:var(--icu-bg);           color:var(--icu); }
+    .quiz-pill:active { opacity:.7; transform:scale(.96); }
     #subcat-row { display:none; gap:6px; padding:10px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); border-bottom:1px solid var(--border); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #subcat-row::-webkit-scrollbar { display:none; }
     #subcat-row.visible { display:flex; }
@@ -300,11 +307,7 @@
         <span id="file-name"></span>
         <button onclick="clearFile()">✕</button>
       </div>
-      <div id="quick-actions">
-        <button class="quick-btn" onclick="startQuiz('psychiatry')">🧠 Quiz: Psychiatry</button>
-        <button class="quick-btn" onclick="startQuiz('psychotherapy')">💬 Quiz: Psychotherapy</button>
-        <button class="quick-btn" onclick="startQuiz('icu')">🏥 Quiz: ICU</button>
-      </div>
+      <div id="quick-actions"></div>
       <div id="input-row">
         <button id="attach-btn" onclick="$('file-input').click()" title="Attach file">📎</button>
         <textarea id="input" placeholder="Tell me something, paste a screenshot, or attach a file..." rows="1"></textarea>
@@ -331,6 +334,11 @@
       <div class="cat-pill resources"     data-cat="resources"     onclick="filterNotes('resources')">Resources</div>
       <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">Personal</div>
       <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">Lifestyle</div>
+    </div>
+    <div id="quiz-row">
+      <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
+      <button class="quiz-pill psychotherapy" onclick="showTab('chat');startQuiz('psychotherapy')">💬 Quiz Psychotherapy</button>
+      <button class="quiz-pill icu"           onclick="showTab('chat');startQuiz('icu')">🏥 Quiz ICU</button>
     </div>
     <div id="subcat-row"></div>
     <div id="tag-filter-bar">
@@ -711,7 +719,7 @@
 
       // Quiz nudge
       if(hasClinical) {
-        chips.push({ text: quizLines[Math.floor(Math.random()*quizLines.length)], color:'var(--psychiatry)', fn:"showTab('chat');startQuiz('psychiatry')" });
+        chips.push({ text: quizLines[Math.floor(Math.random()*quizLines.length)], color:'var(--psychiatry)', fn:"showTab('chat');startQuiz('all_clinical')" });
       }
 
       // Notes nudge

@@ -1070,10 +1070,12 @@ async def start_quiz(body: QuizRequest, request: Request):
         cats = "('icu')"
     elif topic_lower == "psychotherapy":
         cats = "('psychotherapy')"
+    elif topic_lower in ("all_clinical", "all clinical", "clinical"):
+        cats = "('psychiatry','psychotherapy','icu','clinical','study')"
     else:
         cats = "('psychiatry','clinical','study')"  # include old category names for backwards compat
 
-    if body.topic and topic_lower not in ("icu", "psychiatry", "psychotherapy"):
+    if body.topic and topic_lower not in ("icu", "psychiatry", "psychotherapy", "all_clinical", "all clinical", "clinical"):
         words = [w.strip() for w in body.topic.split() if w.strip()]
         conditions = " OR ".join(["(content ILIKE %s OR summary ILIKE %s OR subcategory ILIKE %s)"] * len(words))
         params = []
@@ -1109,7 +1111,7 @@ async def start_quiz(body: QuizRequest, request: Request):
         f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{n['content']}"
         for n in notes_list
     )
-    topic_label = body.topic or "clinical knowledge"
+    topic_label = "clinical knowledge" if topic_lower in ("all_clinical", "all clinical", "clinical", "") else (body.topic or "clinical knowledge")
 
     quiz_prompt = (
         f"You are quizzing a PMHNP student on her own saved notes. "
