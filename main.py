@@ -991,21 +991,30 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
 
     return {"analysis": analysis, "summary": log_date, "saved": True}
 
-# ── Daily Affirmation (cached once per day) ───────────────────────────────────
-_affirmation_cache: dict = {"date": None, "text": ""}
+# ── Affirmation (fresh each dashboard load, varied focus) ─────────────────────
+import random as _random_aff
+
+_AFFIRMATION_FOCUSES = [
+    "her courage to pursue a demanding career while managing her own health",
+    "her identity as a future PMHNP and what that means for the patients she'll serve",
+    "her daily consistency — small habits compounding into something great",
+    "releasing the fear of failure and trusting her preparation",
+    "her worth being independent of her productivity or performance",
+    "the gap between where she is and where she's going — and why that gap is okay",
+    "her resilience in balancing study, work, health, and personal growth",
+    "the courage it takes to show up even on hard or tired days",
+    "her values and what grounds her when things feel uncertain",
+    "the progress she's already made that she might be underselling",
+]
 
 @app.get("/affirmation")
 async def get_affirmation(request: Request):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    today = datetime.now().strftime("%Y-%m-%d")
-    if _affirmation_cache["date"] == today and _affirmation_cache["text"]:
-        return {"affirmation": _affirmation_cache["text"], "cached": True}
-
     profile_text = build_profile_context()
     if not profile_text:
-        return {"affirmation": "", "cached": False}
+        return {"affirmation": ""}
 
     # Pull most recent daily log for extra context
     conn = get_db(); cur = conn.cursor()
@@ -1014,16 +1023,16 @@ async def get_affirmation(request: Request):
     )
     row = cur.fetchone(); cur.close(); conn.close()
     recent_log = strip_html(row["content"])[:600] if row else ""
-
     log_snippet = f"\n\nHer most recent daily log entry:\n{recent_log}" if recent_log else ""
+
+    focus = _random_aff.choice(_AFFIRMATION_FOCUSES)
 
     prompt = (
         f"{profile_text}{log_snippet}\n\n"
-        "Write ONE short, deeply personal affirmation for this person. "
-        "It must feel like it was written *for her specifically* — reference her real goals, values, or journey. "
-        "Address fear of failure, self-doubt, or the pressure she carries. "
-        "Be warm, grounded, and empowering — not cheesy or generic. "
-        "1–2 sentences maximum. No quotes, no labels, just the affirmation itself."
+        f"Write ONE short, deeply personal affirmation for this person. Focus specifically on: {focus}. "
+        "It must feel written *for her specifically* — not generic. "
+        "Be warm, grounded, and empowering. No cheesy slogans. "
+        "1–2 sentences only. No quotes, no labels, just the affirmation."
     )
 
     response = client.messages.create(
@@ -1032,10 +1041,7 @@ async def get_affirmation(request: Request):
         messages=[{"role": "user", "content": prompt}]
     )
     text = response.content[0].text.strip() if response.content else ""
-
-    _affirmation_cache["date"] = today
-    _affirmation_cache["text"] = text
-    return {"affirmation": text, "cached": False}
+    return {"affirmation": text}
 
 
 class QuizRequest(BaseModel):

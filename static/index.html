@@ -1177,7 +1177,11 @@
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
       }
-      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{allNotes=n;});
+      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{
+        allNotes=n;
+        // If the notes tab is already open, re-render so new/updated notes appear immediately
+        if($('notes-page') && $('notes-page').classList.contains('active')) renderNotes();
+      });
     } catch(e) {
       removeTyping();
       appendMessage('brain', 'Something went wrong. Please try again.');
