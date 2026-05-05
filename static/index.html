@@ -45,10 +45,11 @@
     /* ── Tab bar ── */
     #tab-bar { display:flex; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; padding-bottom:env(safe-area-inset-bottom); }
     .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 0 8px; gap:3px; cursor:pointer; font-size:11px; color:var(--muted); border:none; background:none; }
-    .tab.active { color:var(--primary); }
-    .tab svg { width:22px; height:22px; }
-    .tab.active svg { stroke:var(--primary); }
-    .tab svg { stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .tab svg { width:22px; height:22px; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; stroke:var(--muted); }
+    .tab.chat-tab,  .tab.chat-tab svg  { color:var(--primary);    stroke:var(--primary); }
+    .tab.notes-tab, .tab.notes-tab svg { color:var(--lifestyle);  stroke:var(--lifestyle); }
+    .tab.qc-tab                        { color:var(--primary);    font-weight:700; }
+    .tab.profile-tab,.tab.profile-tab svg { color:var(--personal); stroke:var(--personal); }
 
     /* ── Pages ── */
     .page { display:none; flex:1; flex-direction:column; overflow:hidden; }
@@ -350,11 +351,11 @@
 
   <!-- Tab Bar -->
   <div id="tab-bar">
-    <button class="tab active" onclick="showTab('chat')">
+    <button class="tab chat-tab active" onclick="showTab('chat')">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Chat
     </button>
-    <button class="tab" onclick="showTab('notes')">
+    <button class="tab notes-tab" onclick="showTab('notes')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Notes
     </button>
@@ -362,7 +363,7 @@
       <span style="font-size:22px;line-height:1">⚡</span>
       Capture
     </button>
-    <button class="tab" onclick="showTab('profile')">
+    <button class="tab profile-tab" onclick="showTab('profile')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       Profile
     </button>
