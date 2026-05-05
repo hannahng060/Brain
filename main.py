@@ -991,6 +991,53 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
 
     return {"analysis": analysis, "summary": log_date, "saved": True}
 
+# ── Daily Affirmation (cached once per day) ───────────────────────────────────
+_affirmation_cache: dict = {"date": None, "text": ""}
+
+@app.get("/affirmation")
+async def get_affirmation(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _affirmation_cache["date"] == today and _affirmation_cache["text"]:
+        return {"affirmation": _affirmation_cache["text"], "cached": True}
+
+    profile_text = build_profile_context()
+    if not profile_text:
+        return {"affirmation": "", "cached": False}
+
+    # Pull most recent daily log for extra context
+    conn = get_db(); cur = conn.cursor()
+    cur.execute(
+        "SELECT content FROM notes WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%' ORDER BY created_at DESC LIMIT 1"
+    )
+    row = cur.fetchone(); cur.close(); conn.close()
+    recent_log = strip_html(row["content"])[:600] if row else ""
+
+    log_snippet = f"\n\nHer most recent daily log entry:\n{recent_log}" if recent_log else ""
+
+    prompt = (
+        f"{profile_text}{log_snippet}\n\n"
+        "Write ONE short, deeply personal affirmation for this person. "
+        "It must feel like it was written *for her specifically* — reference her real goals, values, or journey. "
+        "Address fear of failure, self-doubt, or the pressure she carries. "
+        "Be warm, grounded, and empowering — not cheesy or generic. "
+        "1–2 sentences maximum. No quotes, no labels, just the affirmation itself."
+    )
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=120,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    text = response.content[0].text.strip() if response.content else ""
+
+    _affirmation_cache["date"] = today
+    _affirmation_cache["text"] = text
+    return {"affirmation": text, "cached": False}
+
+
 class QuizRequest(BaseModel):
     topic: Optional[str] = None
 

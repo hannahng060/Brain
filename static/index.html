@@ -283,7 +283,7 @@
     <div id="messages">
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
-        <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px"></div>
+        <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
           <div class="quote-card" id="dash-quote"></div>
@@ -691,6 +691,20 @@
       $('dash-nudges').innerHTML = chips.map(c =>
         `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
       ).join('');
+
+      // Load personalized affirmation and append inline to greeting (cached daily, non-blocking)
+      (async () => {
+        try {
+          const ar = await fetch('/affirmation');
+          if (ar.ok) {
+            const ad = await ar.json();
+            if (ad.affirmation) {
+              $('dash-greeting').innerHTML =
+                `${greeting}, Hannah 👋<br><span style="font-size:13.5px;font-weight:400;color:var(--muted);font-style:italic">${ad.affirmation}</span>`;
+            }
+          }
+        } catch(e) { /* silent fail */ }
+      })();
 
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
