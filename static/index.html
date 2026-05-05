@@ -283,7 +283,7 @@
     <div id="messages">
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
-        <div class="dashboard-greeting">Good to see you, Hannah 👋</div>
+        <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div class="stats-row" id="dash-stats"><div class="stat-chip">Loading...</div></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
           <div class="quote-card" id="dash-quote"></div>
@@ -661,6 +661,52 @@
         el.onclick = () => openNoteDirectly(p.note);
         wrap.style.display = 'flex';
       }
+
+      // ── Dynamic nudge chips ───────────────────────────────────────────
+      const todayStr = new Date().toDateString();
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Good morning ☀️' : hour < 17 ? 'Good afternoon 🌤' : 'Good evening 🌙';
+
+      const todayLog = notes.find(n =>
+        n.category === 'lifestyle' &&
+        n.subcategory && n.subcategory.toLowerCase().includes('daily log') &&
+        new Date(n.created_at).toDateString() === todayStr
+      );
+      if(todayLog) window._todayLog = todayLog;
+
+      const hasClinical = notes.some(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
+      const totalNotes  = notes.length;
+
+      const quizLines = [
+        "🧠 No quiz yet — boards won't pass themselves!",
+        "📚 Review your notes — exam prep never stops!",
+        "🧠 Keep that knowledge sharp — quiz yourself!"
+      ];
+
+      const chips = [];
+
+      // Log nudge
+      if(!todayLog) {
+        chips.push({ text:"📅 No daily log yet today — start one!", color:'var(--lifestyle)', fn:"switchQCMode('log');openQC()" });
+      } else {
+        chips.push({ text:"📋 Today's log is going — keep it up!", color:'var(--lifestyle)', fn:"openNoteDirectly(window._todayLog)" });
+      }
+
+      // Quiz nudge
+      if(hasClinical) {
+        chips.push({ text: quizLines[Math.floor(Math.random()*quizLines.length)], color:'var(--psychiatry)', fn:"showTab('chat');startQuiz('psychiatry')" });
+      }
+
+      // Notes nudge
+      if(totalNotes > 0) {
+        chips.push({ text:`📖 ${totalNotes} notes saved — review them to make it stick!`, color:'var(--primary)', fn:"showTab('notes')" });
+      }
+
+      $('dash-nudges').innerHTML =
+        `<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">${greeting}, Hannah</div>` +
+        chips.map(c =>
+          `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
+        ).join('');
 
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
