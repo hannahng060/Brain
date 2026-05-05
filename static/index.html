@@ -273,7 +273,7 @@
     <div class="page-header">
       <div class="header-left">
         <span style="font-size:22px">🧠</span>
-        <div><div style="font-size:18px;font-weight:700">Brain</div><div class="subtitle">Your AI note team</div></div>
+        <div><div style="font-size:18px;font-weight:700">Brain</div><div class="subtitle" id="app-subtitle">Your AI note team</div></div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="sign-out" onclick="loadDashboard()" title="New spark">↻ 💡</button>
@@ -485,6 +485,34 @@
     const res = await fetch('/profile');
     if(res.status===401){location.reload();return;}
     const data = await res.json();
+
+    // Build a personal subtitle from profile: "Name · Credential"
+    (function updateSubtitle() {
+      const aboutRaw  = (data.about  || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const careerRaw = (data.career || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+      // Extract name: first "Word Word" before a comma, dash, period, or end (max 30 chars)
+      const nameMatch = aboutRaw.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+      const name = nameMatch ? nameMatch[1].trim() : '';
+
+      // Extract credential: look for known credential patterns or first meaningful phrase in career
+      const credMatch = careerRaw.match(/\b(PMHNP-?B?C?|APRN|NP|RN|MSN|DNP|PhD|MD|PA-?C?|LCSW|LPC|FNP|CNS)\b/i);
+      let cred = credMatch ? credMatch[1].toUpperCase() : '';
+
+      // If no credential acronym found, try to grab first short phrase from career (up to first comma/period)
+      if (!cred && careerRaw) {
+        const phrase = careerRaw.split(/[,.\n]/)[0].trim();
+        if (phrase.length > 0 && phrase.length <= 35) cred = phrase;
+      }
+
+      const sub = $('app-subtitle');
+      if (!sub) return;
+      if (name && cred)       sub.textContent = `${name} · ${cred}`;
+      else if (name)          sub.textContent = name;
+      else if (cred)          sub.textContent = cred;
+      // else keep default "Your AI note team"
+    })();
+
     const list = $('profile-list');
     list.innerHTML = PROFILE_SECTIONS.map(s => `
       <div class="profile-card" id="pc-${s.key}">
