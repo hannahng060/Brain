@@ -495,9 +495,10 @@
       const nameMatch = aboutRaw.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
       const name = nameMatch ? nameMatch[1].trim() : '';
 
-      // Extract ALL credentials found, preserve order
-      const credPattern = /\b(PMHNP-?B?C?|APRN|NP-?C?|RN|MSN|DNP|PhD|MD|PA-?C?|LCSW|LPC|FNP|CNS|BSN|NP)\b/gi;
-      const credMatches = [...(aboutRaw + ' ' + careerRaw).matchAll(credPattern)];
+      // Extract ALL credentials — use lookahead/lookbehind instead of \b for reliability
+      const combined = aboutRaw + ' ' + careerRaw;
+      const credPattern = /(?<![A-Za-z])(PMHNP-BC|PMHNP|APRN|MSN|BSN|DNP|FNP|CNS|LCSW|LPC|RN|NP-C|NP|PA-C|PA|PhD|MD)(?![A-Za-z])/gi;
+      const credMatches = [...combined.matchAll(credPattern)];
       const seen = new Set();
       const creds = credMatches.map(m => m[1].toUpperCase()).filter(c => !seen.has(c) && seen.add(c));
       let cred = creds.join(', ');
