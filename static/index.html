@@ -692,25 +692,41 @@
         `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
       ).join('');
 
-      // Load personalized affirmation and append inline to greeting (cached daily, non-blocking)
-      (async () => {
-        try {
-          const ar = await fetch('/affirmation');
-          if (ar.ok) {
-            const ad = await ar.json();
-            if (ad.affirmation) {
-              $('dash-greeting').innerHTML =
-                `${greeting}, Hannah 👋<br><span style="font-size:13.5px;font-weight:400;color:var(--muted);font-style:italic">${ad.affirmation}</span>`;
-            }
-          }
-        } catch(e) { /* silent fail */ }
-      })();
-
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
 
+      // Soft keyword match: nudge the first banner card to align with the affirmation theme
+      function buildDeckWithKeywords(pairs, keywords) {
+        if (!keywords || !keywords.length || pairs.length <= 1) return makeDeck(pairs);
+        const lkw = keywords.map(k => k.toLowerCase());
+        const matchIdx = pairs.findIndex(p =>
+          lkw.some(kw => (p.quote + ' ' + p.insights.join(' ')).toLowerCase().includes(kw))
+        );
+        if (matchIdx > 0) {
+          const reordered = [...pairs];
+          const [match] = reordered.splice(matchIdx, 1);
+          reordered.unshift(match); // move match to front only — rest stays shuffled
+          return makeDeck(reordered);
+        }
+        return makeDeck(pairs);
+      }
+
+      // Fetch affirmation + keywords, then build banner deck with thematic connection
+      let affirmationKeywords = [];
+      try {
+        const ar = await fetch('/affirmation');
+        if (ar.ok) {
+          const ad = await ar.json();
+          if (ad.affirmation) {
+            $('dash-greeting').innerHTML =
+              `${greeting}, Hannah 👋<br><span style="font-size:13.5px;font-weight:400;color:var(--muted);font-style:italic">${ad.affirmation}</span>`;
+          }
+          if (ad.keywords) affirmationKeywords = ad.keywords;
+        }
+      } catch(e) { /* silent fail — banners still render without keyword hint */ }
+
       window._bannerDecks = {
-        quote:     { deck: makeDeck(extractPairs(personalNotes)), icon: '💡' },
+        quote:     { deck: buildDeckWithKeywords(extractPairs(personalNotes), affirmationKeywords), icon: '💡' },
         knowledge: { deck: makeDeck(extractPairs(clinicalNotes)), icon: '🧠' }
       };
 

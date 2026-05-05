@@ -995,16 +995,26 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
 import random as _random_aff
 
 _AFFIRMATION_FOCUSES = [
-    "her courage to pursue a demanding career while managing her own health",
-    "her identity as a future PMHNP and what that means for the patients she'll serve",
-    "her daily consistency — small habits compounding into something great",
-    "releasing the fear of failure and trusting her preparation",
-    "her worth being independent of her productivity or performance",
-    "the gap between where she is and where she's going — and why that gap is okay",
-    "her resilience in balancing study, work, health, and personal growth",
-    "the courage it takes to show up even on hard or tired days",
-    "her values and what grounds her when things feel uncertain",
-    "the progress she's already made that she might be underselling",
+    ("her courage to pursue a demanding career while managing her own health",
+     ["courage", "career", "health", "strength"]),
+    ("her identity as a future PMHNP and what that means for the patients she'll serve",
+     ["identity", "purpose", "calling", "empathy"]),
+    ("her daily consistency — small habits compounding into something great",
+     ["consistency", "habits", "discipline", "routine"]),
+    ("releasing the fear of failure and trusting her preparation",
+     ["failure", "fear", "confidence", "trust", "preparation"]),
+    ("her worth being independent of her productivity or performance",
+     ["worth", "value", "self-worth", "enough", "acceptance"]),
+    ("the gap between where she is and where she's going — and why that gap is okay",
+     ["growth", "progress", "journey", "patience", "learning"]),
+    ("her resilience in balancing study, work, health, and personal growth",
+     ["resilience", "balance", "stress", "self-management", "endurance"]),
+    ("the courage it takes to show up even on hard or tired days",
+     ["showing up", "tired", "burnout", "perseverance", "motivation"]),
+    ("her values and what grounds her when things feel uncertain",
+     ["values", "faith", "grounded", "belief", "purpose", "spiritual"]),
+    ("the progress she has already made that she might be underselling",
+     ["progress", "achievement", "confidence", "recognition", "growth"]),
 ]
 
 @app.get("/affirmation")
@@ -1025,11 +1035,11 @@ async def get_affirmation(request: Request):
     recent_log = strip_html(row["content"])[:600] if row else ""
     log_snippet = f"\n\nHer most recent daily log entry:\n{recent_log}" if recent_log else ""
 
-    focus = _random_aff.choice(_AFFIRMATION_FOCUSES)
+    focus_text, keywords = _random_aff.choice(_AFFIRMATION_FOCUSES)
 
     prompt = (
         f"{profile_text}{log_snippet}\n\n"
-        f"Write ONE short, deeply personal affirmation for this person. Focus specifically on: {focus}. "
+        f"Write ONE short, deeply personal affirmation for this person. Focus specifically on: {focus_text}. "
         "It must feel written *for her specifically* — not generic. "
         "Be warm, grounded, and empowering. No cheesy slogans. "
         "1–2 sentences only. No quotes, no labels, just the affirmation."
@@ -1041,7 +1051,7 @@ async def get_affirmation(request: Request):
         messages=[{"role": "user", "content": prompt}]
     )
     text = response.content[0].text.strip() if response.content else ""
-    return {"affirmation": text}
+    return {"affirmation": text, "keywords": keywords}
 
 
 class QuizRequest(BaseModel):
