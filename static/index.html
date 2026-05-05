@@ -1023,9 +1023,22 @@
       body: JSON.stringify({summary, content, category, subcategory})
     });
     if(res.ok) {
+      // Update locally immediately — don't wait for loadNotes() to avoid stale reads
+      _editingNote.content    = content;
+      _editingNote.summary    = summary;
+      _editingNote.category   = category;
+      _editingNote.subcategory = subcategory;
+      window._openNote = _editingNote;
+      // Update in allNotes cache too
+      const idx = allNotes.findIndex(n => n.id === _editingNote.id);
+      if(idx !== -1) allNotes[idx] = {...allNotes[idx], content, summary, category, subcategory};
+      // Switch back to view mode showing fresh content
+      $('modal-body').innerHTML = renderContent(content);
+      $('modal-edit').style.display = 'none';
+      $('modal-view').style.display  = 'block';
       setSidebarMode('view');
-      closeModal();
-      loadNotes();
+      showToast('✓ Note saved');
+      loadNotes(); // refresh note list in background
     } else {
       alert('Could not save changes. Try again.');
     }
