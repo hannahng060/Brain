@@ -942,6 +942,7 @@ async def log_append(body: LogAppendRequest, request: Request):
 
 class LogAnalyzeRequest(BaseModel):
     note_id: int
+    local_time: Optional[str] = None  # e.g. "5/5/26 11:26 PM" from browser
 
 @app.post("/log-analyze")
 async def log_analyze(body: LogAnalyzeRequest, request: Request):
@@ -960,20 +961,20 @@ async def log_analyze(body: LogAnalyzeRequest, request: Request):
     log_plain = strip_html(note["content"])
     log_date  = note["summary"] or "today"
 
-    analyze_prompt = f"""You are Brain, Hannah's personal AI assistant. She has asked you to analyze her daily log and give honest, grounded feedback.
+    analyze_prompt = f"""You are Brain, Hannah's personal AI assistant. She has asked you to analyze her daily log.
 
 {profile_text}
 
 Daily log — {log_date}:
 {log_plain}
 
-Reflect on her day with these lenses:
-1. Overall alignment — based on her goals and values, was this a good day? Be honest, not just encouraging.
-2. What she did well — specific things that moved her forward or reflect who she's becoming.
-3. What drifted — anything that was off-track, low-value, or inconsistent with her goals. Be direct but kind.
-4. One thing to carry forward — a single concrete focus for tomorrow based on today's data.
+Write a coaching reflection in exactly 3 paragraphs. Each paragraph covers one distinct lens — do NOT repeat any theme, insight, or recommendation across paragraphs:
 
-Write like a thoughtful coach who knows her deeply. Be specific to what she actually logged — never generic. 3-4 short paragraphs, no bullet points. Warm but real."""
+Paragraph 1 — What went well: 2-3 specific things from today that reflect her values, goals, or growth. Reference actual details from the log.
+Paragraph 2 — What drifted: 1-2 honest observations about what was off-track or inconsistent. Be direct but kind. Do not repeat anything from paragraph 1.
+Paragraph 3 — One thing to carry forward: A single concrete, actionable focus for tomorrow. Must be fresh — not a repeat of anything already said above.
+
+Rules: No bullet points. No headers. No generic statements. No repeating the same theme in multiple paragraphs. Specific to what she actually logged. Warm but real. 3 paragraphs only."""
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -984,15 +985,13 @@ Write like a thoughtful coach who knows her deeply. Be specific to what she actu
 
     # Convert markdown formatting to HTML before saving into the note
     def md_to_html(text: str) -> str:
-        # Bold: **text** → <strong>text</strong>
         text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
-        # Italic: *text* → <em>text</em>
         text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
-        # Paragraphs separated by blank lines
         paras = [p.strip() for p in text.split('\n\n') if p.strip()]
         return '<br><br>'.join(p.replace('\n', '<br>') for p in paras)
 
-    analyzed_at = datetime.now().strftime("%-m/%-d/%y %-I:%M %p")
+    # Use browser local time if provided, otherwise fall back to server time
+    analyzed_at = body.local_time if body.local_time else datetime.now().strftime("%-m/%-d/%y %-I:%M %p")
     analysis_html = f"<em style='font-size:12px;color:#888'>{analyzed_at}</em><br><br>{md_to_html(analysis)}"
     db_update_section_by_id(note["id"], "ANALYSIS", analysis_html)
 
