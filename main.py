@@ -1018,12 +1018,12 @@ async def start_quiz(body: QuizRequest, request: Request):
             params.extend([f"%{w}%", f"%{w}%", f"%{w}%"])
         params.append(50)
         cur.execute(
-            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} AND ({conditions}) ORDER BY created_at DESC LIMIT %s",
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} AND ({conditions}) ORDER BY RANDOM() LIMIT %s",
             params
         )
     else:
         cur.execute(
-            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} ORDER BY created_at DESC LIMIT 50"
+            f"SELECT content, summary, subcategory, category FROM notes WHERE category IN {cats} ORDER BY RANDOM() LIMIT 50"
         )
     notes = cur.fetchall()
     cur.close()
@@ -1034,22 +1034,28 @@ async def start_quiz(body: QuizRequest, request: Request):
         db_add_message("assistant", msg)
         return {"reply": msg}
 
-    # Build context from notes
+    import random as _random
+    notes_list = list(notes)
+    _random.shuffle(notes_list)
+    # Pick a random starting note to anchor the question — forces variety
+    anchor = notes_list[0]
+    anchor_topic = anchor['subcategory'] or anchor['summary'] or 'this topic'
+
+    # Build context from notes (shuffled)
     notes_text = "\n\n---\n\n".join(
         f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{n['content']}"
-        for n in notes
+        for n in notes_list
     )
     topic_label = body.topic or "clinical knowledge"
 
     quiz_prompt = (
         f"You are quizzing a PMHNP student on her own saved notes. "
         f"Topic requested: {topic_label}.\n\n"
-        f"Here are her notes:\n{notes_text}\n\n"
-        "Ask ONE quiz question based on these notes. "
-        "Question types vary by topic — for medications: mechanism, indication, side effect, dosing; "
-        "for conditions: DSM criteria, symptoms, differential; for therapy: technique, indication, theory; "
-        "for any topic: definition or application scenario. "
-        "Ask the question only — do not give the answer, do not give options, do not explain. "
+        f"Here are her notes (in random order):\n{notes_text}\n\n"
+        f"IMPORTANT: Focus your question on '{anchor_topic}' — do NOT ask about the same topic as last time. "
+        "Vary the question type each time: mechanism, indication, side effect, dosing, DSM criteria, "
+        "differential, therapy technique, or clinical scenario. "
+        "Ask ONE question only — no answer, no options, no explanation. "
         "End with 'Take your time!' on a new line."
     )
 
