@@ -1276,6 +1276,8 @@
     $('qc-input').placeholder = "What's on your mind?";
     $('qc-btn').disabled      = true;
     $('qc-btn').textContent   = 'Save it';
+    $('qc-saved-where').style.display = 'none';
+    $('qc-saved-where').textContent   = '';
     // Log mode
     $('qc-log-text').value       = '';
     $('qc-log-text').disabled    = false;
@@ -1330,6 +1332,7 @@
     if(!text || $('qc-btn').disabled) return;
     $('qc-btn').disabled    = true;
     $('qc-btn').textContent = 'Saving…';
+    $('qc-saved-where').style.display = 'none';
     try {
       const localDate = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
       const message = `[QUICK CAPTURE — MUST SAVE] ${text}`;
@@ -1339,13 +1342,31 @@
         body: JSON.stringify({message, local_date: localDate})
       });
       const data = await res.json();
-      const reply = (data.reply || '').replace(/\[QUICK CAPTURE[^\]]*\]\s*/gi, '').trim();
+
+      // Build a "saved to" label from saves metadata
+      let savedLabel = '';
+      if (data.saves && data.saves.length > 0) {
+        const CAT_ICONS = {psychiatry:'🧠',psychotherapy:'💬',icu:'🏥',lifestyle:'📅',personal:'🌱',business:'💼',resources:'📚'};
+        savedLabel = data.saves.map(s => {
+          const icon = CAT_ICONS[s.category] || '📝';
+          const cat  = s.category ? (s.category.charAt(0).toUpperCase() + s.category.slice(1)) : 'Notes';
+          const sub  = s.subcategory ? ` › ${s.subcategory}` : '';
+          return `${icon} Saved to ${cat}${sub}`;
+        }).join('\n');
+      }
+
       $('qc-btn').textContent   = 'Saved ✓';
       $('qc-input').disabled    = true;
       $('qc-input').value       = '';
-      $('qc-input').placeholder = reply || 'Saved!';
+      $('qc-input').placeholder = "What's on your mind?";
+
+      if (savedLabel) {
+        $('qc-saved-where').style.display = 'block';
+        $('qc-saved-where').textContent   = savedLabel;
+      }
+
       loadNotes();
-      setTimeout(() => closeQC(), 2500);
+      setTimeout(() => closeQC(), 3000);
     } catch(e) {
       $('qc-btn').disabled    = false;
       $('qc-btn').textContent = 'Save it';
@@ -1447,6 +1468,7 @@
     <h3>⚡ Quick Capture</h3>
     <p>Just type — Brain will figure out where to save it.</p>
     <textarea id="qc-input" placeholder="What's on your mind?" oninput="qcCheckBtn()"></textarea>
+    <div id="qc-saved-where" style="display:none;font-size:13px;font-weight:600;color:var(--primary);background:var(--primary-light);border-radius:10px;padding:10px 14px;line-height:1.5"></div>
     <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
   </div>
 

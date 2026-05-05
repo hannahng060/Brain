@@ -85,14 +85,15 @@ def db_save_note(raw_input: str, content: str, summary: str,
     cur = conn.cursor()
     cur.execute(
         """INSERT INTO notes (raw_input, content, summary, category, subcategory, tags, entities)
-           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+           VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
         (raw_input, content, summary, category, subcategory,
          json.dumps(tags), json.dumps(entities))
     )
+    note_id = cur.fetchone()["id"]
     conn.commit()
     cur.close()
     conn.close()
-    return {"status": "saved", "category": category, "summary": summary}
+    return {"status": "saved", "id": note_id, "category": category, "subcategory": subcategory, "summary": summary}
 
 def db_search_notes(query: str, category: str = "all", limit: int = 30) -> list:
     conn = get_db()
@@ -675,7 +676,13 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
                 continue
             result = execute_tool(block.name, block.input, raw)
             if block.name in ("save_note", "update_note", "update_daily_log") and "id" in result:
-                saves_made.append({"id": result["id"], "tool": block.name})
+                saves_made.append({
+                    "id": result["id"],
+                    "tool": block.name,
+                    "category": result.get("category", ""),
+                    "subcategory": result.get("subcategory", ""),
+                    "summary": result.get("summary", "")
+                })
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
