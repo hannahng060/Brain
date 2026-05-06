@@ -23,6 +23,7 @@ app = FastAPI(title="Brain")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 active_sessions = set()
+_last_error: dict = {}   # stores most recent chat error for debugging
 
 # ── Database ──────────────────────────────────────────────────────────────────
 def get_db():
@@ -403,11 +404,12 @@ TOOLS = [
                                 "enum": ["DSM-5","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
                                          "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
-                                         "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
+                                         "Bootcamp","Case Consults","Weekly Calls","Practice Building","Community Notes","Clinical Pearls",
+                                         "Licensing","Credentialing","Billing & Insurance","Marketing","Social Media","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
-                                         "Reflections","Goals","Mental Health","Gratitude","Relationships",
-                                         "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
-                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
+                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
+                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -848,7 +850,12 @@ async def chat(body: ChatRequest, request: Request):
         return result
     except Exception as e:
         import traceback
-        print(f"Chat error: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        tb = traceback.format_exc()
+        print(f"Chat error: {type(e).__name__}: {e}\n{tb}")
+        _last_error["type"] = type(e).__name__
+        _last_error["msg"] = str(e)
+        _last_error["tb"] = tb
+        _last_error["time"] = datetime.now().isoformat()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/test")
@@ -868,6 +875,13 @@ async def test():
 async def reset():
     db_clear_messages()
     return {"ok": True, "message": "Chat history cleared. Go back to Brain and try again!"}
+
+@app.get("/last-error")
+async def last_error():
+    """Returns the last chat error traceback for debugging."""
+    if not _last_error:
+        return {"ok": True, "message": "No errors recorded since last deploy."}
+    return _last_error
 
 @app.get("/stats")
 async def get_stats(request: Request):
