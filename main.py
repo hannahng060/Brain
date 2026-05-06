@@ -564,14 +564,10 @@ RULES:
     b. If found: append the meal, recalculate totals, update_note. If not found: save_note under Diet.
     c. NOTE: If the user is logging their day generally (daily log), do NOT use this rule — use rule 13 instead. Meals belong in the Daily Log, not a separate Diet note.
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened):
-    a. Find the right daily log:
-       - If user mentions a specific date (e.g. "4/28", "April 28", "May 1st") → call get_log_by_date with that date string.
-       - If user says "today" or no time reference → call get_today_logs (category=lifestyle, subcategory=Daily Log), use the most recent result.
-       - If user says "yesterday" → call get_today_logs, use the older result (or match heading date).
-       - If no note found → create one with save_note.
-    b. Call update_daily_log with date_ref="today" (or "yesterday" or a specific date), the correct section name, and only the new text. This handles finding and updating in one step. NEVER call update_note or get_today_logs for daily log section updates.
-    b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
-    c. If not found: ALWAYS create a brand new note with save_note under lifestyle → Daily Log. NEVER modify or rename an existing note from a different date. If the user says "I don't see today's log" or "fix my log," create a NEW note for today — do NOT touch any existing note.
+    a. You always know today's exact date from [Today's date: ...] at the top of the message. Use it.
+    b. Call update_daily_log with the ACTUAL date string (e.g. "5/6/26") as date_ref — NOT the word "today". This makes the lookup search by real date in the note, not a time window. For yesterday, use the previous date string (e.g. "5/5/26").
+    c. If the update returns "not found" → ALWAYS create a brand new note with save_note under lifestyle → Daily Log. NEVER modify or rename a note from a different date. If the user says "I don't see today's log" or "fix my log" → create a NEW note for today with save_note. Do NOT touch any existing note from another date.
+    d. If no note found → create one with save_note under lifestyle → Daily Log.
        Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
