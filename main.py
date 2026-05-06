@@ -662,23 +662,29 @@ def content_to_dict(block) -> dict:
         return {"type": "text", "text": block.text}
     elif block.type == "tool_use":
         return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
-    return {}
+    return {}  # unknown block type — filtered out below
 
 def run_agent_loop(messages: list, raw: str) -> tuple:
     saves_made = []
     infer_messages = list(messages)
+    if not infer_messages:
+        return "I'm here but had trouble responding — please try again.", saves_made
     # Force tool_choice=any on first call — Brain MUST call a tool (save_note, search, or no_save)
     # This makes saving impossible to skip; Brain can no longer "forget" to call a tool
+    # max_tokens=4096 prevents truncation mid-tool-call (daily logs can be long)
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=2048,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         tools=TOOLS,
         tool_choice={"type": "any"},
         messages=infer_messages
     )
     while response.stop_reason == "tool_use":
-        assistant_content = [content_to_dict(b) for b in response.content]
+        # Filter out empty/unknown content blocks — prevents "invalid content" API errors
+        assistant_content = [d for d in (content_to_dict(b) for b in response.content) if d]
+        if not assistant_content:
+            break  # no valid content to continue with
         tool_results = []
         for block in response.content:
             if block.type != "tool_use":
@@ -697,13 +703,15 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
                 "tool_use_id": block.id,
                 "content": json.dumps(result, default=str)
             })
+        if not tool_results:
+            break  # no tool results to send — exit gracefully
         infer_messages = infer_messages + [
             {"role": "assistant", "content": assistant_content},
             {"role": "user",      "content": tool_results}
         ]
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
+            max_tokens=4096,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
             messages=infer_messages
