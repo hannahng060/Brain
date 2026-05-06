@@ -513,8 +513,18 @@
       const credPattern = /(?<![A-Za-z])(PMHNP-BC|PMHNP|APRN|MSN|BSN|DNP|FNP|CNS|LCSW|LPC|RN|NP-C|NP|PA-C|PA|PhD|MD)(?![A-Za-z])/gi;
       const credMatches = [...combined.matchAll(credPattern)];
       const seen = new Set();
-      const creds = credMatches.map(m => m[1].toUpperCase()).filter(c => !seen.has(c) && seen.add(c));
-      let cred = creds.join(', ');
+      let rawCreds = credMatches.map(m => m[1].toUpperCase()).filter(c => !seen.has(c) && seen.add(c));
+      // Drop bare "NP" when PMHNP or PMHNP-BC already present (redundant)
+      if (rawCreds.includes('PMHNP') || rawCreds.includes('PMHNP-BC')) {
+        rawCreds = rawCreds.filter(c => c !== 'NP');
+      }
+      // Sort by professional convention: academic degree → licensure → certification
+      const CRED_ORDER = ['DNP','PhD','MSN','BSN','APRN','PMHNP-BC','PMHNP','FNP','CNS','NP-C','LCSW','LPC','RN','PA-C','PA','MD'];
+      rawCreds.sort((a, b) => {
+        const ai = CRED_ORDER.indexOf(a); const bi = CRED_ORDER.indexOf(b);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      let cred = rawCreds.join(', ');
 
       // If no credential acronym found, try to grab first short phrase from career (up to first comma/period)
       if (!cred && careerRaw) {
@@ -524,7 +534,7 @@
 
       const sub = $('app-subtitle');
       if (!sub) return;
-      if (name && cred)       sub.textContent = `${name} · ${cred}`;
+      if (name && cred)       sub.textContent = `${name}, ${cred}`;
       else if (name)          sub.textContent = name;
       else if (cred)          sub.textContent = cred;
       // else keep default "Your AI note team"
