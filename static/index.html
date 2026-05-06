@@ -519,7 +519,7 @@
         rawCreds = rawCreds.filter(c => c !== 'NP');
       }
       // Sort by professional convention: academic degree → licensure → certification
-      const CRED_ORDER = ['DNP','PhD','MSN','BSN','APRN','PMHNP-BC','PMHNP','FNP','CNS','NP-C','LCSW','LPC','RN','PA-C','PA','MD'];
+      const CRED_ORDER = ['DNP','PhD','MSN','BSN','APRN','RN','FNP','CNS','NP-C','LCSW','LPC','PMHNP-BC','PMHNP','PA-C','PA','MD'];
       rawCreds.sort((a, b) => {
         const ai = CRED_ORDER.indexOf(a); const bi = CRED_ORDER.indexOf(b);
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
