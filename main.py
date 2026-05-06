@@ -245,11 +245,20 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
                AND created_at < NOW() - INTERVAL '20 hours'
                ORDER BY created_at DESC LIMIT 1""")
     else:
-        # Normalize separators and search in summary/content
-        normalized = re.sub(r'[-/]', '.', date_ref.strip())
-        variants = list({date_ref.strip(), normalized,
-                         re.sub(r'[-/.]', '-', date_ref.strip()),
-                         re.sub(r'[-/.]', '/', date_ref.strip())})
+        # Build search variants — handle both full format ("Wednesday, May 6, 2026")
+        # and short numeric formats ("5/6/26", "5.6.26")
+        base = date_ref.strip()
+        normalized = re.sub(r'[-/]', '.', base)
+        variants = list({base, normalized,
+                         re.sub(r'[-/.]', '-', base),
+                         re.sub(r'[-/.]', '/', base)})
+        # Also extract just "Month Day, Year" portion if full weekday format given
+        # e.g. "Wednesday, May 6, 2026" → also search "May 6, 2026" and "May 6"
+        month_match = re.search(r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2}(?:,?\s*\d{4})?)', base, re.IGNORECASE)
+        if month_match:
+            variants.append(month_match.group(1))
+            variants.append(month_match.group(1).split(',')[0].strip())  # "May 6"
+        variants = list(set(variants))
         conditions = " OR ".join(["(summary ILIKE %s OR content ILIKE %s)"] * len(variants))
         params = []
         for v in variants:
@@ -565,10 +574,10 @@ RULES:
     c. NOTE: If the user is logging their day generally (daily log), do NOT use this rule — use rule 13 instead. Meals belong in the Daily Log, not a separate Diet note.
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened):
     a. You always know today's exact date from [Today's date: ...] at the top of the message. Use it.
-    b. Call update_daily_log with the ACTUAL date string (e.g. "5/6/26") as date_ref — NOT the word "today". This makes the lookup search by real date in the note, not a time window. For yesterday, use the previous date string (e.g. "5/5/26").
+    b. Call update_daily_log using the FULL date string from [Today's date:] as date_ref — for example "Wednesday, May 6, 2026". Never use "today" or short formats like "5/6/26". The note heading and the search both use this exact format so they always match.
     c. If the update returns "not found" → ALWAYS create a brand new note with save_note under lifestyle → Daily Log. NEVER modify or rename a note from a different date. If the user says "I don't see today's log" or "fix my log" → create a NEW note for today with save_note. Do NOT touch any existing note from another date.
     d. If no note found → create one with save_note under lifestyle → Daily Log.
-       Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
+       Heading format: "Wednesday, May 6, 2026 - Workday" — use the full date from [Today's date:] plus the type of day. Example: "Wednesday, May 6, 2026 - Workday"
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
 <strong><u>OURA RING METRICS:</u></strong>
