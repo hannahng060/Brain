@@ -385,7 +385,7 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"],
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle"],
                                 "description": "personal=inner world/feelings/journal, psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["DSM-5","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
@@ -395,7 +395,7 @@ TOOLS = [
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Relationships",
                                          "Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
-                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. business→Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
+                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -409,7 +409,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -443,7 +443,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","business","resources"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
@@ -555,6 +555,7 @@ RULES:
 8. For people, always include their name in entities[].
 9. Be warm and concise. After retrieving notes, show the summary and end with "Want to add anything?" at most — nothing more. You are a note assistant, not a therapist or journal coach. No bullet-point questions, no prompts about feelings.
 10. If you are unsure of category, pick the best fit and mention it.
+14. NP FELLOWSHIP ROUTING: Save to np_fellowship (not psychiatry) when the note includes ANY of: real patient case context, advice from an experienced NP or mentor, wisdom from Lyndsay Hills' program, takeaways from weekly calls or Skool community, practice-building insights, or anything the user says came from "the fellowship" or "the program." Use these subcategories: Bootcamp (program materials/frameworks), Case Consults (real case discussions), Weekly Calls (call notes), Practice Building (running a private practice), Community Notes (Skool/group chat gems), Clinical Pearls (real-world clinical wisdom with context). If the note is a standalone clinical fact with no fellowship context → save to psychiatry/psychotherapy/icu instead.
 11. DIET LOG UPDATES (only when user explicitly asks to update a standalone diet log):
     a. Call get_today_logs with category=lifestyle, subcategory=Diet to find today's note.
     b. If found: append the meal, recalculate totals, update_note. If not found: save_note under Diet.
@@ -728,7 +729,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         + (f"User note: {user_note}\n" if user_note else "")
         + f"\nContent:\n{truncated}\n\n"
         "Return ONLY a JSON object with these fields:\n"
-        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|business|resources|lifestyle", '
+        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle", '
         '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
         "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness, "
         "psychiatry=psychiatric conditions/meds/assessments/board prep, psychotherapy=therapy modalities, "
