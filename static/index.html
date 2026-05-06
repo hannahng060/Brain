@@ -26,6 +26,7 @@
       --resources:     #6a1b9a; --resources-bg:     #f3e5f5;
       --personal:      #880e4f; --personal-bg:      #fce4ec;
       --lifestyle:     #00796b; --lifestyle-bg:     #e0f2f1;
+      --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -180,6 +181,8 @@
     .badge.lifestyle { background:var(--lifestyle-bg); color:var(--lifestyle); }
     .cat-pill.icu { border-color:var(--icu); color:var(--icu); }
     .cat-pill.icu.active { background:var(--icu); border-color:var(--icu); color:white; }
+    .cat-pill.np_fellowship { border-color:var(--np_fellowship); color:var(--np_fellowship); }
+    .cat-pill.np_fellowship.active { background:var(--np_fellowship); border-color:var(--np_fellowship); color:white; }
     .badge.icu { background:var(--icu-bg); color:var(--icu); }
     #quiz-row { display:flex; gap:8px; padding:8px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #quiz-row::-webkit-scrollbar { display:none; }
@@ -330,6 +333,7 @@
       <div class="cat-pill psychiatry"    data-cat="psychiatry"    onclick="filterNotes('psychiatry')">Psychiatry</div>
       <div class="cat-pill psychotherapy" data-cat="psychotherapy" onclick="filterNotes('psychotherapy')">Psychotherapy</div>
       <div class="cat-pill icu"           data-cat="icu"           onclick="filterNotes('icu')">ICU</div>
+      <div class="cat-pill np_fellowship" data-cat="np_fellowship" onclick="filterNotes('np_fellowship')">NP Fellowship</div>
       <div class="cat-pill business"      data-cat="business"      onclick="filterNotes('business')">Business</div>
       <div class="cat-pill resources"     data-cat="resources"     onclick="filterNotes('resources')">Resources</div>
       <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">Personal</div>
@@ -469,9 +473,10 @@
   let currentTag = null;
 
   const SUBCATS = {
-    psychiatry:    ['DSM-5','Medications','Assessments','Treatments','Lab Values','Neuroscience','Ethics & Law','Board Prep','NP Fellowship'],
+    psychiatry:    ['DSM-5','Medications','Assessments','Treatments','Lab Values','Neuroscience','Ethics & Law','Board Prep'],
     psychotherapy: ['CBT','DBT','ACT','Psychodynamic','Motivational Interviewing','Trauma-Focused','Family & Couples','Group Therapy','Theory & Foundations'],
     icu:           ['Neuro','Respiratory','Cardiac','GI','Renal','Hematology','Pharmacology','Procedures','Protocols & Guidelines'],
+    np_fellowship: ['Bootcamp','Case Consults','Weekly Calls','Practice Building','Community Notes','Clinical Pearls'],
     business:      ['Licensing','Credentialing','Billing & Insurance','Marketing','Social Media','Platforms','Legal'],
     resources:     ['Contacts','URLs & Links','Books','Courses','Tools','Future Ideas'],
     personal:      ['Reflections','Goals','Mental Health','Gratitude','Relationships'],
