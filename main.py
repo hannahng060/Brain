@@ -172,7 +172,7 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     cur.execute(
         """SELECT id, content, summary, category, subcategory, created_at
            FROM notes
-           WHERE category = %s AND subcategory ILIKE %s AND created_at >= NOW() - INTERVAL '48 hours'
+           WHERE category = %s AND subcategory ILIKE %s AND created_at >= NOW() - INTERVAL '20 hours'
            ORDER BY created_at ASC""",
         (category, f"%{subcategory}%")
     )
@@ -230,17 +230,20 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
     # anything else = search by date string across all daily logs
     date_ref_lower = date_ref.lower().strip()
     if date_ref_lower in ("today", ""):
+        # Use 20-hour window so early-morning logs don't find yesterday's note
         cur.execute(
             """SELECT id, content FROM notes
                WHERE category='lifestyle' AND subcategory ILIKE '%daily log%'
-               AND created_at >= NOW() - INTERVAL '48 hours'
+               AND created_at >= NOW() - INTERVAL '20 hours'
                ORDER BY created_at DESC LIMIT 1""")
     elif date_ref_lower == "yesterday":
+        # Yesterday = between 20 and 48 hours ago
         cur.execute(
             """SELECT id, content FROM notes
                WHERE category='lifestyle' AND subcategory ILIKE '%daily log%'
                AND created_at >= NOW() - INTERVAL '48 hours'
-               ORDER BY created_at ASC LIMIT 1""")
+               AND created_at < NOW() - INTERVAL '20 hours'
+               ORDER BY created_at DESC LIMIT 1""")
     else:
         # Normalize separators and search in summary/content
         normalized = re.sub(r'[-/]', '.', date_ref.strip())
@@ -568,7 +571,7 @@ RULES:
        - If no note found → create one with save_note.
     b. Call update_daily_log with date_ref="today" (or "yesterday" or a specific date), the correct section name, and only the new text. This handles finding and updating in one step. NEVER call update_note or get_today_logs for daily log section updates.
     b. If found: update the relevant sections with the new information. Call update_note with the complete updated content.
-    c. If not found: create a new note with save_note under lifestyle → Daily Log.
+    c. If not found: ALWAYS create a brand new note with save_note under lifestyle → Daily Log. NEVER modify or rename an existing note from a different date. If the user says "I don't see today's log" or "fix my log," create a NEW note for today — do NOT touch any existing note.
        Heading format: "M.DD.YY - DayOfWeek - [Type of Day]" where Type of Day is inferred from context (e.g. Workday, Rest Day, Day Off, Travel Day). Example: "4.30.26 - Thursday - Workday"
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
@@ -831,7 +834,8 @@ async def chat(body: ChatRequest, request: Request):
         result = run_agent(msg)
         return result
     except Exception as e:
-        print(f"Chat error: {type(e).__name__}: {e}")
+        import traceback
+        print(f"Chat error: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/test")
