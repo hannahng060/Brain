@@ -1489,10 +1489,29 @@
   }
 
   // ── Surprise Me ──────────────────────────────────────────────────────
-  async function surpriseMe() {
-    const pool = allNotes.filter(n => n.content && n.content.length > 30);
+  let _surpriseSeen    = new Set();  // IDs already shown this cycle
+  let _surpriseLastCat = null;       // last category shown — avoid repeating
+
+  function surpriseMe() {
+    let pool = allNotes.filter(n => n.content && n.content.length > 30);
     if (!pool.length) { showToast('No notes yet — add some first!'); return; }
-    const note = pool[Math.floor(Math.random() * pool.length)];
+
+    // Remove already-seen notes; if all seen, reset for a new cycle
+    let unseen = pool.filter(n => !_surpriseSeen.has(n.id));
+    if (!unseen.length) {
+      _surpriseSeen.clear();
+      unseen = pool;
+      showToast('✨ Full cycle complete — starting fresh!');
+    }
+
+    // Prefer a different category than last time
+    const fresh = unseen.filter(n => n.category !== _surpriseLastCat);
+    const candidates = fresh.length ? fresh : unseen;
+
+    const note = candidates[Math.floor(Math.random() * candidates.length)];
+    _surpriseSeen.add(note.id);
+    _surpriseLastCat = note.category;
+
     openNoteDirectly(note);
     showToast('✨ Surprise!');
   }
