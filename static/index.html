@@ -1017,7 +1017,26 @@
     }
   }
 
-  function closeModal() { $('note-modal').classList.remove('open'); }
+  async function closeModal() {
+    // Auto-save if closing while in edit mode
+    if (_editingNote && $('modal-edit') && $('modal-edit').style.display !== 'none') {
+      const content = $('edit-content').innerHTML.trim();
+      if (content && content !== '<br>') {
+        const summary     = $('edit-summary').value.trim();
+        const category    = $('edit-category').value;
+        const subcategory = $('edit-subcategory').value;
+        await fetch(`/notes/${_editingNote.id}`, {
+          method:'PUT', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({summary, content, category, subcategory})
+        });
+        const idx = allNotes.findIndex(n => n.id === _editingNote.id);
+        if(idx !== -1) allNotes[idx] = {...allNotes[idx], content, summary, category, subcategory};
+        loadNotes();
+        showToast('✓ Auto-saved');
+      }
+    }
+    $('note-modal').classList.remove('open');
+  }
   $('note-modal').addEventListener('click', e=>{ if(e.target===$('note-modal')) closeModal(); });
 
   async function deleteNote(e, id) {
