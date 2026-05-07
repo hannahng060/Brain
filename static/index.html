@@ -140,6 +140,10 @@
     .cl-add input:focus { border-color:var(--primary); }
     .cl-add button { padding:8px 12px; border:none; border-radius:10px; background:var(--primary); color:white; font-size:16px; font-weight:700; cursor:pointer; }
     .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
+    /* ── Streak display ── */
+    #dash-streak { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#e65100; background:#fff3e0; border:1.5px solid #ffcc80; border-radius:20px; padding:4px 12px; margin-bottom:10px; }
+    #dash-streak.cold { color:#888; background:var(--surface); border-color:var(--border); font-weight:400; }
+
     /* ── In-app reminder nudge chips ── */
     .reminder-chip { display:inline-flex; align-items:center; gap:6px; background:#fff8e1; border:1.5px solid #ffb300; border-radius:20px; padding:5px 12px; font-size:13px; color:#7a5800; font-weight:600; cursor:pointer; transition:opacity .2s; }
     .reminder-chip:hover { opacity:.75; }
@@ -326,6 +330,7 @@
     <div id="messages">
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
+        <div id="dash-streak" style="display:none"></div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
@@ -633,14 +638,14 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
     await fetch('/logout', {method:'POST'}); location.reload();
   }
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();}})();
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();loadStreak();}})();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -1322,6 +1327,7 @@
       if(data.saves && data.saves.length > 0) {
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
+        loadStreak();
       }
       fetch('/notes?limit=500').then(r=>r.json()).then(n=>{
         allNotes=n;
@@ -1603,6 +1609,60 @@
     if (_pomoState === 'idle')  { w.textContent = '🍅'; w.title = 'Start 25-min focus timer'; }
     if (_pomoState === 'focus') { w.textContent = `🍅 ${m}:${s}`; w.title = 'Tap to stop'; }
     if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
+  }
+
+  // ── Streak tracker ────────────────────────────────────────────────────
+  async function loadStreak() {
+    try {
+      const r = await fetch('/notes?category=lifestyle&limit=200');
+      if (!r.ok) return;
+      const notes = await r.json();
+
+      // Collect unique dates that have a daily log entry
+      const logDates = new Set();
+      notes.forEach(n => {
+        if (!n.subcategory || !n.subcategory.toLowerCase().includes('daily log')) return;
+        const d = new Date(n.created_at);
+        // Use local date string as key: YYYY-MM-DD
+        logDates.add(d.toLocaleDateString('en-CA')); // en-CA gives YYYY-MM-DD
+      });
+
+      // Count consecutive days backwards from today
+      let streak = 0;
+      const today = new Date();
+      for (let i = 0; i < 365; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = d.toLocaleDateString('en-CA');
+        if (logDates.has(key)) {
+          streak++;
+        } else if (i === 0) {
+          // Today hasn't been logged yet — check if yesterday started the streak
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      const el = $('dash-streak');
+      if (!el) return;
+      el.style.display = 'inline-flex';
+      if (streak >= 2) {
+        el.className = '';
+        const msgs = [
+          `🔥 ${streak}-day logging streak — keep it going!`,
+          `🔥 ${streak} days in a row — you're on fire!`,
+          `🔥 ${streak}-day streak — consistency is everything!`,
+        ];
+        el.textContent = msgs[streak % msgs.length];
+      } else if (streak === 1) {
+        el.className = '';
+        el.textContent = '🔥 Day 1 — every streak starts here!';
+      } else {
+        el.className = 'cold';
+        el.textContent = '📅 Log today to start your streak';
+      }
+    } catch(e) { /* silent fail */ }
   }
 
   // ── Weekly Plan + Daily Checklist ─────────────────────────────────────
