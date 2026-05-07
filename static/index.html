@@ -113,14 +113,14 @@
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
 
     /* ── Pomodoro ── */
-    #pomo-widget { position:fixed; bottom:76px; right:14px; z-index:400; display:flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:6px 12px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.1); font-size:13px; font-weight:600; font-family:inherit; user-select:none; transition:background .3s,border-color .3s; }
+    #pomo-widget { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:4px 12px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; user-select:none; transition:background .3s,border-color .3s; }
     #pomo-widget.focus { background:#fff3e0; border-color:#e65100; color:#e65100; }
     #pomo-widget.break { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; }
 
     /* ── Checklist widget ── */
-    #cl-btn { position:fixed; bottom:76px; right:68px; z-index:400; width:44px; height:44px; border-radius:50%; background:var(--surface); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.1); user-select:none; }
+    #cl-btn { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:4px 12px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; user-select:none; position:relative; }
     #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
-    #cl-panel { position:fixed; bottom:130px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
+    #cl-panel { position:fixed; top:110px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
     #cl-panel.open { display:block; }
     .cl-header { margin-bottom:12px; }
     .cl-today { font-weight:700; font-size:15px; display:block; color:var(--text); }
@@ -141,7 +141,8 @@
     .cl-add button { padding:8px 12px; border:none; border-radius:10px; background:var(--primary); color:white; font-size:16px; font-weight:700; cursor:pointer; }
     .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
     /* ── Streak display ── */
-    #dash-streak { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#e65100; background:#fff3e0; border:1.5px solid #ffcc80; border-radius:20px; padding:4px 12px; margin-bottom:10px; }
+    #dash-tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    #dash-streak { display:none; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#e65100; background:#fff3e0; border:1.5px solid #ffcc80; border-radius:20px; padding:4px 12px; }
     #dash-streak.cold { color:#888; background:var(--surface); border-color:var(--border); font-weight:400; }
 
     /* ── In-app reminder nudge chips ── */
@@ -330,7 +331,11 @@
     <div id="messages">
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
-        <div id="dash-streak" style="display:none"></div>
+        <div id="dash-tools">
+          <div id="dash-streak"></div>
+          <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
+          <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
+        </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
@@ -1648,7 +1653,7 @@
 
       const el = $('dash-streak');
       if (!el) return;
-      el.style.display = 'inline-flex';
+      el.style.display = 'flex';
       if (streak >= 7) {
         el.className = '';
         el.textContent = `📚 ${streak}-day study streak — board exam ready! 🔥`;
@@ -1876,13 +1881,6 @@
 </script>
 <div id="toast"></div>
 
-<!-- Pomodoro floating widget -->
-<div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
-
-<!-- Daily Checklist widget -->
-<div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">
-  ✅<span id="cl-badge"></span>
-</div>
 <div id="cl-panel"></div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
