@@ -1755,9 +1755,10 @@
       body: JSON.stringify({ priorities: ps, study_focus: sf, date_str: ds })
     }).then(function(resp) {
       if (resp && resp.ok) {
-        _focusData.date = ds;
-        _focusData.priorities = ps;
-        _focusData.study_focus = sf;
+        if (!window._focusData) window._focusData = { date:'', priorities:[], study_focus:'' };
+        window._focusData.date = ds;
+        window._focusData.priorities = ps;
+        window._focusData.study_focus = sf;
         renderFocus();
         showToast('🎯 Focus set!');
       } else {

@@ -975,6 +975,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/app")
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_page(request: Request):
     with open("static/index.html") as f:
         return HTMLResponse(f.read(), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
