@@ -357,6 +357,7 @@
         <div id="dash-tools">
           <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
+          <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🎯 Focus</div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
         </div>
         <div id="dash-focus" style="display:none;margin-bottom:10px"></div>
@@ -1677,17 +1678,26 @@
     } catch(e) {}
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
-    renderFocus();
+    // Don't auto-open panel — user taps 🎯 Focus to open it
   }
 
-  function renderFocus() {
+  function toggleFocusPanel() {
     const el = $('dash-focus');
     if (!el) return;
+    const isOpen = el.style.display !== 'none';
+    el.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) renderFocus(true);
+  }
+
+  function renderFocus(forceOpen) {
+    const el = $('dash-focus');
+    if (!el) return;
+    // Only render content if panel is visible or forced open
+    if (el.style.display === 'none' && !forceOpen) return;
+    el.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
-
-    el.style.display = 'block';
     if (!hasFocus) {
       el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">+ Set</button></div>
         <div class="focus-empty">Tell Brain your top priorities and study topic for today.<br><em style="font-size:12px">"Today I want to finish X, Y, and study Medications"</em></div>
