@@ -157,7 +157,7 @@ def db_get_log_by_date(date_str: str) -> list:
     cur.execute(
         f"""SELECT id, content, summary, category, subcategory, created_at
            FROM notes
-           WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%'
+           WHERE category = 'lifestyle' AND subcategory ILIKE '%%daily log%%'
            AND ({conditions})
            ORDER BY created_at DESC LIMIT 3""",
         params
@@ -266,7 +266,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
             params.extend([f"%{v}%", f"%{v}%"])
         cur.execute(
             f"""SELECT id, content FROM notes
-               WHERE category='lifestyle' AND subcategory ILIKE '%daily log%'
+               WHERE category='lifestyle' AND subcategory ILIKE '%%daily log%%'
                AND ({conditions})
                ORDER BY created_at DESC LIMIT 1""", params)
 
