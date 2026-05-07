@@ -140,6 +140,10 @@
     .cl-add input:focus { border-color:var(--primary); }
     .cl-add button { padding:8px 12px; border:none; border-radius:10px; background:var(--primary); color:white; font-size:16px; font-weight:700; cursor:pointer; }
     .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
+    /* ── In-app reminder nudge chips ── */
+    .reminder-chip { display:inline-flex; align-items:center; gap:6px; background:#fff8e1; border:1.5px solid #ffb300; border-radius:20px; padding:5px 12px; font-size:13px; color:#7a5800; font-weight:600; cursor:pointer; transition:opacity .2s; }
+    .reminder-chip:hover { opacity:.75; }
+    .reminder-chip .chip-x { font-size:15px; font-weight:400; color:#bbb; margin-left:2px; }
 
     /* ── Quick Capture ── */
     .tab.qc-tab { color:var(--primary); font-weight:700; }
@@ -636,7 +640,7 @@
     await fetch('/logout', {method:'POST'}); location.reload();
   }
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();}})();
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();}})();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -1608,13 +1612,23 @@
       if (r.ok) _weeklyPlan = await r.json();
     } catch(e) {}
     _clRender();
+    _clUpdateNudges();
   }
 
   function _clGetItems() {
     try { return JSON.parse(localStorage.getItem('brain_checklist') || 'null'); } catch(e) { return null; }
   }
   function _clSaveItems(items) { localStorage.setItem('brain_checklist', JSON.stringify(items)); }
-  function _clDefaultItems() { return { always: ['💊 Take vitamin at lunch'], workday: ['🥗 Pack lunch', '👜 Pack work bag'] }; }
+  function _clDefaultItems() {
+    return {
+      always: [
+        '💊 Vitamin',
+        '🏃 Exercise',
+        '🥑 Healthy snack'
+      ],
+      workday: ['🥗 Pack lunch', '👜 Pack work bag']
+    };
+  }
 
   function _clGetDone() {
     const key = 'brain_done_' + new Date().toISOString().split('T')[0];
@@ -1705,6 +1719,7 @@
     if (done.has(item)) done.delete(item); else done.add(item);
     _clSetDone(done);
     _clRender();
+    _clUpdateNudges();
   }
 
   function clAddItem() {
@@ -1729,8 +1744,48 @@
 
   // Refresh checklist every 5 min (time-based nudges change)
   setInterval(() => { if ($('cl-panel') && $('cl-panel').classList.contains('open')) _clRender(); }, 5 * 60 * 1000);
-  // Also update badge every 5 min even when panel is closed
-  setInterval(_clRender, 5 * 60 * 1000);
+  // Also update badge + nudges every 5 min even when panel is closed
+  setInterval(() => { _clRender(); _clUpdateNudges(); }, 5 * 60 * 1000);
+
+  // ── Timed in-app nudge chips (shown on dashboard) ─────────────────────
+  // Each nudge: { item: checklist label, nudgeHour: show after this hour, emoji, label }
+  const _NUDGE_SCHEDULE = [
+    { item: '💊 Vitamin',       nudgeHour: 12, emoji: '💊', label: 'Take your vitamin!' },
+    { item: '🥑 Healthy snack', nudgeHour: 14, emoji: '🥑', label: 'Healthy snack time' },
+    { item: '🏃 Exercise',      nudgeHour: 17, emoji: '🏃', label: 'Move your body today' },
+  ];
+
+  function _clDismissedKey() { return 'brain_dismissed_' + new Date().toISOString().split('T')[0]; }
+  function _clGetDismissed() { try { return new Set(JSON.parse(localStorage.getItem(_clDismissedKey()) || '[]')); } catch(e) { return new Set(); } }
+  function _clDismiss(item) {
+    const d = _clGetDismissed(); d.add(item);
+    localStorage.setItem(_clDismissedKey(), JSON.stringify([...d]));
+    _clUpdateNudges();
+  }
+
+  function _clUpdateNudges() {
+    const container = $('dash-nudges');
+    if (!container) return;
+    const hour = new Date().getHours();
+    const done = _clGetDone();
+    const dismissed = _clGetDismissed();
+    const items = _clGetItems() || _clDefaultItems();
+    const allItems = [...items.always, ...((_weeklyPlan.work_days||[]).includes(_clDayName(0)) ? items.workday : [])];
+
+    const chips = _NUDGE_SCHEDULE.filter(n =>
+      hour >= n.nudgeHour &&               // it's time
+      allItems.includes(n.item) &&         // item is on their checklist
+      !done.has(n.item) &&                 // not checked off yet
+      !dismissed.has(n.item)              // not dismissed today
+    );
+
+    container.innerHTML = chips.map(n =>
+      `<span class="reminder-chip" onclick="toggleChecklist()">
+        ${n.emoji} ${n.label}
+        <span class="chip-x" onclick="event.stopPropagation();_clDismiss('${n.item}')" title="Dismiss for today">✕</span>
+      </span>`
+    ).join('');
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
