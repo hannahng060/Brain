@@ -901,7 +901,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'All',psychiatry:'Psychiatry',psychotherapy:'Psychotherapy',icu:'ICU',business:'Business',resources:'Resources',personal:'Personal',lifestyle:'Lifestyle'};
+  const CAT_LABELS = {all:'All',psychiatry:'Psychiatry',psychotherapy:'Psychotherapy',icu:'ICU',np_fellowship:'NP Fellowship',business:'Business',resources:'Resources',personal:'Personal',lifestyle:'Lifestyle'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};
@@ -1365,10 +1365,11 @@
       // Build a "saved to" label from saves metadata
       let savedLabel = '';
       if (data.saves && data.saves.length > 0) {
-        const CAT_ICONS = {psychiatry:'🧠',psychotherapy:'💬',icu:'🏥',lifestyle:'📅',personal:'🌱',business:'💼',resources:'📚'};
+        const CAT_ICONS   = {psychiatry:'🧠',psychotherapy:'💬',icu:'🏥',np_fellowship:'🌟',lifestyle:'📅',personal:'🌱',business:'💼',resources:'📚'};
+        const CAT_NAMES   = {psychiatry:'Psychiatry',psychotherapy:'Psychotherapy',icu:'ICU',np_fellowship:'NP Fellowship',lifestyle:'Lifestyle',personal:'Personal',business:'Business',resources:'Resources'};
         savedLabel = data.saves.map(s => {
           const icon = CAT_ICONS[s.category] || '📝';
-          const cat  = s.category ? (s.category.charAt(0).toUpperCase() + s.category.slice(1)) : 'Notes';
+          const cat  = CAT_NAMES[s.category] || (s.category ? (s.category.charAt(0).toUpperCase() + s.category.slice(1)) : 'Notes');
           const sub  = s.subcategory ? ` › ${s.subcategory}` : '';
           return `${icon} Saved to ${cat}${sub}`;
         }).join('\n');
