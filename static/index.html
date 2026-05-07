@@ -117,6 +117,30 @@
     #pomo-widget.focus { background:#fff3e0; border-color:#e65100; color:#e65100; }
     #pomo-widget.break { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; }
 
+    /* ── Checklist widget ── */
+    #cl-btn { position:fixed; bottom:76px; right:68px; z-index:400; width:44px; height:44px; border-radius:50%; background:var(--surface); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.1); user-select:none; }
+    #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
+    #cl-panel { position:fixed; bottom:130px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
+    #cl-panel.open { display:block; }
+    .cl-header { margin-bottom:12px; }
+    .cl-today { font-weight:700; font-size:15px; display:block; color:var(--text); }
+    .cl-week { font-size:12px; color:#888; display:block; margin-top:2px; }
+    .cl-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#aaa; margin:12px 0 6px; }
+    .cl-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer; margin-bottom:4px; transition:background .15s; }
+    .cl-item:hover { background:var(--surface); }
+    .cl-item.done { opacity:.5; }
+    .cl-check { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
+    .cl-item.done .cl-check { background:var(--primary); border-color:var(--primary); color:white; }
+    .cl-label { font-size:14px; color:var(--text); }
+    .cl-item.done .cl-label { text-decoration:line-through; }
+    .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
+    .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
+    .cl-add { display:flex; gap:6px; margin-top:14px; }
+    .cl-add input { flex:1; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
+    .cl-add input:focus { border-color:var(--primary); }
+    .cl-add button { padding:8px 12px; border:none; border-radius:10px; background:var(--primary); color:white; font-size:16px; font-weight:700; cursor:pointer; }
+    .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
+
     /* ── Quick Capture ── */
     .tab.qc-tab { color:var(--primary); font-weight:700; }
     .tab.qc-tab:active { transform:scale(.92); }
@@ -482,6 +506,8 @@
   let _pomoState = 'idle';
   let _pomoSecs  = 25 * 60;
   let _pomoTimer = null;
+  // Weekly plan + checklist state
+  let _weeklyPlan = { work_days: [], events: [], week_of: '', notes: '' };
   let currentSubcat = 'all';
   let currentTag = null;
 
@@ -603,7 +629,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1575,6 +1601,137 @@
     if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
   }
 
+  // ── Weekly Plan + Daily Checklist ─────────────────────────────────────
+  async function loadWeeklyPlan() {
+    try {
+      const r = await fetch('/weekly-plan');
+      if (r.ok) _weeklyPlan = await r.json();
+    } catch(e) {}
+    _clRender();
+  }
+
+  function _clGetItems() {
+    try { return JSON.parse(localStorage.getItem('brain_checklist') || 'null'); } catch(e) { return null; }
+  }
+  function _clSaveItems(items) { localStorage.setItem('brain_checklist', JSON.stringify(items)); }
+  function _clDefaultItems() { return { always: ['💊 Take vitamin at lunch'], workday: ['🥗 Pack lunch', '👜 Pack work bag'] }; }
+
+  function _clGetDone() {
+    const key = 'brain_done_' + new Date().toISOString().split('T')[0];
+    try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(e) { return new Set(); }
+  }
+  function _clSetDone(doneSet) {
+    const key = 'brain_done_' + new Date().toISOString().split('T')[0];
+    localStorage.setItem(key, JSON.stringify([...doneSet]));
+  }
+
+  function _clDayName(offset = 0) {
+    const d = new Date(); d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+  function _clIsWorkDay(offset = 0) {
+    return (_weeklyPlan.work_days || []).includes(_clDayName(offset));
+  }
+  function _clEventsFor(offset = 0) {
+    const day = _clDayName(offset);
+    return (_weeklyPlan.events || []).filter(e => e.day === day);
+  }
+
+  function _clRender() {
+    const panel = $('cl-panel');
+    if (!panel) return;
+
+    const items = _clGetItems() || _clDefaultItems();
+    const done  = _clGetDone();
+    const today = _clDayName(0);
+    const tomorrow = _clDayName(1);
+    const isWorkDay     = _clIsWorkDay(0);
+    const tomorrowWork  = _clIsWorkDay(1);
+    const hour = new Date().getHours();
+    const isEvening = hour >= 17;
+
+    const dayType  = isWorkDay ? '💼 Work Day' : '🌿 Day Off';
+    const weekLabel = _weeklyPlan.week_of
+      ? `Week of ${_weeklyPlan.week_of}`
+      : 'Tell Brain your week to activate smart reminders';
+
+    let html = `<div class="cl-header"><span class="cl-today">${today} — ${dayType}</span><span class="cl-week">${weekLabel}</span></div>`;
+
+    // Today's special events
+    const todayEvents = _clEventsFor(0);
+    if (todayEvents.length) {
+      html += `<div class="cl-section-label">📌 Today</div>`;
+      todayEvents.forEach(e => { html += `<div class="cl-event">📅 ${e.note}</div>`; });
+    }
+
+    // Build today's checklist: always items + workday items if applicable
+    const activeItems = [...items.always, ...(isWorkDay ? items.workday : [])];
+
+    if (activeItems.length) {
+      html += `<div class="cl-section-label">Today's checklist</div>`;
+      activeItems.forEach((item, i) => {
+        const isDone = done.has(item);
+        const safeItem = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        html += `<label class="cl-item${isDone ? ' done' : ''}" onclick="clToggle('${safeItem}')">
+          <span class="cl-check">${isDone ? '✓' : ''}</span>
+          <span class="cl-label">${item}</span></label>`;
+      });
+    } else if (!_weeklyPlan.work_days.length) {
+      html += `<div class="cl-no-plan">Tell Brain your week schedule and I'll show the right reminders for each day 🗓️</div>`;
+    }
+
+    // Evening nudge: pack for tomorrow if it's a work day
+    if (isEvening && tomorrowWork) {
+      const tevents = _clEventsFor(1);
+      let msg = `🎒 Tomorrow (${tomorrow}) is a work day!`;
+      if (tevents.length) msg += ` Don't forget: ${tevents.map(e => e.note).join(', ')}.`;
+      msg += ' Pack tonight before you forget!';
+      html += `<div class="cl-nudge">${msg}</div>`;
+    }
+
+    // Add custom item
+    html += `<div class="cl-add"><input id="cl-new" type="text" placeholder="Add to checklist…" onkeydown="if(event.key==='Enter')clAddItem()"><button onclick="clAddItem()">+</button></div>`;
+
+    panel.innerHTML = html;
+
+    // Update badge (unchecked count)
+    const unchecked = activeItems.filter(i => !done.has(i)).length;
+    const badge = $('cl-badge');
+    if (badge) { badge.textContent = unchecked || ''; badge.style.display = unchecked ? 'flex' : 'none'; }
+  }
+
+  function clToggle(item) {
+    const done = _clGetDone();
+    if (done.has(item)) done.delete(item); else done.add(item);
+    _clSetDone(done);
+    _clRender();
+  }
+
+  function clAddItem() {
+    const input = $('cl-new');
+    const val = (input ? input.value.trim() : '');
+    if (!val) return;
+    const items = _clGetItems() || _clDefaultItems();
+    items.always.push(val);
+    _clSaveItems(items);
+    if (input) input.value = '';
+    _clRender();
+    showToast('✓ Added to checklist');
+  }
+
+  function toggleChecklist() {
+    const panel = $('cl-panel');
+    if (!panel) return;
+    const opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (opening) _clRender();
+  }
+
+  // Refresh checklist every 5 min (time-based nudges change)
+  setInterval(() => { if ($('cl-panel') && $('cl-panel').classList.contains('open')) _clRender(); }, 5 * 60 * 1000);
+  // Also update badge every 5 min even when panel is closed
+  setInterval(_clRender, 5 * 60 * 1000);
+
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1598,6 +1755,12 @@
 
 <!-- Pomodoro floating widget -->
 <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
+
+<!-- Daily Checklist widget -->
+<div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">
+  ✅<span id="cl-badge"></span>
+</div>
+<div id="cl-panel"></div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
 <div id="qc-sheet">

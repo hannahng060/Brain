@@ -62,7 +62,7 @@ def init_db():
         )
     """)
     # Seed default empty sections
-    sections = ['about','health','nutrition','fitness','career','personal','routines']
+    sections = ['about','health','nutrition','fitness','career','personal','routines','weekly_plan']
     for s in sections:
         cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
     # Migrate old category names to new ones
@@ -380,6 +380,17 @@ def build_profile_context() -> str:
         lines.append(f"[{labels.get(k, k)}]: {v}")
     return "\n".join(lines)
 
+def db_save_weekly_plan(week_of: str, work_days: list, events: list, notes: str) -> dict:
+    plan = json.dumps({
+        "week_of": week_of,
+        "work_days": [d.strip().capitalize() for d in work_days],
+        "events": events,
+        "notes": notes,
+        "saved_at": datetime.now().isoformat()
+    })
+    db_update_profile_section("weekly_plan", plan)
+    return {"status": "saved", "work_days": work_days, "week_of": week_of}
+
 def db_clear_messages():
     conn = get_db()
     cur = conn.cursor()
@@ -518,6 +529,30 @@ TOOLS = [
         }
     },
     {
+        "name": "save_weekly_plan",
+        "description": "Save the user's weekly schedule when she tells you her work days and plans for the week. This is NOT a note — it's a live setting used for smart reminders. Overwrites previous week's plan.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "week_of":    {"type": "string", "description": "Week range e.g. 'May 4-10, 2026'"},
+                "work_days":  {"type": "array", "items": {"type": "string"}, "description": "Work day names e.g. ['Monday', 'Wednesday', 'Thursday']"},
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "day":  {"type": "string", "description": "Day name e.g. 'Monday'"},
+                            "note": {"type": "string", "description": "What's happening e.g. 'PT appointment', 'Date night with David'"}
+                        }
+                    },
+                    "description": "Special events or appointments by day"
+                },
+                "notes": {"type": "string", "description": "Any other notes about the week", "default": ""}
+            },
+            "required": ["work_days"]
+        }
+    },
+    {
         "name": "no_save",
         "description": "Use ONLY as your very first action when the message is purely conversational with zero new information — e.g. 'thanks', 'ok', 'got it'. NEVER call this after already calling save_note or update_note. Do NOT use this if the user mentions any fact, experience, plan, or knowledge.",
         "input_schema": {
@@ -635,6 +670,7 @@ RULES:
        - If text starts with "prayer:" or "my words:" → preserve it VERBATIM, word for word, exactly as she wrote it.
        - If text is enclosed in quotation marks ("...") → this is someone else's words; summarize or paraphrase it rather than quoting it in full.
     i. NO REPETITION: Never state the same fact in two different sections. For example, if she woke up at 4am, write it once in MORNING ROUTINE and do NOT mention it again in REFLECTIONS, SPIRITUAL, or ACTIVITIES. Each piece of information belongs in exactly one section.
+15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
@@ -675,6 +711,13 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
         return db_update_note(note_id, fields)
+    elif name == "save_weekly_plan":
+        return db_save_weekly_plan(
+            args.get("week_of", ""),
+            args.get("work_days", []),
+            args.get("events", []),
+            args.get("notes", "")
+        )
     return {"error": "unknown tool"}
 
 def content_to_dict(block) -> dict:
@@ -900,6 +943,19 @@ async def last_error():
     if not _last_error:
         return {"ok": True, "message": "No errors recorded since last deploy."}
     return _last_error
+
+@app.get("/weekly-plan")
+async def get_weekly_plan(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    profile = db_get_profile()
+    plan_raw = profile.get("weekly_plan", "")
+    if not plan_raw or not plan_raw.strip():
+        return {"work_days": [], "events": [], "week_of": "", "notes": ""}
+    try:
+        return json.loads(plan_raw)
+    except Exception:
+        return {"work_days": [], "events": [], "week_of": "", "notes": ""}
 
 @app.get("/stats")
 async def get_stats(request: Request):
