@@ -1755,17 +1755,15 @@
       body: JSON.stringify({ priorities: ps, study_focus: sf, date_str: ds })
     }).then(function(resp) {
       if (resp && resp.ok) {
-        if (!window._focusData) window._focusData = { date:'', priorities:[], study_focus:'' };
-        window._focusData.date = ds;
-        window._focusData.priorities = ps;
-        window._focusData.study_focus = sf;
-        renderFocus();
-        showToast('🎯 Focus set!');
+        loadDailyFocus().then(function() {
+          renderFocus();
+          showToast('🎯 Focus set!');
+        });
       } else {
         showToast('Save failed: ' + (resp ? resp.status : 'no response'));
       }
     }).catch(function(err) {
-      showToast('Error: ' + err.message);
+      showToast('Network error: ' + err.message);
     });
   }
 
@@ -2063,7 +2061,7 @@
     </div>
     <p style="font-size:13px;color:#888;margin:0 0 10px">One item per line. Start a line with <strong>study:</strong> for your study topic.</p>
     <textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications"></textarea>
-    <button onclick="saveFocusFromEditor()" style="margin-top:10px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Focus</button>
+    <button onclick="saveFocusFromEditor()" style="margin-top:10px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;" id="fp-save-btn">Save Focus</button>
   </div>
   <!-- Items view -->
   <div id="fp-items" style="display:none">
