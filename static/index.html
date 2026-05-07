@@ -1621,12 +1621,9 @@
   function _clSaveItems(items) { localStorage.setItem('brain_checklist', JSON.stringify(items)); }
   function _clDefaultItems() {
     return {
-      always: [
-        '💊 Vitamin',
-        '🏃 Exercise',
-        '🥑 Healthy snack'
-      ],
-      workday: ['🥗 Pack lunch', '👜 Pack work bag']
+      always:  ['💊 Vitamin', '🧘 Stretch', '🥑 Healthy snack'],
+      workday: ['🥗 Pack lunch', '👜 Pack work bag'],
+      dayoff:  ['🏃 Exercise']
     };
   }
 
@@ -1678,8 +1675,11 @@
       todayEvents.forEach(e => { html += `<div class="cl-event">📅 ${e.note}</div>`; });
     }
 
-    // Build today's checklist: always items + workday items if applicable
-    const activeItems = [...items.always, ...(isWorkDay ? items.workday : [])];
+    // Build today's checklist: always + workday items on work days, dayoff items on days off
+    const activeItems = [
+      ...items.always,
+      ...(isWorkDay ? (items.workday || []) : (items.dayoff || []))
+    ];
 
     if (activeItems.length) {
       html += `<div class="cl-section-label">Today's checklist</div>`;
@@ -1750,9 +1750,10 @@
   // ── Timed in-app nudge chips (shown on dashboard) ─────────────────────
   // Each nudge: { item: checklist label, nudgeHour: show after this hour, emoji, label }
   const _NUDGE_SCHEDULE = [
-    { item: '💊 Vitamin',       nudgeHour: 12, emoji: '💊', label: 'Take your vitamin!' },
-    { item: '🥑 Healthy snack', nudgeHour: 14, emoji: '🥑', label: 'Healthy snack time' },
-    { item: '🏃 Exercise',      nudgeHour: 17, emoji: '🏃', label: 'Move your body today' },
+    { item: '💊 Vitamin',       nudgeHour: 12, emoji: '💊', label: 'Take your vitamin!',        workdayOnly: false },
+    { item: '🧘 Stretch',       nudgeHour: 16, emoji: '🧘', label: 'Time to stretch!',          workdayOnly: false },
+    { item: '🥑 Healthy snack', nudgeHour: 14, emoji: '🥑', label: 'Healthy snack time',        workdayOnly: false },
+    { item: '🏃 Exercise',      nudgeHour: 10, emoji: '🏃', label: 'Great day to exercise!',    workdayOnly: false },
   ];
 
   function _clDismissedKey() { return 'brain_dismissed_' + new Date().toISOString().split('T')[0]; }
@@ -1770,13 +1771,17 @@
     const done = _clGetDone();
     const dismissed = _clGetDismissed();
     const items = _clGetItems() || _clDefaultItems();
-    const allItems = [...items.always, ...((_weeklyPlan.work_days||[]).includes(_clDayName(0)) ? items.workday : [])];
+    const todayIsWork = (_weeklyPlan.work_days||[]).includes(_clDayName(0));
+    const allItems = [
+      ...items.always,
+      ...(todayIsWork ? (items.workday||[]) : (items.dayoff||[]))
+    ];
 
     const chips = _NUDGE_SCHEDULE.filter(n =>
-      hour >= n.nudgeHour &&               // it's time
-      allItems.includes(n.item) &&         // item is on their checklist
-      !done.has(n.item) &&                 // not checked off yet
-      !dismissed.has(n.item)              // not dismissed today
+      hour >= n.nudgeHour &&       // it's time
+      allItems.includes(n.item) && // item is active today
+      !done.has(n.item) &&         // not checked off yet
+      !dismissed.has(n.item)       // not dismissed today
     );
 
     container.innerHTML = chips.map(n =>
