@@ -1341,11 +1341,11 @@
       }
       data = await res.json();
       appendMessage('brain', data.reply);
+      loadWeakAreas();
       if(data.saves && data.saves.length > 0) {
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
         loadStreak();
-        loadWeakAreas();
       }
       fetch('/notes?limit=500').then(r=>r.json()).then(n=>{
         allNotes=n;
