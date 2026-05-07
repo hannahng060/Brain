@@ -475,6 +475,13 @@
   const $ = id => document.getElementById(id);
   let allNotes = [];
   let currentCat = 'all';
+  // Surprise Me state
+  let _surpriseSeen    = new Set();
+  let _surpriseLastCat = null;
+  // Pomodoro state
+  let _pomoState = 'idle';
+  let _pomoSecs  = 25 * 60;
+  let _pomoTimer = null;
   let currentSubcat = 'all';
   let currentTag = null;
 
@@ -1489,9 +1496,6 @@
   }
 
   // ── Surprise Me ──────────────────────────────────────────────────────
-  let _surpriseSeen    = new Set();
-  let _surpriseLastCat = null;
-
   async function surpriseMe() {
     try {
       // Fetch fresh if allNotes not loaded yet
@@ -1526,10 +1530,6 @@
   }
 
   // ── Pomodoro Timer ────────────────────────────────────────────────────
-  let _pomoState = 'idle';   // 'idle' | 'focus' | 'break'
-  let _pomoSecs  = 25 * 60;
-  let _pomoTimer = null;
-
   function togglePomo() {
     if (_pomoState === 'idle') {
       _pomoState = 'focus';
