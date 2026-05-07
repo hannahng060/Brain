@@ -1745,12 +1745,13 @@
     }).slice(0,3);
     const date_str = new Date().toISOString().split('T')[0];
     try {
-      await fetch('/daily-focus', { method:'POST', headers:{'Content-Type':'application/json'},
+      const r = await fetch('/daily-focus', { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ priorities, study_focus, date_str }) });
+      if (!r.ok) { showToast('Save failed: ' + r.status); return; }
       _focusData = { date: date_str, priorities, study_focus };
-      renderFocus();
+      try { renderFocus(); } catch(re) { console.error('renderFocus error:', re); }
       showToast('🎯 Focus set!');
-    } catch(e) { showToast('Could not save — try again'); }
+    } catch(e) { showToast('Network error: ' + e.message); console.error('save focus error:', e); }
   }
 
   function toggleFocusItem(item) {
