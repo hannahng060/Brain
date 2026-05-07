@@ -122,6 +122,8 @@
     #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
     #cl-panel { position:fixed; top:110px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
     #cl-panel.open { display:block; }
+    #focus-panel { position:fixed; top:110px; right:320px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
+    #focus-panel.open { display:block; }
     .cl-header { margin-bottom:12px; }
     .cl-today { font-weight:700; font-size:15px; display:block; color:var(--text); }
     .cl-week { font-size:12px; color:#888; display:block; margin-top:2px; }
@@ -360,7 +362,6 @@
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🎯 Focus</div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
         </div>
-        <div id="dash-focus" style="display:none;margin-bottom:10px"></div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="dash-weak" style="display:none;margin-bottom:10px"></div>
@@ -1682,18 +1683,16 @@
   }
 
   function toggleFocusPanel() {
-    const el = $('dash-focus');
-    if (!el) return;
-    const isOpen = el.style.display === 'block';
-    if (isOpen) { el.style.display = 'none'; return; }
-    el.style.display = 'block';
-    renderFocus();
+    const panel = $('focus-panel');
+    if (!panel) return;
+    const opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (opening) renderFocus();
   }
 
   function renderFocus(showEditor) {
-    const el = $('dash-focus');
+    const el = $('focus-panel');
     if (!el) return;
-    el.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
@@ -2032,6 +2031,7 @@
 <div id="toast"></div>
 
 <div id="cl-panel"></div>
+<div id="focus-panel"></div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
 <div id="qc-sheet">
