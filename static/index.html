@@ -1684,14 +1684,16 @@
   function toggleFocusPanel() {
     const el = $('dash-focus');
     if (!el) return;
-    const isOpen = el.style.display !== 'none';
-    el.style.display = isOpen ? 'none' : 'block';
-    if (!isOpen) renderFocus();
+    const isOpen = el.style.display === 'block';
+    if (isOpen) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    renderFocus();
   }
 
   function renderFocus(showEditor) {
     const el = $('dash-focus');
-    if (!el || el.style.display === 'none') return;
+    if (!el) return;
+    el.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
