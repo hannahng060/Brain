@@ -65,6 +65,15 @@ def init_db():
     sections = ['about','health','nutrition','fitness','career','personal','routines','weekly_plan']
     for s in sections:
         cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS quiz_results (
+            id          SERIAL PRIMARY KEY,
+            topic       TEXT NOT NULL,
+            question    TEXT NOT NULL,
+            result      TEXT NOT NULL CHECK (result IN ('right','partial','wrong')),
+            created_at  TIMESTAMP DEFAULT NOW()
+        )
+    """)
     # Migrate old category names to new ones
     cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
     conn.commit()
@@ -380,6 +389,39 @@ def build_profile_context() -> str:
         lines.append(f"[{labels.get(k, k)}]: {v}")
     return "\n".join(lines)
 
+def db_save_quiz_result(topic: str, question: str, result: str) -> dict:
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO quiz_results (topic, question, result) VALUES (%s, %s, %s) RETURNING id",
+        (topic, question[:200], result)
+    )
+    row = cur.fetchone()
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "saved", "id": row["id"]}
+
+def db_get_weak_areas(limit: int = 8) -> list:
+    """Return topics sorted by lowest score (most wrong answers first)."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT topic,
+               COUNT(*) as total,
+               SUM(CASE WHEN result='right'   THEN 1 ELSE 0 END) as rights,
+               SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) as partials,
+               SUM(CASE WHEN result='wrong'   THEN 1 ELSE 0 END) as wrongs,
+               ROUND(100.0 * (SUM(CASE WHEN result='right' THEN 1 ELSE 0 END) +
+                              SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) * 0.5) / COUNT(*)) AS score_pct
+        FROM quiz_results
+        GROUP BY topic
+        HAVING COUNT(*) >= 2
+        ORDER BY score_pct ASC
+        LIMIT %s
+    """, (limit,))
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return [dict(r) for r in rows]
+
 def db_save_weekly_plan(week_of: str, work_days: list, events: list, notes: str) -> dict:
     plan = json.dumps({
         "week_of": week_of,
@@ -529,6 +571,20 @@ TOOLS = [
         }
     },
     {
+        "name": "save_quiz_result",
+        "description": "Call this immediately after evaluating the user's quiz answer — BEFORE giving feedback. Records whether she got it right, partial, or wrong so Brain can track weak areas and focus future quizzes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topic":    {"type": "string", "description": "The subcategory/topic of the question e.g. 'Medications', 'DSM-5', 'CBT', 'Trauma-Focused', 'Neuroscience'"},
+                "question": {"type": "string", "description": "First 150 characters of the question asked"},
+                "result":   {"type": "string", "enum": ["right","partial","wrong"],
+                             "description": "right=fully correct and complete, partial=correct concept but missing key details, wrong=incorrect or didn't know"}
+            },
+            "required": ["topic", "question", "result"]
+        }
+    },
+    {
         "name": "save_weekly_plan",
         "description": "Save the user's weekly schedule when she tells you her work days and plans for the week. This is NOT a note — it's a live setting used for smart reminders. Overwrites previous week's plan.",
         "input_schema": {
@@ -675,13 +731,24 @@ RULES:
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
     c. If truly no notes found: say ONE sentence only — "No clinical notes saved yet — add some and I'll quiz you." Nothing more.
-    d. Ask ONE question at a time. Question types: definition, mechanism, indication, side effect, dosing, DSM criteria, or clinical scenario.
+    d. Ask ONE question at a time. Question style rules:
+       - Simple, direct clinical stem — one sentence maximum
+       - High yield only: mechanism of action, first-line treatment, key DSM criteria, black box warning, contraindication, side effect profile, or a brief clinical scenario
+       - Open ended — never multiple choice
+       - Expected answer: 1–3 sentences
+       - End with "Take your time!" on a new line
     e. Wait for the user's answer. Do NOT give the answer before they respond.
-    f. After their answer:
-       - If correct: confirm it, then add one key clinical pearl or real-world application from the notes to deepen understanding.
-       - If incorrect or incomplete: gently correct them, explain the right answer thoroughly using their notes, highlight the 1-2 most important things to remember, and offer a memory trick if helpful.
-       - Either way: end with the teaching, not a question. Let the user ask for the next one when ready.
-    g. Keep going if user asks for another question, says "next", or "keep going".
+    f. After their answer — do this IN ORDER:
+       1. FIRST call save_quiz_result with the topic and result (right/partial/wrong) — do this before giving any feedback
+          - right = fully correct and complete
+          - partial = right idea but missing key details (e.g. knew the drug class but not the mechanism)
+          - wrong = incorrect or said they didn't know
+       2. THEN give feedback:
+          - right: confirm briefly, add ONE clinical pearl to deepen understanding. Keep it short.
+          - partial: affirm what she got right, fill in the missing piece clearly, give a memory trick if helpful.
+          - wrong: gently correct, explain the right answer in 2–3 sentences using plain language, give ONE memory hook.
+       3. End with the teaching point — not another question. Let her ask for the next one.
+    g. Keep going if user says "next", "another", or "keep going".
     h. At the end give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
@@ -711,6 +778,12 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
         return db_update_note(note_id, fields)
+    elif name == "save_quiz_result":
+        return db_save_quiz_result(
+            args.get("topic", "General"),
+            args.get("question", ""),
+            args.get("result", "wrong")
+        )
     elif name == "save_weekly_plan":
         return db_save_weekly_plan(
             args.get("week_of", ""),
@@ -1213,26 +1286,53 @@ async def start_quiz(body: QuizRequest, request: Request):
 
     import random as _random
     notes_list = list(notes)
-    _random.shuffle(notes_list)
-    # Pick a random starting note to anchor the question — forces variety
-    anchor = notes_list[0]
-    anchor_topic = anchor['subcategory'] or anchor['summary'] or 'this topic'
 
-    # Build context from notes (shuffled)
+    # ── Weight toward weak areas ──────────────────────────────────────────
+    weak_areas = db_get_weak_areas(limit=5)
+    weak_topics = [w["topic"] for w in weak_areas]  # sorted weakest first
+
+    # Separate notes into weak and non-weak buckets
+    weak_notes   = [n for n in notes_list if (n["subcategory"] or "") in weak_topics]
+    other_notes  = [n for n in notes_list if (n["subcategory"] or "") not in weak_topics]
+    _random.shuffle(weak_notes)
+    _random.shuffle(other_notes)
+
+    # 70% chance to pick from weak bucket if it has notes, otherwise random
+    if weak_notes and _random.random() < 0.70:
+        anchor = weak_notes[0]
+        ordered_notes = weak_notes + other_notes
+    else:
+        _random.shuffle(notes_list)
+        anchor = notes_list[0]
+        ordered_notes = notes_list
+
+    anchor_topic = anchor["subcategory"] or anchor["summary"] or "clinical knowledge"
+
+    # Build context (up to 40 notes, weak-first)
+    context_notes = ordered_notes[:40]
     notes_text = "\n\n---\n\n".join(
-        f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{n['content']}"
-        for n in notes_list
+        f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{strip_html(n['content'])[:600]}"
+        for n in context_notes
     )
     topic_label = "clinical knowledge" if topic_lower in ("all_clinical", "all clinical", "clinical", "") else (body.topic or "clinical knowledge")
 
+    # Weak area hint for the prompt
+    weak_hint = ""
+    if weak_areas:
+        weak_list = ", ".join(f"{w['topic']} ({w['score_pct']}%)" for w in weak_areas[:3])
+        weak_hint = f"\nHer current weak areas (lowest scores): {weak_list}. Prioritize these topics."
+
     quiz_prompt = (
-        f"You are quizzing a PMHNP student on her own saved notes. "
-        f"Topic requested: {topic_label}.\n\n"
-        f"Here are her notes (in random order):\n{notes_text}\n\n"
-        f"IMPORTANT: Focus your question on '{anchor_topic}' — do NOT ask about the same topic as last time. "
-        "Vary the question type each time: mechanism, indication, side effect, dosing, DSM criteria, "
-        "differential, therapy technique, or clinical scenario. "
-        "Ask ONE question only — no answer, no options, no explanation. "
+        f"You are quizzing Hannah, a PMHNP student preparing for her board exam, using her own saved notes.\n"
+        f"Topic: {topic_label}.{weak_hint}\n\n"
+        f"Notes:\n{notes_text}\n\n"
+        f"Focus this question on: {anchor_topic}\n\n"
+        "Write ONE board-style question. Rules:\n"
+        "- One clear sentence — no preamble, no 'which of the following'\n"
+        "- High yield: mechanism of action, first-line treatment, key DSM criteria, black box warning, contraindication, or brief clinical scenario\n"
+        "- Open ended — expected answer is 1–3 sentences\n"
+        "- Simple language, clinical precision\n"
+        "- Do NOT give the answer or any hints\n"
         "End with 'Take your time!' on a new line."
     )
 
@@ -1247,6 +1347,12 @@ async def start_quiz(body: QuizRequest, request: Request):
     db_add_message("user", f"Quiz me on {topic_label}")
     db_add_message("assistant", question)
     return {"reply": question}
+
+@app.get("/quiz/weak-areas")
+async def get_weak_areas(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return db_get_weak_areas(limit=6)
 
 @app.delete("/notes/{note_id}")
 async def delete_note(note_id: int, request: Request):

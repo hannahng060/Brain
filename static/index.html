@@ -145,6 +145,17 @@
     #dash-streak { display:none; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#e65100; background:#fff3e0; border:1.5px solid #ffcc80; border-radius:20px; padding:4px 12px; }
     #dash-streak.cold { color:#888; background:var(--surface); border-color:var(--border); font-weight:400; }
 
+    /* ── Weak areas panel ── */
+    #dash-weak { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:10px 14px; }
+    .weak-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#888; margin-bottom:8px; }
+    .weak-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:13px; }
+    .weak-label { flex:1; color:var(--text); font-weight:500; }
+    .weak-bar-wrap { width:80px; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+    .weak-bar { height:100%; border-radius:4px; background:#e53935; transition:width .4s; }
+    .weak-bar.ok  { background:#fb8c00; }
+    .weak-bar.good { background:#43a047; }
+    .weak-pct { font-size:12px; color:#888; width:30px; text-align:right; }
+
     /* ── In-app reminder nudge chips ── */
     .reminder-chip { display:inline-flex; align-items:center; gap:6px; background:#fff8e1; border:1.5px solid #ffb300; border-radius:20px; padding:5px 12px; font-size:13px; color:#7a5800; font-weight:600; cursor:pointer; transition:opacity .2s; }
     .reminder-chip:hover { opacity:.75; }
@@ -338,6 +349,7 @@
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+        <div id="dash-weak" style="display:none;margin-bottom:10px"></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
           <div class="quote-card" id="dash-quote"></div>
           <button class="banner-refresh" onclick="refreshBanner('quote')" title="New quote">↻</button>
@@ -643,7 +655,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1333,6 +1345,7 @@
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
         loadStreak();
+        loadWeakAreas();
       }
       fetch('/notes?limit=500').then(r=>r.json()).then(n=>{
         allNotes=n;
@@ -1614,6 +1627,29 @@
     if (_pomoState === 'idle')  { w.textContent = '🍅'; w.title = 'Start 25-min focus timer'; }
     if (_pomoState === 'focus') { w.textContent = `🍅 ${m}:${s}`; w.title = 'Tap to stop'; }
     if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
+  }
+
+  // ── Weak areas dashboard ──────────────────────────────────────────────
+  async function loadWeakAreas() {
+    try {
+      const r = await fetch('/quiz/weak-areas');
+      if (!r.ok) return;
+      const areas = await r.json();
+      const el = $('dash-weak');
+      if (!el) return;
+      if (!areas.length) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      const rows = areas.map(a => {
+        const pct = parseInt(a.score_pct) || 0;
+        const barClass = pct >= 70 ? 'good' : pct >= 50 ? 'ok' : '';
+        return `<div class="weak-row">
+          <span class="weak-label">📌 ${a.topic}</span>
+          <div class="weak-bar-wrap"><div class="weak-bar ${barClass}" style="width:${pct}%"></div></div>
+          <span class="weak-pct">${pct}%</span>
+        </div>`;
+      }).join('');
+      el.innerHTML = `<div class="weak-title">📊 Focus areas — quiz yourself on these</div>${rows}`;
+    } catch(e) { /* silent */ }
   }
 
   // ── Study streak tracker ──────────────────────────────────────────────
