@@ -1611,33 +1611,35 @@
     if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
   }
 
-  // ── Streak tracker ────────────────────────────────────────────────────
+  // ── Study streak tracker ──────────────────────────────────────────────
   async function loadStreak() {
     try {
-      const r = await fetch('/notes?category=lifestyle&limit=200');
+      const r = await fetch('/notes?category=all&limit=500');
       if (!r.ok) return;
       const notes = await r.json();
 
-      // Collect unique dates that have a daily log entry
-      const logDates = new Set();
+      // Clinical categories that count as "study"
+      const studyCats = new Set(['psychiatry','psychotherapy','icu','np_fellowship']);
+
+      // Collect unique local dates where she saved a clinical note
+      const studyDates = new Set();
       notes.forEach(n => {
-        if (!n.subcategory || !n.subcategory.toLowerCase().includes('daily log')) return;
+        if (!studyCats.has(n.category)) return;
         const d = new Date(n.created_at);
-        // Use local date string as key: YYYY-MM-DD
-        logDates.add(d.toLocaleDateString('en-CA')); // en-CA gives YYYY-MM-DD
+        studyDates.add(d.toLocaleDateString('en-CA'));
       });
 
-      // Count consecutive days backwards from today
+      // Count consecutive study days backwards from today
       let streak = 0;
       const today = new Date();
       for (let i = 0; i < 365; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
         const key = d.toLocaleDateString('en-CA');
-        if (logDates.has(key)) {
+        if (studyDates.has(key)) {
           streak++;
         } else if (i === 0) {
-          // Today hasn't been logged yet — check if yesterday started the streak
+          // Haven't studied today yet — don't break, check yesterday
           continue;
         } else {
           break;
@@ -1647,20 +1649,21 @@
       const el = $('dash-streak');
       if (!el) return;
       el.style.display = 'inline-flex';
-      if (streak >= 2) {
+      if (streak >= 7) {
         el.className = '';
-        const msgs = [
-          `🔥 ${streak}-day logging streak — keep it going!`,
-          `🔥 ${streak} days in a row — you're on fire!`,
-          `🔥 ${streak}-day streak — consistency is everything!`,
-        ];
-        el.textContent = msgs[streak % msgs.length];
+        el.textContent = `📚 ${streak}-day study streak — board exam ready! 🔥`;
+      } else if (streak >= 3) {
+        el.className = '';
+        el.textContent = `📚 ${streak}-day study streak — building momentum!`;
+      } else if (streak >= 2) {
+        el.className = '';
+        el.textContent = `📚 ${streak} study days in a row — keep going!`;
       } else if (streak === 1) {
         el.className = '';
-        el.textContent = '🔥 Day 1 — every streak starts here!';
+        el.textContent = `📚 Studied yesterday — do it again today!`;
       } else {
         el.className = 'cold';
-        el.textContent = '📅 Log today to start your streak';
+        el.textContent = `📚 Study today to start your streak`;
       }
     } catch(e) { /* silent fail */ }
   }
