@@ -1489,31 +1489,39 @@
   }
 
   // ── Surprise Me ──────────────────────────────────────────────────────
-  let _surpriseSeen    = new Set();  // IDs already shown this cycle
-  let _surpriseLastCat = null;       // last category shown — avoid repeating
+  let _surpriseSeen    = new Set();
+  let _surpriseLastCat = null;
 
-  function surpriseMe() {
-    let pool = allNotes.filter(n => n.content && n.content.length > 30);
-    if (!pool.length) { showToast('No notes yet — add some first!'); return; }
+  async function surpriseMe() {
+    try {
+      // Fetch fresh if allNotes not loaded yet
+      if (!allNotes.length) {
+        const r = await fetch('/notes?limit=500');
+        if (r.ok) allNotes = await r.json();
+      }
+      let pool = allNotes.filter(n => n.content && n.content.length > 30);
+      if (!pool.length) { showToast('No notes yet — add some first!'); return; }
 
-    // Remove already-seen notes; if all seen, reset for a new cycle
-    let unseen = pool.filter(n => !_surpriseSeen.has(n.id));
-    if (!unseen.length) {
-      _surpriseSeen.clear();
-      unseen = pool;
-      showToast('✨ Full cycle complete — starting fresh!');
+      // Remove already-seen; reset when full cycle done
+      let unseen = pool.filter(n => !_surpriseSeen.has(n.id));
+      if (!unseen.length) {
+        _surpriseSeen.clear();
+        unseen = pool;
+        showToast('✨ Full cycle done — starting fresh!');
+      }
+
+      // Prefer different category from last shown
+      const fresh = unseen.filter(n => n.category !== _surpriseLastCat);
+      const candidates = fresh.length ? fresh : unseen;
+      const note = candidates[Math.floor(Math.random() * candidates.length)];
+
+      _surpriseSeen.add(note.id);
+      _surpriseLastCat = note.category;
+      openNoteDirectly(note);
+      showToast('✨ Surprise!');
+    } catch(e) {
+      showToast('Something went wrong — try again');
     }
-
-    // Prefer a different category than last time
-    const fresh = unseen.filter(n => n.category !== _surpriseLastCat);
-    const candidates = fresh.length ? fresh : unseen;
-
-    const note = candidates[Math.floor(Math.random() * candidates.length)];
-    _surpriseSeen.add(note.id);
-    _surpriseLastCat = note.category;
-
-    openNoteDirectly(note);
-    showToast('✨ Surprise!');
   }
 
   // ── Pomodoro Timer ────────────────────────────────────────────────────
