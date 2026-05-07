@@ -1686,49 +1686,45 @@
     if (!el) return;
     const isOpen = el.style.display !== 'none';
     el.style.display = isOpen ? 'none' : 'block';
-    if (!isOpen) renderFocus(true);
+    if (!isOpen) renderFocus();
   }
 
-  function renderFocus(forceOpen) {
+  function renderFocus(showEditor) {
     const el = $('dash-focus');
-    if (!el) return;
-    // Only render content if panel is visible or forced open
-    if (el.style.display === 'none' && !forceOpen) return;
-    el.style.display = 'block';
+    if (!el || el.style.display === 'none') return;
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
-    if (!hasFocus) {
-      el.innerHTML = `<div class="focus-title">🎯 Today's Focus</div>
-        <div id="focus-editor"></div>`;
-      showFocusEditor();
+
+    if (!hasFocus || showEditor) {
+      // Show editor directly
+      const existing = hasFocus
+        ? [...(_focusData.priorities||[]), _focusData.study_focus ? `study: ${_focusData.study_focus}` : ''].filter(Boolean).join('\n')
+        : '';
+      el.innerHTML = `
+        <div class="focus-title">🎯 Today's Focus</div>
+        <textarea id="focus-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;margin-bottom:6px" placeholder="One item per line e.g.&#10;Submit credentialing docs&#10;Call insurance&#10;study: Medications">${existing}</textarea>
+        <button onclick="saveFocusFromEditor()" style="padding:7px 16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Save</button>`;
+      const ta = $('focus-input');
+      if (ta) ta.focus();
       return;
     }
-    const items = _focusData.priorities.map((p,i) => {
+
+    // Show filled state
+    const items = (_focusData.priorities||[]).map(p => {
       const isDone = _focusDone.has(p);
-      return `<div class="focus-item${isDone?' done':''}" onclick="toggleFocusItem('${p.replace(/'/g,"\\'")}')">
+      const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<div class="focus-item${isDone?' done':''}" onclick="toggleFocusItem('${safe}')">
         <span class="fi-check">${isDone?'✓':''}</span><span>${p}</span></div>`;
     }).join('');
     const study = _focusData.study_focus
       ? `<div class="focus-study">📚 Study focus: ${_focusData.study_focus}</div>` : '';
-    el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">✏️ edit</button></div>
-      ${items}${study}<div id="focus-editor" style="display:none"></div>`;
+    el.innerHTML = `
+      <div class="focus-title">🎯 Today's Focus <button onclick="renderFocus(true)" style="background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;font-family:inherit;padding:0;">✏️ edit</button></div>
+      ${items}${study}`;
   }
 
-  function showFocusEditor() {
-    const editor = $('focus-editor');
-    if (!editor) return;
-    const today = new Date().toISOString().split('T')[0];
-    const isToday = _focusData.date === today;
-    const existing = isToday
-      ? [..._focusData.priorities, _focusData.study_focus ? `study: ${_focusData.study_focus}` : ''].filter(Boolean).join('\n')
-      : '';
-    editor.style.display = 'block';
-    editor.innerHTML = `<textarea id="focus-input" rows="4" placeholder="One item per line. e.g:\nSubmit credentialing docs\nCall insurance\nstudy: Medications">${existing}</textarea>
-      <button class="focus-save-btn" onclick="saveFocusFromEditor()">Save</button>`;
-    const ta = $('focus-input');
-    if (ta) ta.focus();
-  }
+  function showFocusEditor() { renderFocus(true); }
 
   async function saveFocusFromEditor() {
     const ta = $('focus-input');
