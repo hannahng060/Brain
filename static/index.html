@@ -1980,6 +1980,15 @@
     if (opening) _clRender();
   }
 
+  // Close checklist when clicking anywhere outside it
+  document.addEventListener('click', function(e) {
+    const panel = $('cl-panel');
+    if (!panel || !panel.classList.contains('open')) return;
+    if (!panel.contains(e.target) && !e.target.closest('#cl-btn')) {
+      panel.classList.remove('open');
+    }
+  });
+
   // Refresh checklist every 5 min (time-based nudges change)
   setInterval(() => { if ($('cl-panel') && $('cl-panel').classList.contains('open')) _clRender(); }, 5 * 60 * 1000);
   // Also update badge + nudges every 5 min even when panel is closed
