@@ -1670,13 +1670,13 @@
   }
 
   // ── Today's Focus ─────────────────────────────────────────────────────
-  let _focusData = { date:'', priorities:[], study_focus:'' };
-  let _focusDone = new Set();
+  var _focusData = { date:'', priorities:[], study_focus:'' };
+  var _focusDone = new Set();
 
   async function loadDailyFocus() {
     try {
       const r = await fetch('/daily-focus');
-      if (r.ok) _focusData = await r.json();
+      if (r.ok) { var d = await r.json(); _focusData.date = d.date||''; _focusData.priorities = d.priorities||[]; _focusData.study_focus = d.study_focus||''; }
     } catch(e) {}
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
@@ -1733,26 +1733,37 @@
 
   function showFocusEditor() { renderFocus(true); }
 
-  async function saveFocusFromEditor() {
-    const ta = document.getElementById('focus-input');
-    if (!ta) return;
-    const lines = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
-    let study_focus = '';
-    const priorities = lines.filter(function(l) {
-      const m = l.match(/^study:\s*(.+)/i);
-      if (m) { study_focus = m[1]; return false; }
-      return true;
-    }).slice(0,3);
-    const date_str = new Date().toISOString().split('T')[0];
-    let r;
-    try { r = await fetch('/daily-focus', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ priorities, study_focus, date_str }) });
-    } catch(fe) { showToast('Fetch threw: ' + fe.message); return; }
-    if (!r || !r.ok) { showToast('HTTP error: ' + (r ? r.status : 'no response')); return; }
-    try { _focusData = { date: date_str, priorities: priorities, study_focus: study_focus }; }
-    catch(de) { showToast('Data assign error: ' + de.message); return; }
-    try { renderFocus(); } catch(re) { showToast('Render error: ' + re.message); return; }
-    showToast('🎯 Focus set!');
+  function saveFocusFromEditor() {
+    var ta = document.getElementById('focus-input');
+    if (!ta) { showToast('No input found'); return; }
+    var raw = ta.value;
+    var lines = raw.split('\n');
+    var sf = '';
+    var ps = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      var m = line.match(/^study:\s*(.+)/i);
+      if (m) { sf = m[1]; } else if (ps.length < 3) { ps.push(line); }
+    }
+    var ds = new Date().toISOString().split('T')[0];
+    fetch('/daily-focus', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ priorities: ps, study_focus: sf, date_str: ds })
+    }).then(function(resp) {
+      if (resp && resp.ok) {
+        _focusData.date = ds;
+        _focusData.priorities = ps;
+        _focusData.study_focus = sf;
+        renderFocus();
+        showToast('🎯 Focus set!');
+      } else {
+        showToast('Save failed: ' + (resp ? resp.status : 'no response'));
+      }
+    }).catch(function(err) {
+      showToast('Error: ' + err.message);
+    });
   }
 
   function toggleFocusItem(item) {
