@@ -1678,7 +1678,7 @@
   async function loadDailyFocus() {
     try {
       const r = await fetch('/daily-focus');
-      if (r.ok) { var d = await r.json(); _focusData.date = d.date||''; _focusData.priorities = d.priorities||[]; _focusData.study_focus = d.study_focus||''; }
+      if (r.ok) { var d = await r.json(); _focusData = { date: d.date||'', priorities: d.priorities||[], study_focus: d.study_focus||'' }; }
     } catch(e) {}
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
@@ -1696,6 +1696,7 @@
   }
 
   function renderFocus(showEditor) {
+    if (!_focusData) _focusData = { date:'', priorities:[], study_focus:'' };
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
