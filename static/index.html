@@ -1694,46 +1694,41 @@
   }
 
   function renderFocus(showEditor) {
-    const el = $('focus-panel');
-    if (!el) return;
     const today = new Date().toISOString().split('T')[0];
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
+    const editor = $('fp-editor');
+    const items  = $('fp-items');
+    const list   = $('fp-list');
+    if (!editor || !items) return;
 
     if (!hasFocus || showEditor) {
-      const existing = hasFocus
-        ? [...(_focusData.priorities||[]), _focusData.study_focus ? 'study: ' + _focusData.study_focus : ''].filter(Boolean).join('\n')
-        : '';
-      el.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
-          '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
-          '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
-        '</div>' +
-        '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">One item per line. Start a line with <strong>study:</strong> to set your study topic.</p>' +
-        '<textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications">' + existing + '</textarea>' +
-        '<button onclick="saveFocusFromEditor()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Focus</button>';
-      setTimeout(function() { var ta = document.getElementById('focus-input'); if (ta) ta.focus(); }, 80);
+      // Show editor, fill textarea with existing data if any
+      const ta = $('focus-input');
+      if (ta) {
+        ta.value = hasFocus
+          ? [...(_focusData.priorities||[]), _focusData.study_focus ? 'study: ' + _focusData.study_focus : ''].filter(Boolean).join('\n')
+          : '';
+      }
+      editor.style.display = 'block';
+      items.style.display  = 'none';
       return;
     }
 
-    // Show filled state
-    const items = (_focusData.priorities||[]).map(function(p) {
-      const isDone = _focusDone.has(p);
-      const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return '<div class="focus-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + safe + '\')">' +
-        '<span class="fi-check">' + (isDone ? '✓' : '') + '</span><span>' + p + '</span></div>';
-    }).join('');
-    const study = _focusData.study_focus
-      ? '<div class="focus-study">📚 Study focus: ' + _focusData.study_focus + '</div>' : '';
-    el.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
-        '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
-        '<div style="display:flex;gap:10px;align-items:center">' +
-          '<button onclick="renderFocus(true)" style="background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;font-family:inherit;padding:0">✏️ edit</button>' +
-          '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
-        '</div>' +
-      '</div>' +
-      items + study;
+    // Show filled/items state
+    editor.style.display = 'none';
+    items.style.display  = 'block';
+    if (list) {
+      const rows = (_focusData.priorities||[]).map(function(p) {
+        const isDone = _focusDone.has(p);
+        const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="focus-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + safe + '\')">' +
+          '<span class="fi-check">' + (isDone ? '✓' : '') + '</span><span>' + p + '</span></div>';
+      }).join('');
+      const study = _focusData.study_focus
+        ? '<div class="focus-study">📚 Study: ' + _focusData.study_focus + '</div>' : '';
+      list.innerHTML = rows + study;
+    }
   }
 
   function showFocusEditor() { renderFocus(true); }
@@ -2043,7 +2038,29 @@
 
 <div id="cl-panel"></div>
 <div id="focus-overlay" onclick="toggleFocusPanel()"></div>
-<div id="focus-panel"></div>
+<div id="focus-panel">
+  <!-- Editor view -->
+  <div id="fp-editor">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:700">🎯 Today's Focus</div>
+      <button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:24px;color:#aaa;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>
+    <p style="font-size:13px;color:#888;margin:0 0 10px">One item per line. Start a line with <strong>study:</strong> for your study topic.</p>
+    <textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications"></textarea>
+    <button onclick="saveFocusFromEditor()" style="margin-top:10px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Focus</button>
+  </div>
+  <!-- Items view -->
+  <div id="fp-items" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:700">🎯 Today's Focus</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button onclick="showFocusEditor()" style="background:none;border:none;font-size:14px;color:#888;cursor:pointer;font-family:inherit;padding:0">✏️ edit</button>
+        <button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:24px;color:#aaa;cursor:pointer;line-height:1;padding:0">×</button>
+      </div>
+    </div>
+    <div id="fp-list"></div>
+  </div>
+</div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
 <div id="qc-sheet">
