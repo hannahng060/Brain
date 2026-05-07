@@ -414,7 +414,7 @@ def db_get_weak_areas(limit: int = 8) -> list:
                               SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) * 0.5) / COUNT(*)) AS score_pct
         FROM quiz_results
         GROUP BY topic
-        HAVING COUNT(*) >= 2
+        HAVING COUNT(*) >= 1
         ORDER BY score_pct ASC
         LIMIT %s
     """, (limit,))
