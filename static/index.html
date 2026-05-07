@@ -538,6 +538,10 @@
 </div>
 
 <script>
+  // Focus state declared first so it's always initialized
+  var _focusData = { date:'', priorities:[], study_focus:'' };
+  var _focusDone = new Set();
+
   const $ = id => document.getElementById(id);
   let allNotes = [];
   let currentCat = 'all';
@@ -1670,8 +1674,6 @@
   }
 
   // ── Today's Focus ─────────────────────────────────────────────────────
-  var _focusData = { date:'', priorities:[], study_focus:'' };
-  var _focusDone = new Set();
 
   async function loadDailyFocus() {
     try {
