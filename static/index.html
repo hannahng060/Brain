@@ -1520,7 +1520,8 @@
       openNoteDirectly(note);
       showToast('✨ Surprise!');
     } catch(e) {
-      showToast('Something went wrong — try again');
+      console.error('surpriseMe error:', e);
+      showToast('⚠️ ' + (e.message || 'Unknown error'));
     }
   }
 
