@@ -1699,9 +1699,9 @@
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
     if (!hasFocus) {
-      el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">+ Set</button></div>
-        <div class="focus-empty">Tell Brain your top priorities and study topic for today.<br><em style="font-size:12px">"Today I want to finish X, Y, and study Medications"</em></div>
-        <div id="focus-editor" style="display:none"></div>`;
+      el.innerHTML = `<div class="focus-title">🎯 Today's Focus</div>
+        <div id="focus-editor"></div>`;
+      showFocusEditor();
       return;
     }
     const items = _focusData.priorities.map((p,i) => {
@@ -1711,7 +1711,7 @@
     }).join('');
     const study = _focusData.study_focus
       ? `<div class="focus-study">📚 Study focus: ${_focusData.study_focus}</div>` : '';
-    el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">edit</button></div>
+    el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">✏️ edit</button></div>
       ${items}${study}<div id="focus-editor" style="display:none"></div>`;
   }
 
