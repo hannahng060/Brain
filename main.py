@@ -285,6 +285,14 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
         re.IGNORECASE | re.DOTALL
     )
     match = header_pattern.search(content)
+    # Backward-compat: old logs have "SPIRITUAL / LEARNING" as a single section.
+    # If SPIRITUAL or LEARNING not found, fall back to the combined header.
+    if not match and section.upper() in ("SPIRITUAL", "LEARNING"):
+        fallback_pattern = re.compile(
+            r'(<strong><u>SPIRITUAL\s*/\s*LEARNING:<\/u><\/strong>)(.*?)(?=<strong><u>|\Z)',
+            re.IGNORECASE | re.DOTALL
+        )
+        match = fallback_pattern.search(content)
     if not match:
         cur.close(); conn.close()
         return {"status": "error", "message": f"Section '{section}' not found in note {note_id}"}
@@ -481,7 +489,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL / LEARNING, OURA RING METRICS, ANALYSIS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -603,20 +611,30 @@ RULES:
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
 
-<strong><u>SPIRITUAL / LEARNING:</u></strong>
-[data or —]
+<strong><u>SPIRITUAL:</u></strong>
+[faith, prayer, scripture, gratitude to God, faith moments — preserve prayer: and my words: verbatim; summarize quoted text from others]
+
+<strong><u>LEARNING:</u></strong>
+[books, articles, podcasts, courses, study insights, things learned today]
 
 <strong><u>EVENING ROUTINE:</u></strong>
 [data or —]
 
 <strong><u>REFLECTIONS:</u></strong>
-[personal thoughts, feelings, gratitude, moments, anything on her mind today]
+[personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
 
 <strong><u>ANALYSIS:</u></strong>
 [brief summary connecting the day's data]
 
     e. Meals always go in the MEALS section of Daily Log. NEVER create a separate Diet note for today's meals.
     f. Personal thoughts, feelings, reflections, gratitude, or anything about how the day feels → always go in the REFLECTIONS section of the Daily Log. NEVER create a separate Personal note for these. If no Daily Log exists yet for today, create one first, then add the reflection.
+    g. SECTION ROUTING — SPIRITUAL vs REFLECTIONS:
+       - SPIRITUAL = her relationship with God/faith: prayers, scripture, devotionals, faith moments, blessings she attributes to God, gratitude TO God. Route here if she says "I prayed", "I read the Bible", "God...", "blessed", "scripture", "devotion", or anything faith-related.
+       - REFLECTIONS = her relationship with herself: personal feelings, self-awareness, emotional processing, observations about her day, gratitude FOR experiences/people, moments that mattered. Route here if she says "I feel", "I realized", "I'm proud", "I'm grateful for [person/event]", "I noticed", or any inner-world observation not directed at God.
+    h. QUOTE HANDLING in SPIRITUAL section:
+       - If text starts with "prayer:" or "my words:" → preserve it VERBATIM, word for word, exactly as she wrote it.
+       - If text is enclosed in quotation marks ("...") → this is someone else's words; summarize or paraphrase it rather than quoting it in full.
+    i. NO REPETITION: Never state the same fact in two different sections. For example, if she woke up at 4am, write it once in MORNING ROUTINE and do NOT mention it again in REFLECTIONS, SPIRITUAL, or ACTIVITIES. Each piece of information belongs in exactly one section.
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
     b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
