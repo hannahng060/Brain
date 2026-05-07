@@ -112,6 +112,11 @@
     .quote-insight { display:inline; font-style:normal; color:#666; }
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
 
+    /* ── Pomodoro ── */
+    #pomo-widget { position:fixed; bottom:76px; right:14px; z-index:400; display:flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:6px 12px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.1); font-size:13px; font-weight:600; font-family:inherit; user-select:none; transition:background .3s,border-color .3s; }
+    #pomo-widget.focus { background:#fff3e0; border-color:#e65100; color:#e65100; }
+    #pomo-widget.break { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; }
+
     /* ── Quick Capture ── */
     .tab.qc-tab { color:var(--primary); font-weight:700; }
     .tab.qc-tab:active { transform:scale(.92); }
@@ -788,6 +793,16 @@
 
       renderBanner($('dash-quote'),     $('wrap-quote'),     window._bannerDecks.quote.deck,     '💡');
       renderBanner($('dash-knowledge'), $('wrap-knowledge'), window._bannerDecks.knowledge.deck, '🧠');
+
+      // Surprise Me button — always on dashboard
+      let surpriseRow = $('dash-surprise');
+      if (!surpriseRow) {
+        const row = document.createElement('div');
+        row.id = 'dash-surprise';
+        row.style = 'margin-top:10px';
+        row.innerHTML = `<button onclick="surpriseMe()" style="background:none;border:1.5px dashed var(--primary);color:var(--primary);border-radius:20px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;text-align:center">✨ Surprise me</button>`;
+        $('dashboard').appendChild(row);
+      }
     } catch(e) {}
   }
 
@@ -1473,6 +1488,65 @@
     }
   }
 
+  // ── Surprise Me ──────────────────────────────────────────────────────
+  async function surpriseMe() {
+    const pool = allNotes.filter(n => n.content && n.content.length > 30);
+    if (!pool.length) { showToast('No notes yet — add some first!'); return; }
+    const note = pool[Math.floor(Math.random() * pool.length)];
+    openNoteDirectly(note);
+    showToast('✨ Surprise!');
+  }
+
+  // ── Pomodoro Timer ────────────────────────────────────────────────────
+  let _pomoState = 'idle';   // 'idle' | 'focus' | 'break'
+  let _pomoSecs  = 25 * 60;
+  let _pomoTimer = null;
+
+  function togglePomo() {
+    if (_pomoState === 'idle') {
+      _pomoState = 'focus';
+      _pomoSecs  = 25 * 60;
+      _pomoTimer = setInterval(_pomoTick, 1000);
+    } else {
+      // Stop & reset
+      clearInterval(_pomoTimer);
+      _pomoTimer = null;
+      _pomoState = 'idle';
+      _pomoSecs  = 25 * 60;
+    }
+    _pomoRender();
+  }
+
+  function _pomoTick() {
+    _pomoSecs--;
+    if (_pomoSecs <= 0) {
+      clearInterval(_pomoTimer);
+      if (_pomoState === 'focus') {
+        showToast('🍅 Focus done! 5-min break starting…');
+        _pomoState = 'break';
+        _pomoSecs  = 5 * 60;
+        _pomoTimer = setInterval(_pomoTick, 1000);
+      } else {
+        showToast('☕ Break over — ready for another round?');
+        _pomoState = 'idle';
+        _pomoSecs  = 25 * 60;
+        _pomoTimer = null;
+      }
+    }
+    _pomoRender();
+  }
+
+  function _pomoRender() {
+    const w = $('pomo-widget');
+    if (!w) return;
+    const m = Math.floor(_pomoSecs / 60);
+    const s = String(_pomoSecs % 60).padStart(2, '0');
+    w.className = _pomoState === 'idle' ? '' : _pomoState;
+    if (_pomoState === 'idle')  { w.textContent = '🍅'; w.title = 'Start 25-min focus timer'; }
+    if (_pomoState === 'focus') { w.textContent = `🍅 ${m}:${s}`; w.title = 'Tap to stop'; }
+    if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1493,6 +1567,9 @@
   }
 </script>
 <div id="toast"></div>
+
+<!-- Pomodoro floating widget -->
+<div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
 <div id="qc-sheet">
