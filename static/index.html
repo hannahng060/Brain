@@ -142,8 +142,20 @@
     .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
     /* ── Streak display ── */
     #dash-tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-    #dash-streak { display:none; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#e65100; background:#fff3e0; border:1.5px solid #ffcc80; border-radius:20px; padding:4px 12px; }
-    #dash-streak.cold { color:#888; background:var(--surface); border-color:var(--border); font-weight:400; }
+    /* ── Today's Focus panel ── */
+    #dash-focus { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+    .focus-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#888; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+    .focus-title button { background:none; border:none; color:#aaa; font-size:13px; cursor:pointer; font-family:inherit; padding:0; }
+    .focus-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:14px; color:var(--text); cursor:pointer; border-radius:8px; }
+    .focus-item .fi-check { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; color:var(--primary); transition:all .15s; }
+    .focus-item.done .fi-check { background:var(--primary); border-color:var(--primary); color:white; }
+    .focus-item.done span { text-decoration:line-through; opacity:.5; }
+    .focus-study { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:13px; color:var(--primary); font-weight:600; }
+    .focus-empty { font-size:13px; color:#aaa; line-height:1.6; }
+    #focus-editor { margin-top:10px; }
+    #focus-editor textarea { width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); resize:none; outline:none; box-sizing:border-box; }
+    #focus-editor textarea:focus { border-color:var(--primary); }
+    #focus-editor .focus-save-btn { margin-top:6px; padding:7px 16px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
 
     /* ── Weak areas panel ── */
     #dash-weak { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:10px 14px; }
@@ -343,10 +355,11 @@
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
         <div id="dash-tools">
-          <div id="dash-streak"></div>
           <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
+          <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
         </div>
+        <div id="dash-focus" style="display:none;margin-bottom:10px"></div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="dash-weak" style="display:none;margin-bottom:10px"></div>
@@ -655,7 +668,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1342,6 +1355,7 @@
       data = await res.json();
       appendMessage('brain', data.reply);
       loadWeakAreas();
+      loadDailyFocus();
       if(data.saves && data.saves.length > 0) {
         showToast(`✓ ${data.saves.length} note${data.saves.length>1?'s':''} saved`);
         loadDashboard();
@@ -1652,7 +1666,99 @@
     } catch(e) { /* silent */ }
   }
 
-  // ── Study streak tracker ──────────────────────────────────────────────
+  // ── Today's Focus ─────────────────────────────────────────────────────
+  let _focusData = { date:'', priorities:[], study_focus:'' };
+  let _focusDone = new Set();
+
+  async function loadDailyFocus() {
+    try {
+      const r = await fetch('/daily-focus');
+      if (r.ok) _focusData = await r.json();
+    } catch(e) {}
+    const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
+    try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
+    renderFocus();
+  }
+
+  function renderFocus() {
+    const el = $('dash-focus');
+    if (!el) return;
+    const today = new Date().toISOString().split('T')[0];
+    const isToday = _focusData.date === today;
+    const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
+
+    el.style.display = 'block';
+    if (!hasFocus) {
+      el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">+ Set</button></div>
+        <div class="focus-empty">Tell Brain your top priorities and study topic for today.<br><em style="font-size:12px">"Today I want to finish X, Y, and study Medications"</em></div>
+        <div id="focus-editor" style="display:none"></div>`;
+      return;
+    }
+    const items = _focusData.priorities.map((p,i) => {
+      const isDone = _focusDone.has(p);
+      return `<div class="focus-item${isDone?' done':''}" onclick="toggleFocusItem('${p.replace(/'/g,"\\'")}')">
+        <span class="fi-check">${isDone?'✓':''}</span><span>${p}</span></div>`;
+    }).join('');
+    const study = _focusData.study_focus
+      ? `<div class="focus-study">📚 Study focus: ${_focusData.study_focus}</div>` : '';
+    el.innerHTML = `<div class="focus-title">🎯 Today's Focus <button onclick="showFocusEditor()">edit</button></div>
+      ${items}${study}<div id="focus-editor" style="display:none"></div>`;
+  }
+
+  function showFocusEditor() {
+    const editor = $('focus-editor');
+    if (!editor) return;
+    const today = new Date().toISOString().split('T')[0];
+    const isToday = _focusData.date === today;
+    const existing = isToday
+      ? [..._focusData.priorities, _focusData.study_focus ? `study: ${_focusData.study_focus}` : ''].filter(Boolean).join('\n')
+      : '';
+    editor.style.display = 'block';
+    editor.innerHTML = `<textarea id="focus-input" rows="4" placeholder="One item per line. e.g:\nSubmit credentialing docs\nCall insurance\nstudy: Medications">${existing}</textarea>
+      <button class="focus-save-btn" onclick="saveFocusFromEditor()">Save</button>`;
+    const ta = $('focus-input');
+    if (ta) ta.focus();
+  }
+
+  async function saveFocusFromEditor() {
+    const ta = $('focus-input');
+    if (!ta) return;
+    const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
+    let study_focus = '';
+    const priorities = lines.filter(l => {
+      const m = l.match(/^study:\s*(.+)/i);
+      if (m) { study_focus = m[1]; return false; }
+      return true;
+    }).slice(0,3);
+    const date_str = new Date().toISOString().split('T')[0];
+    try {
+      await fetch('/daily-focus', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ priorities, study_focus, date_str }) });
+      _focusData = { date: date_str, priorities, study_focus };
+      renderFocus();
+      showToast('🎯 Focus set!');
+    } catch(e) { showToast('Could not save — try again'); }
+  }
+
+  function toggleFocusItem(item) {
+    if (_focusDone.has(item)) _focusDone.delete(item); else _focusDone.add(item);
+    const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
+    localStorage.setItem(key, JSON.stringify([..._focusDone]));
+    renderFocus();
+  }
+
+  // ── Quick Win ─────────────────────────────────────────────────────────
+  async function doQuickWin() {
+    showTab('chat');
+    try {
+      const r = await fetch('/quiz/quick-win');
+      if (!r.ok) { showToast('Could not load — try again'); return; }
+      const data = await r.json();
+      appendMessage('brain', data.reply);
+    } catch(e) { showToast('Something went wrong'); }
+  }
+
+  // ── Study streak (kept for loadStreak calls but display removed) ───────
   async function loadStreak() {
     try {
       const r = await fetch('/notes?category=all&limit=500');
@@ -1689,7 +1795,7 @@
 
       const el = $('dash-streak');
       if (!el) return;
-      el.style.display = 'flex';
+      el.style.display = 'none'; // streak replaced by Today's Focus
       if (streak >= 7) {
         el.className = '';
         el.textContent = `📚 ${streak}-day study streak — board exam ready! 🔥`;

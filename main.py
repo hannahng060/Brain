@@ -62,7 +62,7 @@ def init_db():
         )
     """)
     # Seed default empty sections
-    sections = ['about','health','nutrition','fitness','career','personal','routines','weekly_plan']
+    sections = ['about','health','nutrition','fitness','career','personal','routines','weekly_plan','daily_focus']
     for s in sections:
         cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
     cur.execute("""
@@ -422,6 +422,21 @@ def db_get_weak_areas(limit: int = 8) -> list:
     cur.close(); conn.close()
     return [dict(r) for r in rows]
 
+def db_save_daily_focus(priorities: list, study_focus: str, date_str: str) -> dict:
+    data = json.dumps({"date": date_str, "priorities": priorities, "study_focus": study_focus})
+    db_update_profile_section("daily_focus", data)
+    return {"status": "saved", "date": date_str, "priorities": priorities, "study_focus": study_focus}
+
+def db_get_daily_focus() -> dict:
+    profile = db_get_profile()
+    raw = profile.get("daily_focus", "")
+    if not raw:
+        return {"date": "", "priorities": [], "study_focus": ""}
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"date": "", "priorities": [], "study_focus": ""}
+
 def db_save_weekly_plan(week_of: str, work_days: list, events: list, notes: str) -> dict:
     plan = json.dumps({
         "week_of": week_of,
@@ -585,6 +600,19 @@ TOOLS = [
         }
     },
     {
+        "name": "save_daily_focus",
+        "description": "Save today's focus: up to 3 daily priorities (any life area) + one study topic. Call this when the user sets their intentions for the day.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "priorities":   {"type": "array", "items": {"type": "string"}, "description": "Up to 3 priorities for today — anything: tasks, goals, errands, self-care"},
+                "study_focus":  {"type": "string", "description": "One clinical topic to focus studying on today e.g. 'Medications', 'DSM-5', 'CBT'"},
+                "date_str":     {"type": "string", "description": "Today's date e.g. '2026-05-07'"}
+            },
+            "required": ["priorities"]
+        }
+    },
+    {
         "name": "save_weekly_plan",
         "description": "Save the user's weekly schedule when she tells you her work days and plans for the week. This is NOT a note — it's a live setting used for smart reminders. Overwrites previous week's plan.",
         "input_schema": {
@@ -726,6 +754,7 @@ RULES:
        - If text starts with "prayer:" or "my words:" → preserve it VERBATIM, word for word, exactly as she wrote it.
        - If text is enclosed in quotation marks ("...") → this is someone else's words; summarize or paraphrase it rather than quoting it in full.
     i. NO REPETITION: Never state the same fact in two different sections. For example, if she woke up at 4am, write it once in MORNING ROUTINE and do NOT mention it again in REFLECTIONS, SPIRITUAL, or ACTIVITIES. Each piece of information belongs in exactly one section.
+16. DAILY FOCUS: When the user sets intentions for the day — priorities, goals, what they want to accomplish, what to study today — call save_daily_focus. Extract up to 3 priorities (any life area: work tasks, errands, self-care, personal) and one study topic. Examples: "today I want to focus on finishing my notes and studying CBT", "my top 3 today: call insurance, submit credentialing, study medications", "I want to get through my inbox and review DSM-5 today".
 15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
     a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
@@ -783,6 +812,12 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
             args.get("topic", "General"),
             args.get("question", ""),
             args.get("result", "wrong")
+        )
+    elif name == "save_daily_focus":
+        return db_save_daily_focus(
+            args.get("priorities", []),
+            args.get("study_focus", ""),
+            args.get("date_str", datetime.now().strftime("%Y-%m-%d"))
         )
     elif name == "save_weekly_plan":
         return db_save_weekly_plan(
@@ -1347,6 +1382,72 @@ async def start_quiz(body: QuizRequest, request: Request):
     db_add_message("user", f"Quiz me on {topic_label}")
     db_add_message("assistant", question)
     return {"reply": question}
+
+@app.get("/daily-focus")
+async def get_daily_focus(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return db_get_daily_focus()
+
+class DailyFocusRequest(BaseModel):
+    priorities: list
+    study_focus: Optional[str] = ""
+    date_str: Optional[str] = ""
+
+@app.post("/daily-focus")
+async def set_daily_focus(body: DailyFocusRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    date_str = body.date_str or datetime.now().strftime("%Y-%m-%d")
+    return db_save_daily_focus(body.priorities, body.study_focus or "", date_str)
+
+@app.get("/quiz/quick-win")
+async def quiz_quick_win(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    # Find the weak topic closest to mastery (highest score among weak areas)
+    weak = db_get_weak_areas(limit=10)
+    if weak:
+        # Sort by score descending — pick the "almost there" topic
+        best = sorted(weak, key=lambda x: x["score_pct"], reverse=True)[0]
+        target_topic = best["topic"]
+    else:
+        target_topic = None
+    # Fetch notes for that topic
+    conn = get_db(); cur = conn.cursor()
+    if target_topic:
+        cur.execute(
+            "SELECT content, summary, subcategory FROM notes WHERE subcategory = %s ORDER BY RANDOM() LIMIT 20",
+            (target_topic,)
+        )
+    else:
+        cur.execute(
+            "SELECT content, summary, subcategory FROM notes WHERE category IN ('psychiatry','psychotherapy','icu','np_fellowship') ORDER BY RANDOM() LIMIT 20"
+        )
+    notes = cur.fetchall(); cur.close(); conn.close()
+    if not notes:
+        return {"reply": "Add some clinical notes first and I'll find you a quick win! 💪"}
+    import random as _r; _r.shuffle(list(notes))
+    notes_text = "\n\n---\n\n".join(
+        f"[{n['subcategory']}] {n['summary']}\n{strip_html(n['content'])[:400]}"
+        for n in notes
+    )
+    prompt = (
+        f"You are quizzing a PMHNP student. She needs a confidence boost — pick the most straightforward, achievable question from this topic: {target_topic or 'clinical knowledge'}.\n\n"
+        f"Notes:\n{notes_text}\n\n"
+        "Write ONE easy but meaningful question — something she likely knows or is close to knowing. "
+        "A clear definition, a well-known first-line treatment, or a basic DSM criterion. "
+        "One sentence. Open ended. End with 'You got this! 💪' on a new line."
+    )
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001", max_tokens=200,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    question = response.content[0].text.strip() if response.content else "Could not generate a question."
+    db_add_message("user", f"Quick win quiz on {target_topic or 'clinical knowledge'}")
+    db_add_message("assistant", question)
+    topic_label = f"your best chance right now: **{target_topic}**" if target_topic else "clinical knowledge"
+    return {"reply": f"⚡ Quick win — {topic_label}\n\n{question}"}
 
 @app.get("/quiz/weak-areas")
 async def get_weak_areas(request: Request):
