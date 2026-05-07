@@ -122,8 +122,9 @@
     #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
     #cl-panel { position:fixed; top:110px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
     #cl-panel.open { display:block; }
-    #focus-panel { position:fixed; top:110px; left:14px; right:14px; max-width:320px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:402; display:none; max-height:72vh; overflow-y:auto; }
-    #focus-panel.open { display:block; }
+    #focus-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #focus-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:10px; max-height:80dvh; overflow-y:auto; }
+    #focus-panel.open { display:flex; }
     .cl-header { margin-bottom:12px; }
     .cl-today { font-weight:700; font-size:15px; display:block; color:var(--text); }
     .cl-week { font-size:12px; color:#888; display:block; margin-top:2px; }
@@ -1684,9 +1685,11 @@
 
   function toggleFocusPanel() {
     const panel = $('focus-panel');
+    const overlay = $('focus-overlay');
     if (!panel) return;
     const opening = !panel.classList.contains('open');
     panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
     if (opening) renderFocus();
   }
 
@@ -1698,41 +1701,49 @@
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
 
     if (!hasFocus || showEditor) {
-      // Show editor directly
       const existing = hasFocus
-        ? [...(_focusData.priorities||[]), _focusData.study_focus ? `study: ${_focusData.study_focus}` : ''].filter(Boolean).join('\n')
+        ? [...(_focusData.priorities||[]), _focusData.study_focus ? 'study: ' + _focusData.study_focus : ''].filter(Boolean).join('\n')
         : '';
-      el.innerHTML = `
-        <div class="focus-title">🎯 Today's Focus</div>
-        <textarea id="focus-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;margin-bottom:6px" placeholder="One item per line e.g.&#10;Submit credentialing docs&#10;Call insurance&#10;study: Medications">${existing}</textarea>
-        <button onclick="saveFocusFromEditor()" style="padding:7px 16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Save</button>`;
-      const ta = $('focus-input');
-      if (ta) ta.focus();
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+          '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
+          '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
+        '</div>' +
+        '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">One item per line. Start a line with <strong>study:</strong> to set your study topic.</p>' +
+        '<textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications">' + existing + '</textarea>' +
+        '<button onclick="saveFocusFromEditor()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Focus</button>';
+      setTimeout(function() { var ta = document.getElementById('focus-input'); if (ta) ta.focus(); }, 80);
       return;
     }
 
     // Show filled state
-    const items = (_focusData.priorities||[]).map(p => {
+    const items = (_focusData.priorities||[]).map(function(p) {
       const isDone = _focusDone.has(p);
       const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return `<div class="focus-item${isDone?' done':''}" onclick="toggleFocusItem('${safe}')">
-        <span class="fi-check">${isDone?'✓':''}</span><span>${p}</span></div>`;
+      return '<div class="focus-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + safe + '\')">' +
+        '<span class="fi-check">' + (isDone ? '✓' : '') + '</span><span>' + p + '</span></div>';
     }).join('');
     const study = _focusData.study_focus
-      ? `<div class="focus-study">📚 Study focus: ${_focusData.study_focus}</div>` : '';
-    el.innerHTML = `
-      <div class="focus-title">🎯 Today's Focus <button onclick="renderFocus(true)" style="background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;font-family:inherit;padding:0;">✏️ edit</button></div>
-      ${items}${study}`;
+      ? '<div class="focus-study">📚 Study focus: ' + _focusData.study_focus + '</div>' : '';
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+        '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
+        '<div style="display:flex;gap:10px;align-items:center">' +
+          '<button onclick="renderFocus(true)" style="background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;font-family:inherit;padding:0">✏️ edit</button>' +
+          '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
+        '</div>' +
+      '</div>' +
+      items + study;
   }
 
   function showFocusEditor() { renderFocus(true); }
 
   async function saveFocusFromEditor() {
-    const ta = $('focus-input');
+    const ta = document.getElementById('focus-input');
     if (!ta) return;
-    const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const lines = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
     let study_focus = '';
-    const priorities = lines.filter(l => {
+    const priorities = lines.filter(function(l) {
       const m = l.match(/^study:\s*(.+)/i);
       if (m) { study_focus = m[1]; return false; }
       return true;
@@ -1751,7 +1762,7 @@
     if (_focusDone.has(item)) _focusDone.delete(item); else _focusDone.add(item);
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     localStorage.setItem(key, JSON.stringify([..._focusDone]));
-    renderFocus();
+    renderFocus(false);
   }
 
   // ── Quick Win ─────────────────────────────────────────────────────────
@@ -2031,6 +2042,7 @@
 <div id="toast"></div>
 
 <div id="cl-panel"></div>
+<div id="focus-overlay" onclick="toggleFocusPanel()"></div>
 <div id="focus-panel"></div>
 
 <div id="qc-overlay" onclick="closeQC()"></div>
