@@ -383,35 +383,37 @@
 <!-- App -->
 <div id="app">
 
+  <!-- Global Header (always visible) -->
+  <div class="page-header" id="global-header">
+    <div class="header-left">
+      <span style="font-size:22px">🌿</span>
+      <div><div style="font-size:18px;font-weight:700">The Fulfilled Living</div><div class="subtitle" id="app-subtitle">Your AI note team</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="top-tab-chat" class="top-tab active" onclick="showTab('chat')" title="Chat">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chat</span>
+      </button>
+      <button id="top-tab-notes" class="top-tab" onclick="showTab('notes')" title="Notes">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Notes</span>
+      </button>
+      <button id="top-tab-capture" class="top-tab" onclick="openQC()" title="Capture">
+        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Capture</span>
+      </button>
+      <button id="top-tab-profile" class="top-tab" onclick="showTab('profile')" title="Profile">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span>Profile</span>
+      </button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+      <button class="sign-out" onclick="loadDashboard()" title="New spark">↻ 💡</button>
+      <button class="sign-out" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
   <!-- Chat Page -->
   <div class="page active" id="chat-page">
-    <div class="page-header">
-      <div class="header-left">
-        <span style="font-size:22px">🌿</span>
-        <div><div style="font-size:18px;font-weight:700">The Fulfilled Living</div><div class="subtitle" id="app-subtitle">Your AI note team</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button id="top-tab-chat" class="top-tab active" onclick="showTab('chat')" title="Chat">
-          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>Chat</span>
-        </button>
-        <button id="top-tab-notes" class="top-tab" onclick="showTab('notes')" title="Notes">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <span>Notes</span>
-        </button>
-        <button id="top-tab-capture" class="top-tab" onclick="openQC()" title="Capture">
-          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span>Capture</span>
-        </button>
-        <button id="top-tab-profile" class="top-tab" onclick="showTab('profile')" title="Profile">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          <span>Profile</span>
-        </button>
-        <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-        <button class="sign-out" onclick="loadDashboard()" title="New spark">↻ 💡</button>
-        <button class="sign-out" onclick="doLogout()">Sign out</button>
-      </div>
-    </div>
     <div id="messages">
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
@@ -459,8 +461,8 @@
 
   <!-- Notes Page -->
   <div class="page" id="notes-page">
-    <div class="page-header">
-      <div><div style="font-size:18px;font-weight:700">My Notes</div><div class="subtitle" id="notes-count">Loading...</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0;flex-shrink:0;">
+      <div class="subtitle" id="notes-count">Loading...</div>
       <button class="sign-out" onclick="loadNotes()">Refresh</button>
     </div>
     <div class="category-scroll">
@@ -491,8 +493,8 @@
 
   <!-- Profile Page -->
   <div class="page" id="profile-page">
-    <div class="page-header">
-      <div><div style="font-size:18px;font-weight:700">My Profile</div><div class="subtitle">Brain uses this to know you</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0;flex-shrink:0;">
+      <div class="subtitle">Brain uses this to know you</div>
       <button class="sign-out" onclick="loadProfile()">Refresh</button>
     </div>
     <div id="profile-list"></div>
