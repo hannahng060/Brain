@@ -142,9 +142,9 @@
     .cl-editing .cl-delete { display:block; }
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
-    #mood-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #mood-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; }
-    #mood-panel.open { display:flex; }
+    #mood-overlay, #sleep-overlay, #meal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #mood-panel, #sleep-panel, #meal-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; max-height:85dvh; overflow-y:auto; }
+    #mood-panel.open, #sleep-panel.open, #meal-panel.open { display:flex; }
     .mood-row { display:flex; justify-content:space-around; align-items:center; }
     .mood-btn { font-size:13px; font-weight:600; background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:7px 12px; cursor:pointer; transition:all .15s; color:var(--text); white-space:nowrap; font-family:inherit; }
     .mood-btn.selected { border-color:var(--primary); background:var(--primary); color:white; }
@@ -394,6 +394,8 @@
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
+          <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
+          <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -2125,9 +2127,18 @@
     if (opening) { _selectedMood = ''; _selectedEnergy = 0; resetMoodUI(); }
   }
 
+  var _selectedStress = '';
+  function selectStress(el, val) {
+    _selectedStress = val;
+    document.querySelectorAll('#mood-panel .mood-btn[id^="stress-btn"]').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
   function resetMoodUI() {
-    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#mood-panel .mood-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+    _selectedStress = '';
+    var hr = $('mood-hr'); if (hr) hr.value = '';
     var btn = $('mood-save-btn');
     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
     var note = $('mood-note');
@@ -2163,7 +2174,10 @@
     var now = new Date();
     var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     var note = ($('mood-note') ? $('mood-note').value.trim() : '');
+    var hr = ($('mood-hr') ? $('mood-hr').value.trim() : '');
     var msg = 'Mood check-in (' + timeStr + '): ' + _selectedMood + '  Energy: ' + _selectedEnergy + '/5'
+      + (_selectedStress ? '  Daytime stress: ' + _selectedStress : '')
+      + (hr ? '  HR: ' + hr + ' bpm' : '')
       + (note ? '  —  ' + note : '');
     try {
       await fetch('/chat', {
@@ -2176,6 +2190,93 @@
     } catch(e) {
       showToast('Could not save — try again');
       if (btn) { btn.textContent = 'Log it'; btn.disabled = false; }
+    }
+  }
+
+  // ── Sleep Panel ───────────────────────────────────────────────────────
+  var _sleepQuality = '';
+  function toggleSleepPanel() {
+    var panel = $('sleep-panel'), overlay = $('sleep-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) { _sleepQuality = ''; document.querySelectorAll('#sleep-panel .mood-btn').forEach(b=>b.classList.remove('selected')); ['sleep-readiness','sleep-score','sleep-hours','sleep-note'].forEach(id=>{var el=$( id);if(el)el.value='';}); }
+  }
+  function selectSleepQuality(el, val) {
+    _sleepQuality = val;
+    document.querySelectorAll('#sleep-panel .mood-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  async function saveSleepLog() {
+    var btn = $('sleep-save-btn');
+    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+    var readiness = $('sleep-readiness') ? $('sleep-readiness').value : '';
+    var score = $('sleep-score') ? $('sleep-score').value : '';
+    var hours = $('sleep-hours') ? $('sleep-hours').value : '';
+    var note = $('sleep-note') ? $('sleep-note').value.trim() : '';
+    var parts = ['Morning check-in (Oura):'];
+    if (readiness) parts.push('Readiness: ' + readiness);
+    if (score) parts.push('Sleep score: ' + score);
+    if (hours) parts.push('Hours slept: ' + hours);
+    if (_sleepQuality) parts.push('Sleep quality: ' + _sleepQuality);
+    if (note) parts.push('Notes: ' + note);
+    try {
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  ')}) });
+      showToast('🌙 Morning check-in logged!');
+      toggleSleepPanel();
+    } catch(e) {
+      showToast('Could not save — try again');
+      if (btn) { btn.textContent = 'Log Morning'; btn.disabled = false; }
+    }
+  }
+
+  // ── Meal Panel ────────────────────────────────────────────────────────
+  var _mealTime = '', _mealSize = '', _mealType = '';
+  function toggleMealPanel() {
+    var panel = $('meal-panel'), overlay = $('meal-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) {
+      _mealTime = ''; _mealSize = ''; _mealType = '';
+      document.querySelectorAll('#meal-panel .mood-btn').forEach(b=>b.classList.remove('selected'));
+      var mn = $('meal-note'); if (mn) mn.value = '';
+      var mb = $('meal-save-btn'); if (mb) { mb.disabled=true; mb.style.opacity='.5'; mb.textContent='Log Meal'; }
+      // Auto-detect time of day
+      var h = new Date().getHours();
+      var autoTime = h < 11 ? '🌅 Morning' : h < 15 ? '☀️ Afternoon' : h < 20 ? '🌆 Evening' : '🌙 Late night';
+      document.querySelectorAll('#meal-panel .mood-btn').forEach(b => { if (b.textContent.trim() === autoTime) { b.classList.add('selected'); _mealTime = autoTime; } });
+      checkMealReady();
+    }
+  }
+  function selectMealTime(el, val) { _mealTime = val; document.querySelectorAll('#meal-panel [onclick^="selectMealTime"]').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); checkMealReady(); }
+  function selectMealSize(el, val) { _mealSize = val; document.querySelectorAll('#meal-panel [onclick^="selectMealSize"]').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); checkMealReady(); }
+  function selectMealType(el, val) { _mealType = val; document.querySelectorAll('#meal-panel [onclick^="selectMealType"]').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); checkMealReady(); }
+  function checkMealReady() {
+    var btn = $('meal-save-btn');
+    var ready = _mealTime && _mealSize;
+    if (btn) { btn.disabled = !ready; btn.style.opacity = ready ? '1' : '.5'; }
+  }
+  async function saveMealLog() {
+    var btn = $('meal-save-btn');
+    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+    var now = new Date();
+    var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+    var note = $('meal-note') ? $('meal-note').value.trim() : '';
+    var isLate = now.getHours() >= 20;
+    var msg = 'Meal log (' + timeStr + '): ' + _mealTime + '  Size: ' + _mealSize
+      + (_mealType ? '  Type: ' + _mealType : '')
+      + (isLate ? '  ⚠️ Late meal' : '')
+      + (note ? '  — ' + note : '');
+    try {
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      showToast('🍽️ Meal logged!' + (isLate ? ' (late meal noted)' : ''));
+      toggleMealPanel();
+    } catch(e) {
+      showToast('Could not save — try again');
+      if (btn) { btn.textContent = 'Log Meal'; btn.disabled = false; }
     }
   }
 
@@ -2351,10 +2452,99 @@
     </div>
   </div>
   <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Daytime Stress <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — from Oura)</span></div>
+    <div class="mood-grid">
+      <button class="mood-btn" id="stress-btn-relaxed" onclick="selectStress(this,'Relaxed')">😌 Relaxed</button>
+      <button class="mood-btn" id="stress-btn-low" onclick="selectStress(this,'Low')">🟢 Low</button>
+      <button class="mood-btn" id="stress-btn-moderate" onclick="selectStress(this,'Moderate')">🟡 Moderate</button>
+      <button class="mood-btn" id="stress-btn-high" onclick="selectStress(this,'High')">🔴 High</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Heart Rate <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <input id="mood-hr" type="number" placeholder="e.g. 72 bpm" min="30" max="220" style="width:140px;padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none">
+  </div>
+  <div>
     <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">What's behind this? <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
     <textarea id="mood-note" rows="2" placeholder="e.g. work was overwhelming, great workout, argument with someone..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5"></textarea>
   </div>
   <button id="mood-save-btn" onclick="saveMoodLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log it</button>
+</div>
+
+<div id="sleep-overlay" onclick="toggleSleepPanel()"></div>
+<div id="sleep-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:16px;font-weight:700">🌙 Morning Check-in</div>
+    <button onclick="toggleSleepPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Readiness</div>
+      <input id="sleep-readiness" type="number" placeholder="0–100" min="0" max="100" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    </div>
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Sleep Score</div>
+      <input id="sleep-score" type="number" placeholder="0–100" min="0" max="100" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    </div>
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Hours Slept</div>
+      <input id="sleep-hours" type="number" placeholder="e.g. 7.5" min="0" max="24" step="0.5" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Sleep Quality</div>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectSleepQuality(this,'Excellent')">✨ Excellent</button>
+      <button class="mood-btn" onclick="selectSleepQuality(this,'Good')">👍 Good</button>
+      <button class="mood-btn" onclick="selectSleepQuality(this,'Fair')">😐 Fair</button>
+      <button class="mood-btn" onclick="selectSleepQuality(this,'Poor')">😩 Poor</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Notes <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <input id="sleep-note" type="text" placeholder="e.g. woke up at 3am, vivid dreams..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+  </div>
+  <button id="sleep-save-btn" onclick="saveSleepLog()" style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Log Morning</button>
+</div>
+
+<div id="meal-overlay" onclick="toggleMealPanel()"></div>
+<div id="meal-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:16px;font-weight:700">🍽️ Meal Log</div>
+    <button onclick="toggleMealPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">When</div>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectMealTime(this,'🌅 Morning')">🌅 Morning</button>
+      <button class="mood-btn" onclick="selectMealTime(this,'☀️ Afternoon')">☀️ Afternoon</button>
+      <button class="mood-btn" onclick="selectMealTime(this,'🌆 Evening')">🌆 Evening</button>
+      <button class="mood-btn" onclick="selectMealTime(this,'🌙 Late night')">🌙 Late night</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Size</div>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectMealSize(this,'Light')">🥗 Light</button>
+      <button class="mood-btn" onclick="selectMealSize(this,'Medium')">🍱 Medium</button>
+      <button class="mood-btn" onclick="selectMealSize(this,'Large')">🍛 Large</button>
+      <button class="mood-btn" onclick="selectMealSize(this,'Skipped')">⏭️ Skipped</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Type</div>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectMealType(this,'Regular meal')">🥦 Regular</button>
+      <button class="mood-btn" onclick="selectMealType(this,'Comfort food')">🍕 Comfort food</button>
+      <button class="mood-btn" onclick="selectMealType(this,'Snack')">🍎 Snack</button>
+      <button class="mood-btn" onclick="selectMealType(this,'Eating out')">🍽️ Eating out</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">What did you eat? <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <input id="meal-note" type="text" placeholder="e.g. rice and chicken, leftovers, snacked on chips..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+  </div>
+  <button id="meal-save-btn" onclick="saveMealLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log Meal</button>
 </div>
 <div id="fin-overlay" onclick="toggleFinPanel()"></div>
 <div id="fin-panel">
