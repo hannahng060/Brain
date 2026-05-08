@@ -2210,7 +2210,7 @@
     var opening = !panel.classList.contains('open');
     panel.classList.toggle('open', opening);
     if (overlay) overlay.style.display = opening ? 'block' : 'none';
-    if (opening) { ['sleep-readiness','sleep-score','sleep-hours','sleep-deep','sleep-rem','sleep-note'].forEach(id=>{var el=$(id);if(el)el.value='';}); }
+    if (opening) { ['sleep-readiness','sleep-score','sleep-hours','sleep-deep','sleep-rem','sleep-debt','sleep-note'].forEach(id=>{var el=$(id);if(el)el.value='';}); }
   }
   function selectSleepQuality(el, val) {
     _sleepQuality = val;
@@ -2226,12 +2226,14 @@
     var note = $('sleep-note') ? $('sleep-note').value.trim() : '';
     var deep = $('sleep-deep') ? $('sleep-deep').value.trim() : '';
     var rem = $('sleep-rem') ? $('sleep-rem').value.trim() : '';
+    var debt = $('sleep-debt') ? $('sleep-debt').value.trim() : '';
     var parts = ['Morning check-in (Oura):'];
     if (readiness) parts.push('Readiness: ' + readiness);
     if (score) parts.push('Sleep score: ' + score);
     if (hours) parts.push('Hours slept: ' + hours);
     if (deep) parts.push('Deep sleep: ' + deep);
     if (rem) parts.push('REM sleep: ' + rem);
+    if (debt) parts.push('Sleep debt: ' + debt);
     if (note) parts.push('Notes: ' + note);
     try {
       await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  ')}) });
@@ -2522,6 +2524,13 @@
       <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">REM Sleep</div>
       <input id="sleep-rem" type="text" placeholder="e.g. 1h 30m" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
     </div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Sleep Debt</div>
+      <input id="sleep-debt" type="text" placeholder="e.g. 6h 30m" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    </div>
+    <div style="flex:1;min-width:120px"></div>
   </div>
   <div>
     <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Notes <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
