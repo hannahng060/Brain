@@ -120,6 +120,7 @@
     /* ── Checklist widget ── */
     #cl-btn { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:4px 12px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; user-select:none; position:relative; }
     #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
+    #cl-overlay { display:none; position:fixed; inset:0; z-index:400; }
     #cl-panel { position:fixed; top:110px; right:14px; width:290px; background:var(--bg); border:1.5px solid var(--border); border-radius:18px; padding:16px; box-shadow:0 4px 24px rgba(0,0,0,.15); z-index:401; display:none; max-height:72vh; overflow-y:auto; }
     #cl-panel.open { display:block; }
     #focus-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
@@ -1860,7 +1861,7 @@
   function _clDefaultItems() {
     return {
       always:  ['💊 Vitamin', '🧘 Stretch', '🥑 Healthy snack'],
-      workday: ['🥗 Pack lunch'],
+      workday: [],
       dayoff:  ['🏃 Exercise']
     };
   }
@@ -1974,20 +1975,19 @@
 
   function toggleChecklist() {
     const panel = $('cl-panel');
+    const overlay = $('cl-overlay');
     if (!panel) return;
     const opening = !panel.classList.contains('open');
     panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
     if (opening) _clRender();
   }
-
-  // Close checklist when clicking anywhere outside it
-  document.addEventListener('click', function(e) {
+  function closeChecklist() {
     const panel = $('cl-panel');
-    if (!panel || !panel.classList.contains('open')) return;
-    if (!panel.contains(e.target) && !e.target.closest('#cl-btn')) {
-      panel.classList.remove('open');
-    }
-  });
+    const overlay = $('cl-overlay');
+    if (panel) panel.classList.remove('open');
+    if (overlay) overlay.style.display = 'none';
+  }
 
   // Refresh checklist every 5 min (time-based nudges change)
   setInterval(() => { if ($('cl-panel') && $('cl-panel').classList.contains('open')) _clRender(); }, 5 * 60 * 1000);
@@ -2060,6 +2060,7 @@
 </script>
 <div id="toast"></div>
 
+<div id="cl-overlay" onclick="closeChecklist()"></div>
 <div id="cl-panel"></div>
 <div id="focus-overlay" onclick="toggleFocusPanel()"></div>
 <div id="focus-panel">
