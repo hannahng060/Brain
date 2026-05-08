@@ -307,8 +307,11 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
         return {"status": "error", "message": f"Section '{section}' not found in note {note_id}"}
 
     existing = match.group(2).strip()
-    if existing and existing not in ('—', '-', ''):
-        new_body = existing + '; ' + text
+    # OURA RING METRICS should always replace (never append) to prevent duplicate tables
+    if section.upper().replace(' ', '') in ('OURARINGMETRICS', 'OURA RING METRICS', 'OURA'):
+        new_body = text
+    elif existing and existing not in ('—', '-', ''):
+        new_body = existing + '\n\n' + text
     else:
         new_body = text
 
