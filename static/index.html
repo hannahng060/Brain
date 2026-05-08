@@ -2138,6 +2138,13 @@
     el.classList.add('selected');
   }
 
+  var _vyvanseType = '';
+  function selectVyvanseBrand(el, val) {
+    _vyvanseType = (_vyvanseType === val) ? '' : val;
+    document.querySelectorAll('#vyvanse-brand-btn,#vyvanse-generic-btn').forEach(b => b.classList.remove('selected'));
+    if (_vyvanseType) el.classList.add('selected');
+  }
+
   var _selectedResilience = '';
   function selectResilience(el, val) {
     _selectedResilience = val;
@@ -2154,6 +2161,8 @@
     var bp = $('mood-bp'); if (bp) bp.value = '';
     var vyvanse = $('mood-vyvanse'); if (vyvanse) vyvanse.value = '';
     var vt = $('mood-vyvanse-time'); if (vt) vt.value = '';
+    _vyvanseType = '';
+    document.querySelectorAll('#vyvanse-brand-btn,#vyvanse-generic-btn').forEach(b => b.classList.remove('selected'));
     var btn = $('mood-save-btn');
     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
     var note = $('mood-note');
@@ -2198,7 +2207,7 @@
       + (_selectedResilience ? '  Resilience: ' + _selectedResilience : '')
       + (hr ? '  HR: ' + hr + ' bpm' : '')
       + (bp ? '  BP: ' + bp + ' mmHg' : '')
-      + (vyvanse ? '  Vyvanse: ' + vyvanse + 'mg' + (vyvanseTime ? ' at ' + vyvanseTime : '') : '')
+      + (vyvanse ? '  Vyvanse' + (_vyvanseType ? ' (' + _vyvanseType + ')' : '') + ': ' + vyvanse + 'mg' + (vyvanseTime ? ' at ' + vyvanseTime : '') : '')
       + (note ? '  —  ' + note : '');
     try {
       await fetch('/chat', {
@@ -2452,10 +2461,12 @@
   </div>
   <div>
     <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Vyvanse <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <input id="mood-vyvanse" type="number" placeholder="mg" min="0" max="200" style="width:80px;padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none">
       <span style="font-size:13px;color:#aaa">mg at</span>
       <input id="mood-vyvanse-time" type="time" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none">
+      <button id="vyvanse-brand-btn" onclick="selectVyvanseBrand(this,'Brand')" class="mood-btn" style="font-size:12px;padding:6px 12px">Brand</button>
+      <button id="vyvanse-generic-btn" onclick="selectVyvanseBrand(this,'Generic')" class="mood-btn" style="font-size:12px;padding:6px 12px">Generic</button>
     </div>
   </div>
   <div>
