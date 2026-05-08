@@ -754,7 +754,7 @@
     await fetch('/logout', {method:'POST'}); location.reload();
   }
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();loadStreak();}})();
+  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();loadStreak();loadWeakAreas();loadDailyFocus();setTimeout(_updateFocusBadge,1500);}})();
 
   function shuffle(arr) {
     const a = [...arr];
