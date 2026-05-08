@@ -484,8 +484,8 @@ TOOLS = [
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Social Media","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
-                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media"],
-                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media"},
+                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"],
+                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -577,7 +577,7 @@ TOOLS = [
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Relationships",
-                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media"]},
+                                         "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
@@ -933,7 +933,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
         "personal: Reflections/Goals/Mental Health/Gratitude/Relationships. "
-        "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media.\n"
+        "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
     )
 
