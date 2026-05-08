@@ -478,8 +478,8 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle"],
-                                "description": "personal=inner world/feelings/journal/relationships/family (subcategories: Reflections, Goals, Mental Health, Gratitude, Relationships, Mom), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom"],
+                                "description": "personal=inner world/feelings/journal/relationships (subcategories: Reflections, Goals, Mental Health, Gratitude, Relationships), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["DSM-5","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
@@ -503,7 +503,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -527,7 +527,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 30},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "all"], "default": "all"}
             }
         }
     },
@@ -537,7 +537,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
@@ -730,7 +730,7 @@ Format as a single combined table with header row + one data row per check-in. I
 <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="padding:2px 20px 2px 0;color:#888">Stress</td><td style="padding:2px 20px 2px 0;color:#888">Resilience</td><td style="padding:2px 20px 2px 0;color:#888">HR</td><td style="color:#888">BP</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Relaxed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>66 bpm</strong></td><td><strong>118/76</strong></td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">3:00 PM</td><td style="padding:2px 20px 2px 0"><strong>😤 Frustrated</strong> — work stress</td><td style="padding:2px 20px 2px 0"><strong>2/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Stressed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>72 bpm</strong></td><td>—</td></tr></table>
 Daytime Stress, Resilience, HR, and BP always go HERE — never in OURA RING METRICS.
 If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g. "Vyvanse (Brand) 30mg at 9:00 AM").
-If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under personal → Mom capturing what happened, the emotional impact, and any relevant details.]
+If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under mom → the relevant subcategory (e.g. IEHP, Social Security, Medi-Cal) capturing what happened, the emotional impact, and any relevant details. Use mom → Quick Reference for phone numbers and account info.]
 
 <strong><u>ENERGY:</u></strong>
 [Covered inside the MOOD table above — do not create a separate ENERGY section entry if mood was logged together.]
