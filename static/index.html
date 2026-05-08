@@ -1067,7 +1067,7 @@
         </div>
         <div class="note-summary">${esc(n.summary||'Note')}</div>
 
-        <div class="note-content">${esc(stripHtml(n.content))}</div>
+        <div class="note-content">${previewWithHighlights(n.content)}</div>
         ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag" onclick="filterByTag('${esc(t)}',event)">${esc(t)}</span>`).join('')}</div>`:''}
       </div>`;
     }).join('');
@@ -2193,6 +2193,34 @@
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
   function stripHtml(s){ const d=document.createElement('div'); d.innerHTML=s||''; return d.textContent||''; }
+  function previewWithHighlights(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.innerHTML = s;
+    // Walk all nodes, keep text but wrap highlighted spans with their background
+    function walk(node) {
+      if (node.nodeType === 3) return document.createTextNode(node.textContent);
+      if (node.nodeType === 1) {
+        const bg = node.style && node.style.backgroundColor;
+        const isHighlight = bg && bg !== 'transparent' && bg !== '';
+        const frag = document.createDocumentFragment();
+        node.childNodes.forEach(c => frag.appendChild(walk(c)));
+        if (isHighlight) {
+          const span = document.createElement('span');
+          span.style.backgroundColor = bg;
+          span.style.borderRadius = '3px';
+          span.style.padding = '0 2px';
+          span.appendChild(frag);
+          return span;
+        }
+        return frag;
+      }
+      return document.createTextNode('');
+    }
+    const out = document.createElement('div');
+    d.childNodes.forEach(c => out.appendChild(walk(c)));
+    return out.innerHTML;
+  }
 
   function renderContent(s) {
     if(!s) return '';
