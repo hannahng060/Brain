@@ -2129,6 +2129,8 @@
     document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
     var btn = $('mood-save-btn');
     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+    var note = $('mood-note');
+    if (note) note.value = '';
   }
 
   function selectMood(el, mood) {
@@ -2157,14 +2159,16 @@
     if (!_selectedMood || !_selectedEnergy) return;
     var now = new Date();
     var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-    var msg = 'Mood: ' + _selectedMood + '  Energy: ' + _selectedEnergy + '/5  (' + timeStr + ')';
+    var note = ($('mood-note') ? $('mood-note').value.trim() : '');
+    var msg = 'Mood check-in (' + timeStr + '): ' + _selectedMood + '  Energy: ' + _selectedEnergy + '/5'
+      + (note ? '  —  ' + note : '');
     try {
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({message: msg})
       });
-      showToast(_selectedMood + ' Mood & energy logged!');
+      showToast(_selectedMood + ' Mood logged!');
       toggleMoodPanel();
     } catch(e) {
       showToast('Could not save — try again');
@@ -2334,6 +2338,10 @@
       <button class="energy-btn" onclick="selectEnergy(this,4)">4</button>
       <button class="energy-btn" onclick="selectEnergy(this,5)">5</button>
     </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">What's behind this? <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <textarea id="mood-note" rows="2" placeholder="e.g. work was overwhelming, great workout, argument with someone..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5"></textarea>
   </div>
   <button id="mood-save-btn" onclick="saveMoodLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log it</button>
 </div>
