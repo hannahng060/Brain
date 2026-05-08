@@ -690,7 +690,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); var _qc=parseInt(localStorage.getItem(_quizCountKey())||'0'); if(_qc>0){var _qb=$('quick-win-btn');if(_qb)_qb.innerHTML='⚡ Quick Win <span style="background:var(--primary);color:white;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px">'+_qc+'</span>';} }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1294,8 +1294,7 @@
     var key = _quizCountKey();
     var n = parseInt(localStorage.getItem(key) || '0') + 1;
     localStorage.setItem(key, n);
-    var btn = $('quick-win-btn');
-    if (btn) btn.innerHTML = '⚡ Quick Win <span style="background:var(--primary);color:white;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px">' + n + '</span>';
+    loadWeakAreas();
   }
 
   async function startQuiz(forceTopic) {
@@ -1685,6 +1684,7 @@
       if (!el) return;
       if (!areas.length) { el.style.display = 'none'; return; }
       el.style.display = 'block';
+      const todayCount = parseInt(localStorage.getItem(_quizCountKey()) || '0');
       const rows = areas.map(a => {
         const pct = parseInt(a.score_pct) || 0;
         const barClass = pct >= 70 ? 'good' : pct >= 50 ? 'ok' : '';
@@ -1692,6 +1692,7 @@
           <span class="weak-label">📌 ${a.topic}</span>
           <div class="weak-bar-wrap"><div class="weak-bar ${barClass}" style="width:${pct}%"></div></div>
           <span class="weak-pct">${pct}%</span>
+          ${todayCount > 0 ? `<span style="font-size:11px;color:#aaa;margin-left:6px">${todayCount} today</span>` : ''}
         </div>`;
       }).join('');
       el.innerHTML = `<div class="weak-title">📊 Focus areas — quiz yourself on these</div>${rows}`;
