@@ -45,14 +45,14 @@
     /* ── App shell ── */
     #app { display:none; flex-direction:column; height:100dvh; }
 
-    /* ── Tab bar ── */
-    #tab-bar { display:flex; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; padding-bottom:env(safe-area-inset-bottom); }
-    .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 0 8px; gap:3px; cursor:pointer; font-size:11px; color:var(--muted); border:none; background:none; }
-    .tab svg { width:22px; height:22px; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; stroke:var(--muted); }
-    .tab.chat-tab,  .tab.chat-tab svg  { color:var(--primary);    stroke:var(--primary); }
-    .tab.notes-tab, .tab.notes-tab svg { color:var(--lifestyle);  stroke:var(--lifestyle); }
-    .tab.qc-tab                        { color:var(--primary);    font-weight:700; }
-    .tab.profile-tab,.tab.profile-tab svg { color:var(--personal); stroke:var(--personal); }
+    /* ── Tab bar (hidden — tabs moved to header) ── */
+    #tab-bar { display:none; }
+
+    /* ── Top nav tabs ── */
+    .top-tab { background:none; border:none; cursor:pointer; padding:6px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:all .15s; }
+    .top-tab svg { width:20px; height:20px; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; stroke:currentColor; }
+    .top-tab:hover { background:var(--bg); color:var(--primary); }
+    .top-tab.active { color:var(--primary); background:var(--primary-light); }
 
     /* ── Pages ── */
     .page { display:none; flex:1; flex-direction:column; overflow:hidden; }
@@ -389,7 +389,20 @@
         <span style="font-size:22px">🌿</span>
         <div><div style="font-size:18px;font-weight:700">The Fulfilled Living</div><div class="subtitle" id="app-subtitle">Your AI note team</div></div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button id="top-tab-chat" class="top-tab active" onclick="showTab('chat')" title="Chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button id="top-tab-notes" class="top-tab" onclick="showTab('notes')" title="Notes">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>
+        <button id="top-tab-capture" class="top-tab" onclick="openQC()" title="Capture">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </button>
+        <button id="top-tab-profile" class="top-tab" onclick="showTab('profile')" title="Profile">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </button>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
         <button class="sign-out" onclick="loadDashboard()" title="New spark">↻ 💡</button>
         <button class="sign-out" onclick="doLogout()">Sign out</button>
       </div>
@@ -980,10 +993,10 @@
   // ── Tabs ──────────────────────────────────────────────────────────────
   function showTab(tab) {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.top-tab').forEach(t=>t.classList.remove('active'));
     $(`${tab}-page`).classList.add('active');
-    const idx = tab==='chat'?0:tab==='notes'?1:2;
-    document.querySelectorAll('.tab')[idx].classList.add('active');
+    const topTab = $('top-tab-' + tab);
+    if (topTab) topTab.classList.add('active');
     if(tab==='notes') { clearTagFilter(); loadNotes(); }
     if(tab==='profile') loadProfile();
   }
