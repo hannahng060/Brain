@@ -400,7 +400,7 @@
         <div id="dash-tools">
           <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
-          <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🎯 Focus</div>
+          <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
@@ -1754,6 +1754,7 @@
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
     // Don't auto-open panel — user taps 🎯 Focus to open it
+    _updateFocusBadge();
   }
 
   function toggleFocusPanel() {
@@ -1802,6 +1803,25 @@
       const study = _focusData.study_focus
         ? '<div class="focus-study">📚 Study: ' + _focusData.study_focus + '</div>' : '';
       list.innerHTML = rows + study;
+    }
+    // Update focus badge
+    _updateFocusBadge();
+  }
+
+  function _updateFocusBadge() {
+    const badge = $('focus-badge');
+    if (!badge) return;
+    const today = new Date().toISOString().split('T')[0];
+    const isToday = _focusData && _focusData.date === today;
+    if (!isToday) { badge.style.display = 'none'; return; }
+    const total = (_focusData.priorities||[]).length;
+    const done = (_focusDone||new Set()).size;
+    const remaining = total - done;
+    if (remaining > 0) {
+      badge.textContent = remaining;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
     }
   }
 
