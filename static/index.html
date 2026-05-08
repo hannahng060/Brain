@@ -2158,6 +2158,8 @@
 
   async function saveMoodLog() {
     if (!_selectedMood || !_selectedEnergy) return;
+    var btn = $('mood-save-btn');
+    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
     var now = new Date();
     var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     var note = ($('mood-note') ? $('mood-note').value.trim() : '');
@@ -2169,10 +2171,11 @@
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({message: msg})
       });
-      showToast(_selectedMood + ' Mood logged!');
+      showToast('Mood logged! ' + _selectedMood);
       toggleMoodPanel();
     } catch(e) {
       showToast('Could not save — try again');
+      if (btn) { btn.textContent = 'Log it'; btn.disabled = false; }
     }
   }
 
