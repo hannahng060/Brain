@@ -144,8 +144,8 @@
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
     #mood-overlay, #sleep-overlay, #meal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #mood-panel, #sleep-panel, #meal-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; max-height:85dvh; overflow-y:auto; }
-    #mood-panel.open, #sleep-panel.open, #meal-panel.open { display:flex; }
+    #mood-panel, #sleep-panel, #meal-panel, #call-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; max-height:85dvh; overflow-y:auto; }
+    #mood-panel.open, #sleep-panel.open, #meal-panel.open, #call-panel.open { display:flex; }
     .mood-row { display:flex; justify-content:space-around; align-items:center; }
     .mood-btn { font-size:13px; font-weight:600; background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:7px 12px; cursor:pointer; transition:all .15s; color:var(--text); white-space:nowrap; font-family:inherit; }
     .mood-btn.selected { border-color:var(--primary); background:var(--primary); color:white; }
@@ -401,6 +401,7 @@
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
           <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
+          <div onclick="toggleCallPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📞 Call</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -2342,6 +2343,54 @@
     }
   }
 
+  // ── Call Log Panel ────────────────────────────────────────────────────
+  function toggleCallPanel() {
+    var panel = $('call-panel'), overlay = $('call-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) {
+      ['call-who','call-phone','call-what','call-next'].forEach(id => { var el=$(id); if(el) el.value=''; });
+      var btn = $('call-save-btn'); if (btn) { btn.disabled=true; btn.style.opacity='.5'; btn.textContent='Log Call'; }
+    }
+  }
+
+  function checkCallReady() {
+    var btn = $('call-save-btn');
+    if (!btn) return;
+    var who = ($('call-who')||{}).value||'';
+    var what = ($('call-what')||{}).value||'';
+    var ready = who.trim() && what.trim();
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? '1' : '.5';
+  }
+
+  async function saveCallLog() {
+    var who  = ($('call-who')  ? $('call-who').value.trim()  : '');
+    var phone = ($('call-phone') ? $('call-phone').value.trim() : '');
+    var what = ($('call-what') ? $('call-what').value.trim() : '');
+    var next = ($('call-next') ? $('call-next').value.trim() : '');
+    if (!who || !what) return;
+    var btn = $('call-save-btn');
+    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+    var now = new Date();
+    var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+    var dateStr = now.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    var msg = 'Call log (' + dateStr + ' ' + timeStr + '): Called ' + who
+      + (phone ? ' — ' + phone : '')
+      + '  What happened: ' + what
+      + (next ? '  Next step: ' + next : '');
+    try {
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      showToast('📞 Call logged!');
+      toggleCallPanel();
+    } catch(e) {
+      showToast('Could not save — try again');
+      if (btn) { btn.textContent = 'Log Call'; btn.disabled = false; }
+    }
+  }
+
   // ── Finance Panel ─────────────────────────────────────────────────────
   var _finChecked = new Set();
   var _FIN_ITEMS = [
@@ -2644,6 +2693,30 @@
     <input id="meal-note" type="text" placeholder="e.g. rice and chicken, leftovers, snacked on chips..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
   </div>
   <button id="meal-save-btn" onclick="saveMealLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log Meal</button>
+</div>
+<div id="call-overlay" onclick="toggleCallPanel()"></div>
+<div id="call-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:16px;font-weight:700">📞 Log a Call</div>
+    <button onclick="toggleCallPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Who did you call? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#aaa">(required)</span></div>
+    <input id="call-who" type="text" placeholder="e.g. IEHP, Social Security, Medi-Cal, Primary Doc..." oninput="checkCallReady()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Phone number <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <input id="call-phone" type="tel" placeholder="e.g. 1-800-772-1213" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">What happened? <span style="font-weight:400;text-transform:none;letter-spacing:0">(required)</span></div>
+    <textarea id="call-what" rows="3" placeholder="e.g. spoke with Maria, she helped schedule an appointment, need to bring ID and Medicare card..." oninput="checkCallReady()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5"></textarea>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Next step <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <input id="call-next" type="text" placeholder="e.g. appointment June 15 at 10am, fax form by June 1, call back in 2 weeks..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+  </div>
+  <button id="call-save-btn" onclick="saveCallLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log Call</button>
 </div>
 <div id="fin-overlay" onclick="toggleFinPanel()"></div>
 <div id="fin-panel">

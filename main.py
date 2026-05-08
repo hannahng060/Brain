@@ -800,7 +800,17 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
           - wrong: gently correct, explain the right answer in 2–3 sentences using plain language, give ONE memory hook.
        3. End with the teaching point — not another question. Let her ask for the next one.
     g. Keep going if user says "next", "another", or "keep going".
-    h. At the end give a short score (e.g. "4/5 — strong on mechanisms, review side effects")."""
+    h. At the end give a short score (e.g. "4/5 — strong on mechanisms, review side effects").
+
+16. CALL LOG: When a message starts with "Call log (...):":
+    a. Save ONE note under mom → the matching subcategory (Social Security, IEHP, Medi-Cal, Medicare, Primary Doc, Eye Care, Pharmacy, Cash Benefits). If no match, use mom → Quick Reference.
+    b. Format the note clearly:
+       📞 [Date & Time]
+       Called: [who] — [phone if provided]
+       What happened: [summary]
+       Next step: [next step if provided]
+    c. Do NOT create multiple notes. ONE note per call log message.
+    d. If a phone number was used → also update mom → Quick Reference with that number if not already there."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
