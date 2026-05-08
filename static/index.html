@@ -1942,26 +1942,29 @@
       todayEvents.forEach(e => { html += `<div class="cl-event">📅 ${e.note}</div>`; });
     }
 
-    // Build today's checklist: always + workday items on work days, dayoff items on days off
+    // Build today's checklist: defaults always show + custom items from localStorage
     const isSunday = new Date().getDay() === 0;
-    const activeItems = [
-      ...items.always,
-      ...(isWorkDay ? (items.workday || []) : (items.dayoff || [])),
-      ...(isSunday ? (items.sunday || []) : [])
+    const defaults = _clDefaultItems();
+    const coreItems = [
+      ...defaults.always,
+      ...(isWorkDay ? (defaults.workday || []) : (defaults.dayoff || [])),
+      ...(isSunday ? (defaults.sunday || []) : [])
     ];
+    const customItems = (items.always || []).filter(i => !coreItems.includes(i));
+    const activeItems = [...coreItems, ...customItems];
 
     if (activeItems.length) {
       html += `<div class="cl-section-label">Today's checklist</div>`;
-      activeItems.forEach((item, i) => {
+      activeItems.forEach((item) => {
         const isDone = done.has(item);
+        const isCore = coreItems.includes(item);
         const safeItem = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         html += `<label class="cl-item${isDone ? ' done' : ''}" onclick="clToggle('${safeItem}')">
           <span class="cl-check">${isDone ? '✓' : ''}</span>
           <span class="cl-label">${item}</span>
-          <button class="cl-delete" onclick="event.preventDefault();event.stopPropagation();clDeleteItem('${safeItem}')">×</button></label>`;
+          ${!isCore ? `<button class="cl-delete" onclick="event.preventDefault();event.stopPropagation();clDeleteItem('${safeItem}')">×</button>` : ''}
+          </label>`;
       });
-    } else if (!_weeklyPlan.work_days.length) {
-      html += `<div class="cl-no-plan">Tell Brain your week schedule and I'll show the right reminders for each day 🗓️</div>`;
     }
 
     // Evening nudge: pack for tomorrow if it's a work day
