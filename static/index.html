@@ -283,7 +283,14 @@
     #tag-filter-clear { background:none; border:none; cursor:pointer; font-size:18px; color:var(--primary); padding:0; }
 
     #notes-list { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
-    .note-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; }
+    .note-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; border-left:4px solid var(--border); }
+    .note-card.psychiatry    { border-left-color:var(--psychiatry); }
+    .note-card.psychotherapy { border-left-color:var(--psychotherapy); }
+    .note-card.business      { border-left-color:var(--business); }
+    .note-card.resources     { border-left-color:var(--resources); }
+    .note-card.personal      { border-left-color:var(--personal); }
+    .note-card.lifestyle     { border-left-color:var(--lifestyle); }
+    .note-card.np_fellowship { border-left-color:#e65100; }
     .note-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .delete-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--muted); font-size:16px; line-height:1; }
     .delete-btn:hover { background:#fce4ec; color:#c62828; }
@@ -1047,7 +1054,7 @@
     $('notes-list').innerHTML = filtered.map((n,i) => {
       const tags = tryParse(n.tags);
       const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      return `<div class="note-card" onclick="openNote(${i})">
+      return `<div class="note-card ${n.category||''}" onclick="openNote(${i})">
         <div class="note-card-header">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge ${n.category}">${n.category}</span>
