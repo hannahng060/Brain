@@ -308,7 +308,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE'}
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE'}
     if section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
         new_body = text
     elif existing and existing not in ('—', '-', ''):
@@ -562,7 +562,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, DAILY ROUTINE, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, DAILY ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -725,8 +725,8 @@ NEVER write to this section from a mood check-in. Daytime Stress, Resilience, an
 [data or —]
 
 <strong><u>DAILY ROUTINE:</u></strong>
-[IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives, write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool
-When an "Activity completed:" message arrives → add that item to the ACTIVITIES section instead, NOT here.]
+[IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives → ALWAYS call update_daily_log with section=DAILY ROUTINE. If no daily log exists yet for today, create one first with save_note under lifestyle → Daily Log, then update it. Write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool
+When an "Activity completed:" message arrives → add that item to the ACTIVITIES section instead, NOT here. Never ignore a "Daily routine update:" message — always save it.]
 
 <strong><u>MOOD:</u></strong>
 [IMPORTANT: This section is always REPLACED (not appended). Every time you update MOOD, write ONE complete table containing ALL check-ins logged today — include previous entries from this conversation plus the new one.
@@ -752,9 +752,6 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 <strong><u>LEARNING:</u></strong>
 [books, articles, podcasts, courses, study insights, things learned today]
 
-<strong><u>EVENING ROUTINE:</u></strong>
-[only for explicit evening wind-down notes — not for checklist items]
-
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
 
@@ -769,7 +766,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
     h. QUOTE HANDLING in SPIRITUAL section:
        - If text starts with "prayer:" or "my words:" → preserve it VERBATIM, word for word, exactly as she wrote it.
        - If text is enclosed in quotation marks ("...") → this is someone else's words; summarize or paraphrase it rather than quoting it in full.
-    i. NO REPETITION: Never state the same fact in two different sections. For example, if she woke up at 4am, write it once in MORNING ROUTINE and do NOT mention it again in REFLECTIONS, SPIRITUAL, or ACTIVITIES. Each piece of information belongs in exactly one section.
+    i. NO REPETITION: Never state the same fact in two different sections. For example, if she woke up at 4am, write it once in DAILY ROUTINE and do NOT mention it again in REFLECTIONS, SPIRITUAL, or ACTIVITIES. Each piece of information belongs in exactly one section.
     j. FORMATTING RULES FOR ALL SECTIONS:
        - When a section has 2+ distinct items, activities, or events → use an HTML unordered list: <ul style="margin:4px 0;padding-left:18px"><li>item one</li><li>item two</li></ul>
        - NEVER chain multiple items with semicolons, commas, or run-on sentences.
