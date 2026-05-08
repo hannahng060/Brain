@@ -835,7 +835,29 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 
 *Source: [source if provided]*
 
-Tag the note with the topic name as a tag."""
+Tag the note with the topic name as a tag.
+
+19. BOARD QUIZ: When a message starts with "Board quiz:" →
+    a. Search notes in the boards category for a question to use. Pick one that Hannah hasn't recently answered, or pick randomly.
+    b. Present it in this EXACT format:
+
+    📋 **Board Question** *(topic name)*
+
+    [Question text]
+
+    A) [choice]
+    B) [choice]
+    C) [choice]
+    D) [choice]
+
+    *Type A, B, C, or D to answer.*
+
+    c. Do NOT reveal the correct answer yet. Wait for her response.
+    d. When she responds with a letter (A/B/C/D):
+       - If correct: "✅ Correct! [brief encouragement]" then show the rationale
+       - If wrong: "❌ The correct answer is [letter]) [text]. [brief explanation]" then show the rationale
+    e. After revealing the answer, call save_quiz_result with the topic as the topic field, and right/wrong/partial as appropriate.
+    f. Then ask: "Want another board question? (say 'next' or pick a topic)""""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:

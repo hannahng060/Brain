@@ -557,6 +557,21 @@
       <button class="mood-btn" id="bqs-other" onclick="selectBoardSource(this,'Other')">Other</button>
     </div>
 
+    <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Ready to practice?</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="startBoardQuiz()" style="flex:1;padding:12px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">🎯 Quiz me on Board Questions</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;" id="boardq-topic-quiz-row">
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Assessment &amp; Diagnosis')">🧠 Assessment</button>
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Psychopharmacology')">💊 Pharm</button>
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Psychotherapy')">💬 Therapy</button>
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Medical Management')">🏥 Medical</button>
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Special Populations')">👥 Special Pop</button>
+        <button class="mood-btn" onclick="startBoardQuizByTopic('Professional &amp; Ethics')">⚖️ Ethics</button>
+      </div>
+    </div>
+
     <button onclick="saveBoardQuestion()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Question</button>
   </div>
 
@@ -2748,6 +2763,34 @@
         if(typeof loadNotes === 'function') loadNotes();
       } else { showToast('Save failed'); }
     } catch(e) { showToast('Save failed'); }
+  }
+
+  function startBoardQuiz() {
+    toggleBoardQPanel();
+    showTab('chat');
+    var msg = 'Board quiz: Give me a random multiple choice question from my board question bank. Present it exactly in A/B/C/D format — show the question and all choices but do NOT reveal the answer yet. Wait for me to respond with my answer choice.';
+    setTimeout(function() {
+      var input = document.getElementById('input');
+      if (input) {
+        input.value = msg;
+        input.dispatchEvent(new Event('input'));
+        if (typeof sendMessage === 'function') sendMessage();
+      }
+    }, 300);
+  }
+
+  function startBoardQuizByTopic(topic) {
+    toggleBoardQPanel();
+    showTab('chat');
+    var msg = 'Board quiz: Give me a multiple choice question from my board question bank on the topic: ' + topic + '. Present it exactly in A/B/C/D format — show the question and all choices but do NOT reveal the answer yet. Wait for me to respond with my answer choice.';
+    setTimeout(function() {
+      var input = document.getElementById('input');
+      if (input) {
+        input.value = msg;
+        input.dispatchEvent(new Event('input'));
+        if (typeof sendMessage === 'function') sendMessage();
+      }
+    }, 300);
   }
 
   // ── Finance Panel ─────────────────────────────────────────────────────
