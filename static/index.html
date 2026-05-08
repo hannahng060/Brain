@@ -29,6 +29,7 @@
       --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
       --mom:           #c0770a; --mom-bg:           #fff8e1;
       --garden: #2e7d32; --garden-bg: #e8f5e9;
+      --boards: #1a237e; --boards-bg: #e8eaf6;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -277,6 +278,8 @@
     .cat-pill.mom.active { background:var(--mom); border-color:var(--mom); color:white; }
     .cat-pill.garden { border-color:var(--garden); color:var(--garden); }
     .cat-pill.garden.active { background:var(--garden); border-color:var(--garden); color:white; }
+    .cat-pill.boards { border-color:var(--boards); color:var(--boards); }
+    .cat-pill.boards.active { background:var(--boards); border-color:var(--boards); color:white; }
     .badge.icu { background:var(--icu-bg); color:var(--icu); }
     #quiz-row { display:flex; gap:8px; padding:8px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #quiz-row::-webkit-scrollbar { display:none; }
@@ -309,7 +312,9 @@
     .note-card.np_fellowship { border-left-color:#e65100; }
     .note-card.mom           { border-left-color:var(--mom); }
     .note-card.garden { border-left-color:var(--garden); }
+    .note-card.boards { border-left-color:var(--boards); }
     .badge.garden { background:var(--garden-bg); color:var(--garden); }
+    .badge.boards { background:var(--boards-bg); color:var(--boards); }
     .note-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .delete-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--muted); font-size:16px; line-height:1; }
     .delete-btn:hover { background:#fce4ec; color:#c62828; }
@@ -428,6 +433,7 @@
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
           <div onclick="toggleCallPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📞 Call</div>
           <div onclick="toggleGardenPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌱 Garden</div>
+          <div onclick="toggleBoardQPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Board Q</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -477,6 +483,7 @@
       <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">🌿 Lifestyle</div>
       <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">👵🏼 Mom</div>
       <div class="cat-pill garden" data-cat="garden" onclick="filterNotes('garden')">🌱 Garden</div>
+      <div class="cat-pill boards" data-cat="boards" onclick="filterNotes('boards')">🎓 Boards</div>
     </div>
     <div id="quiz-row">
       <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
@@ -498,6 +505,59 @@
       <button class="sign-out" onclick="loadProfile()">Refresh</button>
     </div>
     <div id="profile-list"></div>
+  </div>
+
+  <!-- Board Q Overlay & Panel -->
+  <div id="boardq-overlay" onclick="toggleBoardQPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:410;"></div>
+  <div id="boardq-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;z-index:411;flex-direction:column;gap:12px;max-height:90dvh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:17px;font-weight:700">📋 Board Question Entry</div>
+      <button onclick="toggleBoardQPanel()" style="background:none;border:none;font-size:24px;color:#aaa;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>
+
+    <!-- Topic selector -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Topic</div>
+    <div id="boardq-topics" style="display:flex;flex-wrap:wrap;gap:6px;">
+      <button class="mood-btn" id="bqt-assessment" onclick="selectBoardTopic(this,'Assessment & Diagnosis')">🧠 Assessment & Diagnosis</button>
+      <button class="mood-btn" id="bqt-pharm" onclick="selectBoardTopic(this,'Psychopharmacology')">💊 Psychopharmacology</button>
+      <button class="mood-btn" id="bqt-therapy" onclick="selectBoardTopic(this,'Psychotherapy')">💬 Psychotherapy</button>
+      <button class="mood-btn" id="bqt-medical" onclick="selectBoardTopic(this,'Medical Management')">🏥 Medical Management</button>
+      <button class="mood-btn" id="bqt-special" onclick="selectBoardTopic(this,'Special Populations')">👥 Special Populations</button>
+      <button class="mood-btn" id="bqt-ethics" onclick="selectBoardTopic(this,'Professional & Ethics')">⚖️ Professional & Ethics</button>
+    </div>
+
+    <!-- Question -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Question <span style="color:#e53935">*</span></div>
+    <textarea id="boardq-question" placeholder="Paste the question here..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;line-height:1.5;min-height:80px;outline:none;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+
+    <!-- Answer choices -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Answer Choices <span style="color:#e53935">*</span></div>
+    <textarea id="boardq-choices" placeholder="Paste all choices here, e.g.:&#10;A) Start an SSRI immediately&#10;B) Conduct a full psychiatric evaluation&#10;C) Refer to therapy only&#10;D) Order labs" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;line-height:1.5;min-height:100px;outline:none;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+
+    <!-- Correct answer -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Correct Answer <span style="color:#e53935">*</span></div>
+    <div style="display:flex;gap:8px;">
+      <button class="mood-btn" id="bqa-A" onclick="selectBoardAnswer(this,'A')">A</button>
+      <button class="mood-btn" id="bqa-B" onclick="selectBoardAnswer(this,'B')">B</button>
+      <button class="mood-btn" id="bqa-C" onclick="selectBoardAnswer(this,'C')">C</button>
+      <button class="mood-btn" id="bqa-D" onclick="selectBoardAnswer(this,'D')">D</button>
+      <button class="mood-btn" id="bqa-E" onclick="selectBoardAnswer(this,'E')">E</button>
+    </div>
+
+    <!-- Rationale -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Rationale / Explanation <span style="font-weight:400;font-style:italic">(optional)</span></div>
+    <textarea id="boardq-rationale" placeholder="Paste the explanation or rationale here..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;line-height:1.5;min-height:70px;outline:none;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+
+    <!-- Source -->
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:2px">Source <span style="font-weight:400;font-style:italic">(optional)</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;" id="boardq-sources">
+      <button class="mood-btn" id="bqs-blueprint" onclick="selectBoardSource(this,'Blueprint')">📘 Blueprint</button>
+      <button class="mood-btn" id="bqs-georgette" onclick="selectBoardSource(this,'Georgette')">📗 Georgette</button>
+      <button class="mood-btn" id="bqs-fellowship" onclick="selectBoardSource(this,'Fellowship')">🎓 Fellowship</button>
+      <button class="mood-btn" id="bqs-other" onclick="selectBoardSource(this,'Other')">Other</button>
+    </div>
+
+    <button onclick="saveBoardQuestion()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Question</button>
   </div>
 
   <!-- Tab Bar -->
@@ -555,6 +615,7 @@
           <option value="lifestyle">Lifestyle</option>
           <option value="mom">🧡 Mom</option>
           <option value="garden">🌱 Garden</option>
+          <option value="boards">🎓 Boards</option>
         </select>
         <span class="edit-label">Subcategory</span>
         <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -637,6 +698,7 @@
     personal:      ['Reflections','Goals','Mental Health','Gratitude','Relationships'],
     mom:           ['Quick Reference','IEHP','Medi-Cal','Medicare','Social Security','Primary Doc','Eye Care','Pharmacy','Cash Benefits','Vietnam Travel'],
     garden:        ['Orchids','House Plants','Outdoor Flowers','Notes & Learning'],
+    boards:        ['Assessment & Diagnosis','Psychopharmacology','Psychotherapy','Medical Management','Special Populations','Professional & Ethics'],
     lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening']
   };
 
@@ -1075,7 +1137,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden'};
+  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden',boards:'🎓 Boards'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};
@@ -2620,6 +2682,72 @@
       }
     });
     return nudges;
+  }
+
+  // ── Board Q Panel ─────────────────────────────────────────────────────
+  var _boardTopic = '';
+  var _boardAnswer = '';
+  var _boardSource = '';
+
+  function toggleBoardQPanel() {
+    const panel = document.getElementById('boardq-panel');
+    const overlay = document.getElementById('boardq-overlay');
+    if (!panel) return;
+    const opening = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = opening ? 'flex' : 'none';
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) {
+      _boardTopic = ''; _boardAnswer = ''; _boardSource = '';
+      document.querySelectorAll('#boardq-topics .mood-btn, #boardq-sources .mood-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('#bqa-A,#bqa-B,#bqa-C,#bqa-D,#bqa-E').forEach(b => b.classList.remove('selected'));
+      var q = document.getElementById('boardq-question');
+      var c = document.getElementById('boardq-choices');
+      var r = document.getElementById('boardq-rationale');
+      if(q) q.value=''; if(c) c.value=''; if(r) r.value='';
+    }
+  }
+
+  function selectBoardTopic(btn, topic) {
+    document.querySelectorAll('#boardq-topics .mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    _boardTopic = topic;
+  }
+
+  function selectBoardAnswer(btn, letter) {
+    document.querySelectorAll('#bqa-A,#bqa-B,#bqa-C,#bqa-D,#bqa-E').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    _boardAnswer = letter;
+  }
+
+  function selectBoardSource(btn, source) {
+    document.querySelectorAll('#boardq-sources .mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    _boardSource = source;
+  }
+
+  async function saveBoardQuestion() {
+    var question = (document.getElementById('boardq-question')||{}).value||'';
+    var choices  = (document.getElementById('boardq-choices')||{}).value||'';
+    var rationale= (document.getElementById('boardq-rationale')||{}).value||'';
+    if (!_boardTopic) { showToast('Please select a topic'); return; }
+    if (!question.trim()) { showToast('Please enter the question'); return; }
+    if (!choices.trim()) { showToast('Please enter the answer choices'); return; }
+    if (!_boardAnswer) { showToast('Please select the correct answer'); return; }
+    var msg = 'Board question entry:'
+      + ' Topic: ' + _boardTopic
+      + ' | Question: ' + question.trim()
+      + ' | Choices: ' + choices.trim()
+      + ' | Correct: ' + _boardAnswer
+      + (_boardSource ? ' | Source: ' + _boardSource : '')
+      + (rationale.trim() ? ' | Rationale: ' + rationale.trim() : '');
+    try {
+      const res = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      if (res.ok) {
+        showToast('📋 Question saved!');
+        toggleBoardQPanel();
+        if(typeof loadNotes === 'function') loadNotes();
+      } else { showToast('Save failed'); }
+    } catch(e) { showToast('Save failed'); }
   }
 
   // ── Finance Panel ─────────────────────────────────────────────────────

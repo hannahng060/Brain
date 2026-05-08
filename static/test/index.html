@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { margin:0; font-family:system-ui; background:#f5f5f5; }
+  :root { --bg:#fff; --surface:#f9f9f9; --text:#1a1a1a; --muted:#888; --border:#e0e0e0; --primary:#6366f1; }
+  
+  /* EXACT copy from index.html */
+  #focus-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+  #focus-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:10px; max-height:80dvh; overflow-y:auto; }
+  #focus-panel.open { display:flex; }
+  
+  .focus-item { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; background:var(--bg); border:1px solid var(--border); cursor:pointer; }
+  .fi-check { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .focus-item.done { opacity:.5; }
+  .focus-item.done .fi-check { background:var(--primary); border-color:var(--primary); color:white; }
+
+  /* Fake messages/app area */
+  #app { height:100vh; display:flex; flex-direction:column; }
+  #header { background:#fff; border-bottom:1px solid #eee; padding:14px 20px; font-weight:700; font-size:18px; }
+  #messages { flex:1; overflow-y:auto; padding:16px; -webkit-overflow-scrolling:touch; background:#f5f5f5; }
+  #tools { display:flex; gap:8px; padding:12px 16px; background:#fff; border-top:1px solid #eee; }
+  .tool-btn { padding:6px 14px; border-radius:20px; border:1.5px solid #e0e0e0; background:#fff; font-size:13px; font-weight:600; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">🌿 Brain Test</div>
+  <div id="messages">
+    <p>This is the messages area with -webkit-overflow-scrolling:touch (same as the real app).</p>
+    <p>Scroll me to simulate the real app layout.</p>
+    <p style="margin-top:200px">More content below...</p>
+  </div>
+  <div id="tools">
+    <button class="tool-btn" onclick="toggleFocusPanel()">🎯 Focus</button>
+  </div>
+</div>
+
+<div id="focus-overlay" onclick="toggleFocusPanel()"></div>
+<div id="focus-panel"></div>
+
+<script>
+function $(id) { return document.getElementById(id); }
+
+let _focusData = { date:'', priorities:[], study_focus:'' };
+let _focusDone = new Set();
+
+function toggleFocusPanel() {
+  const panel = $('focus-panel');
+  const overlay = $('focus-overlay');
+  if (!panel) return;
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open', opening);
+  if (overlay) overlay.style.display = opening ? 'block' : 'none';
+  if (opening) renderFocus();
+}
+
+function renderFocus(showEditor) {
+  const el = $('focus-panel');
+  if (!el) return;
+  const today = new Date().toISOString().split('T')[0];
+  const isToday = _focusData.date === today;
+  const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
+
+  if (!hasFocus || showEditor) {
+    const existing = hasFocus
+      ? [...(_focusData.priorities||[]), _focusData.study_focus ? 'study: ' + _focusData.study_focus : ''].filter(Boolean).join('\n')
+      : '';
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+        '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
+        '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
+      '</div>' +
+      '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">One item per line. Prefix with <strong>study:</strong> for study topic.</p>' +
+      '<textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications">' + existing + '</textarea>' +
+      '<button onclick="saveFocusFromEditor()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Focus</button>';
+    setTimeout(function() { var ta = document.getElementById('focus-input'); if (ta) ta.focus(); }, 80);
+    return;
+  }
+
+  const items = (_focusData.priorities||[]).map(function(p) {
+    const isDone = _focusDone.has(p);
+    const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="focus-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + safe + '\')">' +
+      '<span class="fi-check">' + (isDone ? '✓' : '') + '</span><span>' + p + '</span></div>';
+  }).join('');
+  const study = _focusData.study_focus
+    ? '<div style="padding:10px 12px;border-radius:10px;background:#eef;font-size:14px">📚 Study focus: ' + _focusData.study_focus + '</div>' : '';
+  el.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+      '<div style="font-size:16px;font-weight:700;color:var(--text)">🎯 Today\'s Focus</div>' +
+      '<div style="display:flex;gap:10px;align-items:center">' +
+        '<button onclick="renderFocus(true)" style="background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;font-family:inherit;padding:0">✏️ edit</button>' +
+        '<button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">×</button>' +
+      '</div>' +
+    '</div>' +
+    items + study;
+}
+
+function saveFocusFromEditor() {
+  const ta = document.getElementById('focus-input');
+  if (!ta) return;
+  const lines = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  let study_focus = '';
+  const priorities = lines.filter(function(l) {
+    const m = l.match(/^study:\s*(.+)/i);
+    if (m) { study_focus = m[1]; return false; }
+    return true;
+  }).slice(0,3);
+  const date_str = new Date().toISOString().split('T')[0];
+  _focusData = { date: date_str, priorities, study_focus };
+  renderFocus();
+  alert('Saved! priorities=' + JSON.stringify(priorities) + ' study=' + study_focus);
+}
+
+function toggleFocusItem(item) {
+  if (_focusDone.has(item)) _focusDone.delete(item); else _focusDone.add(item);
+  renderFocus(false);
+}
+</script>
+</body>
+</html>
