@@ -1542,6 +1542,10 @@
       if(_qcMode === 'brain') submitQC();
       else submitQCLog();
     }
+    if(e.key === 'Escape') {
+      const activePage = document.querySelector('.page.active');
+      if(activePage && activePage.id !== 'chat-page') showTab('chat');
+    }
   });
 
   // ── Brain mode helpers ─────────────────────────────────────────────────
