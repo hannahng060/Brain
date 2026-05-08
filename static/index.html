@@ -747,7 +747,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1836,12 +1836,9 @@
   function _updateFocusBadge() {
     const badge = $('focus-badge');
     if (!badge) return;
-    const today = new Date().toISOString().split('T')[0];
-    const isToday = _focusData && _focusData.date === today;
-    if (!isToday) { badge.style.display = 'none'; return; }
-    const total = (_focusData.priorities||[]).length;
-    const done = (_focusDone||new Set()).size;
-    const remaining = total - done;
+    const priorities = (_focusData && _focusData.priorities) || [];
+    const done = (_focusDone || new Set()).size;
+    const remaining = priorities.length - done;
     if (remaining > 0) {
       badge.textContent = remaining;
       badge.style.display = 'flex';
