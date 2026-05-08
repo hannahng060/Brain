@@ -142,6 +142,14 @@
     .cl-editing .cl-delete { display:block; }
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
+    #mood-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #mood-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; }
+    #mood-panel.open { display:flex; }
+    .mood-row { display:flex; justify-content:space-around; align-items:center; }
+    .mood-btn { font-size:32px; background:none; border:2.5px solid transparent; border-radius:50%; width:52px; height:52px; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; }
+    .mood-btn.selected { border-color:var(--primary); background:var(--primary-light,#ede7f6); transform:scale(1.15); }
+    .energy-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--border); background:var(--bg); font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; color:var(--muted); }
+    .energy-btn.selected { background:var(--primary); border-color:var(--primary); color:white; transform:scale(1.1); }
     #fin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
     #fin-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
     #fin-panel.open { display:flex; }
@@ -384,6 +392,7 @@
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🎯 Focus</div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
+          <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -2102,6 +2111,66 @@
     ).join('');
   }
 
+  // ── Mood & Energy Panel ───────────────────────────────────────────────
+  var _selectedMood = '';
+  var _selectedEnergy = 0;
+
+  function toggleMoodPanel() {
+    var panel = $('mood-panel'), overlay = $('mood-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) { _selectedMood = ''; _selectedEnergy = 0; resetMoodUI(); }
+  }
+
+  function resetMoodUI() {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+    var btn = $('mood-save-btn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+  }
+
+  function selectMood(el, mood) {
+    _selectedMood = mood;
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    checkMoodReady();
+  }
+
+  function selectEnergy(el, val) {
+    _selectedEnergy = val;
+    document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    checkMoodReady();
+  }
+
+  function checkMoodReady() {
+    var btn = $('mood-save-btn');
+    if (!btn) return;
+    var ready = _selectedMood && _selectedEnergy;
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? '1' : '.5';
+  }
+
+  async function saveMoodLog() {
+    if (!_selectedMood || !_selectedEnergy) return;
+    var now = new Date();
+    var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+    var msg = 'Mood: ' + _selectedMood + '  Energy: ' + _selectedEnergy + '/5  (' + timeStr + ')';
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({message: msg})
+      });
+      showToast(_selectedMood + ' Mood & energy logged!');
+      toggleMoodPanel();
+    } catch(e) {
+      showToast('Could not save — try again');
+    }
+  }
+
   // ── Finance Panel ─────────────────────────────────────────────────────
   var _finChecked = new Set();
   var _FIN_ITEMS = [
@@ -2240,6 +2309,34 @@
 
 <div id="cl-overlay" onclick="closeChecklist()"></div>
 <div id="cl-panel"></div>
+<div id="mood-overlay" onclick="toggleMoodPanel()"></div>
+<div id="mood-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:16px;font-weight:700">🌡️ How are you feeling?</div>
+    <button onclick="toggleMoodPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Mood</div>
+    <div class="mood-row">
+      <button class="mood-btn" onclick="selectMood(this,'😔')" title="Low">😔</button>
+      <button class="mood-btn" onclick="selectMood(this,'😐')" title="Meh">😐</button>
+      <button class="mood-btn" onclick="selectMood(this,'🙂')" title="Okay">🙂</button>
+      <button class="mood-btn" onclick="selectMood(this,'😊')" title="Good">😊</button>
+      <button class="mood-btn" onclick="selectMood(this,'🤩')" title="Great">🤩</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Energy</div>
+    <div class="mood-row">
+      <button class="energy-btn" onclick="selectEnergy(this,1)">1</button>
+      <button class="energy-btn" onclick="selectEnergy(this,2)">2</button>
+      <button class="energy-btn" onclick="selectEnergy(this,3)">3</button>
+      <button class="energy-btn" onclick="selectEnergy(this,4)">4</button>
+      <button class="energy-btn" onclick="selectEnergy(this,5)">5</button>
+    </div>
+  </div>
+  <button id="mood-save-btn" onclick="saveMoodLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log it</button>
+</div>
 <div id="fin-overlay" onclick="toggleFinPanel()"></div>
 <div id="fin-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
