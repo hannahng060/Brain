@@ -142,6 +142,16 @@
     .cl-editing .cl-delete { display:block; }
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
+    #fin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #fin-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
+    #fin-panel.open { display:flex; }
+    .fin-check-row { display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+    .fin-check-row:last-of-type { border-bottom:none; }
+    .fin-circle { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
+    .fin-check-row.checked .fin-circle { background:var(--primary); border-color:var(--primary); color:white; }
+    .fin-check-row.checked .fin-row-label { text-decoration:line-through; opacity:.5; }
+    .fin-row-label { font-size:15px; color:var(--text); flex:1; }
+    .fin-last { font-size:12px; color:#aaa; text-align:center; margin-bottom:6px; }
     .cl-add { display:flex; gap:6px; margin-top:14px; }
     .cl-add input { flex:1; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; }
     .cl-add input:focus { border-color:var(--primary); }
@@ -366,6 +376,7 @@
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🎯 Focus</div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
+          <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -679,7 +690,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -2061,6 +2072,99 @@
     ).join('');
   }
 
+  // ── Finance Panel ─────────────────────────────────────────────────────
+  var _finChecked = new Set();
+  var _FIN_ITEMS = [
+    '🏦 Checked SoFi balance',
+    '🏦 Checked Chase balance',
+    '💳 Paid off credit cards',
+    '👀 Anything suspicious?',
+    '📊 Opened Copilot for 5 mins'
+  ];
+
+  function toggleFinPanel() {
+    var panel = $('fin-panel'), overlay = $('fin-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) { _finChecked = new Set(); renderFinPanel(); }
+  }
+
+  function renderFinPanel() {
+    var last = localStorage.getItem('brain_fin_checkin');
+    var lastEl = $('fin-last-checkin');
+    if (lastEl) {
+      if (last) {
+        var days = Math.floor((Date.now() - new Date(last)) / 86400000);
+        lastEl.textContent = days === 0 ? 'Last check-in: today' : days === 1 ? 'Last check-in: yesterday' : 'Last check-in: ' + days + ' days ago';
+      } else {
+        lastEl.textContent = 'No check-in yet — let\'s start!';
+      }
+    }
+    var list = $('fin-items');
+    if (list) {
+      list.innerHTML = _FIN_ITEMS.map(function(item) {
+        var checked = _finChecked.has(item);
+        var safe = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="fin-check-row' + (checked ? ' checked' : '') + '" onclick="finToggle(\'' + safe + '\')">' +
+          '<div class="fin-circle">' + (checked ? '✓' : '') + '</div>' +
+          '<div class="fin-row-label">' + item + '</div></div>';
+      }).join('');
+    }
+    renderFinSubs();
+  }
+
+  function finToggle(item) {
+    if (_finChecked.has(item)) _finChecked.delete(item); else _finChecked.add(item);
+    renderFinPanel();
+  }
+
+  function logFinCheckin() {
+    localStorage.setItem('brain_fin_checkin', new Date().toISOString());
+    _finChecked = new Set();
+    renderFinPanel();
+    showToast('💰 Finance check-in logged!');
+  }
+
+  function renderFinSubs() {
+    var subs = JSON.parse(localStorage.getItem('brain_fin_subs') || '[]');
+    var el = $('fin-subs-list');
+    if (!el) return;
+    if (!subs.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;padding:4px 0">No subscriptions added yet</div>'; return; }
+    el.innerHTML = subs.map(function(s, i) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px">' +
+        '<span>' + esc(s) + '</span>' +
+        '<button onclick="finDeleteSub(' + i + ')" style="background:none;border:none;color:#bbb;font-size:17px;cursor:pointer;padding:0 2px">×</button></div>';
+    }).join('');
+  }
+
+  function finAddSub() {
+    var input = $('fin-sub-input');
+    var val = input ? input.value.trim() : '';
+    if (!val) return;
+    var subs = JSON.parse(localStorage.getItem('brain_fin_subs') || '[]');
+    subs.push(val);
+    localStorage.setItem('brain_fin_subs', JSON.stringify(subs));
+    if (input) input.value = '';
+    renderFinSubs();
+  }
+
+  function finDeleteSub(i) {
+    var subs = JSON.parse(localStorage.getItem('brain_fin_subs') || '[]');
+    subs.splice(i, 1);
+    localStorage.setItem('brain_fin_subs', JSON.stringify(subs));
+    renderFinSubs();
+  }
+
+  // Nudge on dashboard if no finance check-in in 10+ days
+  function finNudge() {
+    var last = localStorage.getItem('brain_fin_checkin');
+    if (!last) return;
+    var days = Math.floor((Date.now() - new Date(last)) / 86400000);
+    if (days >= 10) showToast('💰 It\'s been ' + days + ' days since your last finance check-in!');
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────
   function tryParse(s){ try{ const r=JSON.parse(s); return Array.isArray(r)?r:[]; }catch{return [];} }
   function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -2084,6 +2188,24 @@
 
 <div id="cl-overlay" onclick="closeChecklist()"></div>
 <div id="cl-panel"></div>
+<div id="fin-overlay" onclick="toggleFinPanel()"></div>
+<div id="fin-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-size:16px;font-weight:700">💰 Finance Check-in</div>
+    <button onclick="toggleFinPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
+  </div>
+  <div id="fin-last-checkin" class="fin-last"></div>
+  <div id="fin-items"></div>
+  <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
+  <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+    <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📋 Subscriptions & Memberships</div>
+    <div id="fin-subs-list" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
+      <button onclick="finAddSub()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+    </div>
+  </div>
+</div>
 <div id="focus-overlay" onclick="toggleFocusPanel()"></div>
 <div id="focus-panel">
   <!-- Editor view -->
