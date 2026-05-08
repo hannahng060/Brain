@@ -2069,6 +2069,26 @@
     const overlay = $('cl-overlay');
     if (panel) panel.classList.remove('open');
     if (overlay) overlay.style.display = 'none';
+    _clLogRoutine();
+  }
+
+  async function _clLogRoutine() {
+    const done = _clGetDone();
+    if (!done || done.size === 0) return;
+    // Only log if checked items changed since last log
+    const todayKey = 'brain_routine_logged_' + new Date().toISOString().split('T')[0];
+    const lastLogged = localStorage.getItem(todayKey) || '';
+    const current = Array.from(done).sort().join('|||');
+    if (lastLogged === current) return;
+    localStorage.setItem(todayKey, current);
+    const itemList = Array.from(done).join('  ');
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: 'Daily routine update: ' + itemList})
+      });
+    } catch(e) { /* silent */ }
   }
 
   // Refresh checklist every 5 min (time-based nudges change)

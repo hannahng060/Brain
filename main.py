@@ -308,7 +308,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS'}
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE'}
     if section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
         new_body = text
     elif existing and existing not in ('—', '-', ''):
@@ -561,7 +561,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, DAILY ROUTINE, MORNING ROUTINE, EVENING ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -721,8 +721,8 @@ NEVER write to this section from a mood check-in. Daytime Stress, Resilience, an
 <strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
 [data or —]
 
-<strong><u>MORNING ROUTINE:</u></strong>
-[data or —]
+<strong><u>DAILY ROUTINE:</u></strong>
+[IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives, write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool]
 
 <strong><u>MOOD:</u></strong>
 [IMPORTANT: This section is always REPLACED (not appended). Every time you update MOOD, write ONE complete table containing ALL check-ins logged today — include previous entries from this conversation plus the new one.
@@ -749,7 +749,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 [books, articles, podcasts, courses, study insights, things learned today]
 
 <strong><u>EVENING ROUTINE:</u></strong>
-[data or —]
+[only for explicit evening wind-down notes — not for checklist items]
 
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
