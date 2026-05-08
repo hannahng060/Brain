@@ -478,8 +478,8 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom"],
-                                "description": "personal=inner world/feelings/journal/relationships (subcategories: Reflections, Goals, Mental Health, Gratitude, Relationships), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden"],
+                                "description": "personal=inner world/feelings/journal/relationships (subcategories: Reflections, Goals, Mental Health, Gratitude, Relationships), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["DSM-5","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
@@ -503,7 +503,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -527,7 +527,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 30},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"}
             }
         }
     },
@@ -537,7 +537,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
@@ -811,7 +811,10 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
        What happened: [summary]
        Next step: [next step if provided]
     c. Do NOT create multiple notes. ONE note per call log message.
-    d. If a phone number was used → also update mom → Quick Reference with that number if not already there."""
+    d. If a phone number was used → also update mom → Quick Reference with that number if not already there.
+17. GARDEN LOG: When a message starts with "Garden log: watered":
+    a. Add to ACTIVITIES section of today's daily log: "💧 Watered [plant name]"
+    b. Keep it brief — one line per plant watered."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:

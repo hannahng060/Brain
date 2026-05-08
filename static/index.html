@@ -28,6 +28,7 @@
       --lifestyle:     #00796b; --lifestyle-bg:     #e0f2f1;
       --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
       --mom:           #c0770a; --mom-bg:           #fff8e1;
+      --garden: #2e7d32; --garden-bg: #e8f5e9;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -144,8 +145,8 @@
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
     #mood-overlay, #sleep-overlay, #meal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #mood-panel, #sleep-panel, #meal-panel, #call-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; max-height:85dvh; overflow-y:auto; }
-    #mood-panel.open, #sleep-panel.open, #meal-panel.open, #call-panel.open { display:flex; }
+    #mood-panel, #sleep-panel, #meal-panel, #call-panel, #garden-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; max-height:85dvh; overflow-y:auto; }
+    #mood-panel.open, #sleep-panel.open, #meal-panel.open, #call-panel.open, #garden-panel.open { display:flex; }
     .mood-row { display:flex; justify-content:space-around; align-items:center; }
     .mood-btn { font-size:13px; font-weight:600; background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:7px 12px; cursor:pointer; transition:all .15s; color:var(--text); white-space:nowrap; font-family:inherit; }
     .mood-btn.selected { border-color:var(--primary); background:var(--primary); color:white; }
@@ -273,6 +274,8 @@
     .cat-pill.np_fellowship.active { background:var(--np_fellowship); border-color:var(--np_fellowship); color:white; }
     .cat-pill.mom { border-color:var(--mom); color:var(--mom); }
     .cat-pill.mom.active { background:var(--mom); border-color:var(--mom); color:white; }
+    .cat-pill.garden { border-color:var(--garden); color:var(--garden); }
+    .cat-pill.garden.active { background:var(--garden); border-color:var(--garden); color:white; }
     .badge.icu { background:var(--icu-bg); color:var(--icu); }
     #quiz-row { display:flex; gap:8px; padding:8px 16px; overflow-x:auto; flex-shrink:0; background:var(--bg); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     #quiz-row::-webkit-scrollbar { display:none; }
@@ -304,6 +307,8 @@
     .note-card.lifestyle     { border-left-color:var(--lifestyle); }
     .note-card.np_fellowship { border-left-color:#e65100; }
     .note-card.mom           { border-left-color:var(--mom); }
+    .note-card.garden { border-left-color:var(--garden); }
+    .badge.garden { background:var(--garden-bg); color:var(--garden); }
     .note-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .delete-btn { background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--muted); font-size:16px; line-height:1; }
     .delete-btn:hover { background:#fce4ec; color:#c62828; }
@@ -402,6 +407,7 @@
           <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
           <div onclick="toggleCallPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📞 Call</div>
+          <div onclick="toggleGardenPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌱 Garden</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -450,6 +456,7 @@
       <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">🪞 Personal</div>
       <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">🌿 Lifestyle</div>
       <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">👵🏼 Mom</div>
+      <div class="cat-pill garden" data-cat="garden" onclick="filterNotes('garden')">🌱 Garden</div>
     </div>
     <div id="quiz-row">
       <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
@@ -527,6 +534,7 @@
           <option value="personal">Personal</option>
           <option value="lifestyle">Lifestyle</option>
           <option value="mom">🧡 Mom</option>
+          <option value="garden">🌱 Garden</option>
         </select>
         <span class="edit-label">Subcategory</span>
         <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -608,6 +616,7 @@
     resources:     ['Contacts','URLs & Links','Books','Courses','Tools','Future Ideas'],
     personal:      ['Reflections','Goals','Mental Health','Gratitude','Relationships'],
     mom:           ['Quick Reference','IEHP','Medi-Cal','Medicare','Social Security','Primary Doc','Eye Care','Pharmacy','Cash Benefits','Vietnam Travel'],
+    garden:        ['Orchids','House Plants','Outdoor Flowers','Notes & Learning'],
     lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening']
   };
 
@@ -870,6 +879,8 @@
         chips.push({ text:`📖 ${totalNotes} notes saved — review them to make it stick!`, color:'var(--primary)', fn:"showTab('notes')" });
       }
 
+      // Garden nudges
+      gardenNudge().forEach(n => chips.push(n));
       $('dash-greeting').textContent = `${greeting}, Hannah 👋`;
       $('dash-nudges').innerHTML = chips.map(c =>
         `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
@@ -1046,7 +1057,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom'};
+  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};
@@ -2426,6 +2437,150 @@
     }
   }
 
+  // ── Garden / Plant Tracker ────────────────────────────────────────────────────────────────────
+  var _gardenType = '';
+
+  function _gardenGetPlants() {
+    try { return JSON.parse(localStorage.getItem('brain_plants') || '[]'); } catch(e) { return []; }
+  }
+  function _gardenSavePlants(p) { localStorage.setItem('brain_plants', JSON.stringify(p)); }
+
+  function _gardenDaysAgo(dateStr) {
+    if (!dateStr) return null;
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  }
+  function _gardenDaysUntil(plant) {
+    const ago = _gardenDaysAgo(plant.lastWatered);
+    if (ago === null) return -999;
+    return plant.waterEveryDays - ago;
+  }
+  function _gardenStatusLabel(plant) {
+    const d = _gardenDaysUntil(plant);
+    if (d === -999) return { text: 'Never watered ⚠️', color: '#e53935' };
+    if (d < 0)  return { text: `${Math.abs(d)} day${Math.abs(d)>1?'s':''} overdue 🔴`, color: '#e53935' };
+    if (d === 0) return { text: 'Water today! 💧', color: '#f57c00' };
+    if (d <= 2)  return { text: `Due in ${d} day${d>1?'s':''} 🟡`, color: '#f9a825' };
+    return { text: `Next water in ${d} days ✅`, color: '#2e7d32' };
+  }
+  function _gardenEmoji(type) {
+    return {orchid:'🌸', succulent:'🌵', house:'🪴', outdoor:'🌺'}[type] || '🌿';
+  }
+
+  function toggleGardenPanel() {
+    var panel = $('garden-panel'), overlay = $('garden-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open', opening);
+    if (overlay) overlay.style.display = opening ? 'block' : 'none';
+    if (opening) { cancelAddPlant(); _gardenRender(); }
+  }
+
+  function _gardenRender() {
+    var list = $('garden-plant-list');
+    if (!list) return;
+    var plants = _gardenGetPlants();
+    if (plants.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px 0;font-size:14px">No plants yet — add your first one below 🌱</div>';
+      return;
+    }
+    list.innerHTML = plants.map(function(p) {
+      var status = _gardenStatusLabel(p);
+      var ago = _gardenDaysAgo(p.lastWatered);
+      var agoText = ago === null ? 'Never watered' : ago === 0 ? 'Watered today' : 'Watered ' + ago + ' day' + (ago>1?'s':'') + ' ago';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'
+        + '<div style="font-size:28px">' + _gardenEmoji(p.type) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-weight:700;font-size:15px">' + p.name + '</div>'
+        + '<div style="font-size:12px;color:#aaa;margin-top:2px">' + agoText + '</div>'
+        + '<div style="font-size:12px;font-weight:600;margin-top:3px;color:' + status.color + '">' + status.text + '</div>'
+        + (p.notes ? '<div style="font-size:11px;color:#aaa;margin-top:2px">' + p.notes + '</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;gap:8px;flex-shrink:0">'
+        + '<button onclick="waterPlant(' + p.id + ')" style="padding:8px 14px;background:var(--garden);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">💧 Water</button>'
+        + '<button onclick="deletePlant(' + p.id + ')" style="padding:8px 10px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;color:#aaa">🗑</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function selectGardenType(el, type) {
+    _gardenType = type;
+    document.querySelectorAll('[id^="gtype-"]').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    // Set default watering days by type
+    var defaults = { orchid:7, succulent:14, house:7, outdoor:3 };
+    var daysInput = $('garden-add-days');
+    if (daysInput) daysInput.value = defaults[type] || 7;
+  }
+
+  function showAddPlantForm() {
+    var form = $('garden-add-form'), btn = $('garden-add-btn');
+    if (form) form.style.display = 'flex';
+    if (btn) btn.style.display = 'none';
+    _gardenType = '';
+    document.querySelectorAll('[id^="gtype-"]').forEach(b => b.classList.remove('selected'));
+    var nameEl = $('garden-add-name'); if (nameEl) nameEl.value = '';
+    var notesEl = $('garden-add-notes'); if (notesEl) notesEl.value = '';
+    var daysEl = $('garden-add-days'); if (daysEl) daysEl.value = '7';
+  }
+
+  function cancelAddPlant() {
+    var form = $('garden-add-form'), btn = $('garden-add-btn');
+    if (form) form.style.display = 'none';
+    if (btn) btn.style.display = 'block';
+  }
+
+  function saveGardenPlant() {
+    var name = ($('garden-add-name') ? $('garden-add-name').value.trim() : '');
+    var days = parseInt($('garden-add-days') ? $('garden-add-days').value : '7') || 7;
+    var notes = ($('garden-add-notes') ? $('garden-add-notes').value.trim() : '');
+    if (!name) { showToast('Please enter a plant name'); return; }
+    var plants = _gardenGetPlants();
+    plants.push({ id: Date.now(), name: name, type: _gardenType || 'house', waterEveryDays: days, lastWatered: null, notes: notes });
+    _gardenSavePlants(plants);
+    cancelAddPlant();
+    _gardenRender();
+    showToast('🌱 ' + name + ' added!');
+  }
+
+  async function waterPlant(id) {
+    var plants = _gardenGetPlants();
+    var plant = plants.find(p => p.id === id);
+    if (!plant) return;
+    plant.lastWatered = new Date().toISOString().split('T')[0];
+    _gardenSavePlants(plants);
+    _gardenRender();
+    showToast('💧 ' + plant.name + ' watered!');
+    // Log to Brain
+    try {
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: 'Garden log: watered ' + plant.name + ' today.'}) });
+    } catch(e) {}
+  }
+
+  function deletePlant(id) {
+    var plants = _gardenGetPlants().filter(p => p.id !== id);
+    _gardenSavePlants(plants);
+    _gardenRender();
+  }
+
+  function gardenNudge() {
+    var plants = _gardenGetPlants();
+    if (!plants.length) return [];
+    var nudges = [];
+    plants.forEach(function(p) {
+      var d = _gardenDaysUntil(p);
+      if (d === -999) {
+        nudges.push({ text: '🌱 ' + p.name + ' has never been watered!', color:'#e53935', fn:"toggleGardenPanel()" });
+      } else if (d < 0) {
+        nudges.push({ text: '💧 ' + p.name + ' is ' + Math.abs(d) + ' day' + (Math.abs(d)>1?'s':'') + ' overdue!', color:'#e53935', fn:"toggleGardenPanel()" });
+      } else if (d === 0) {
+        nudges.push({ text: '💧 Water ' + p.name + ' today!', color:'#f57c00', fn:"toggleGardenPanel()" });
+      }
+    });
+    return nudges;
+  }
+
   // ── Finance Panel ─────────────────────────────────────────────────────
   var _finChecked = new Set();
   var _FIN_ITEMS = [
@@ -2752,6 +2907,38 @@
     <input id="call-next" type="text" placeholder="e.g. appointment June 15 at 10am, fax form by June 1, call back in 2 weeks..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
   </div>
   <button id="call-save-btn" onclick="saveCallLog()" disabled style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.5">Log Call</button>
+</div>
+<div id="garden-overlay" onclick="toggleGardenPanel()"></div>
+<div id="garden-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:16px;font-weight:700">🌱 My Plants</div>
+    <button onclick="toggleGardenPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div id="garden-plant-list"></div>
+  <div id="garden-add-form" style="display:none;border-top:1.5px solid var(--border);padding-top:16px;display:none;flex-direction:column;gap:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--garden)">Add a plant</div>
+    <input id="garden-add-name" type="text" placeholder="Plant name (e.g. Orchid, Pothos...)" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Type</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="mood-btn" id="gtype-orchid"   onclick="selectGardenType(this,'orchid')">🌸 Orchid</button>
+        <button class="mood-btn" id="gtype-succulent" onclick="selectGardenType(this,'succulent')">🌵 Succulent</button>
+        <button class="mood-btn" id="gtype-house"    onclick="selectGardenType(this,'house')">🪴 House Plant</button>
+        <button class="mood-btn" id="gtype-outdoor"  onclick="selectGardenType(this,'outdoor')">🌺 Outdoor</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Water every</div>
+      <input id="garden-add-days" type="number" value="7" min="1" max="365" style="width:70px;padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none">
+      <span style="font-size:13px;color:#aaa">days</span>
+    </div>
+    <input id="garden-add-notes" type="text" placeholder="Notes: soil type, light, fertilizer... (optional)" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    <div style="display:flex;gap:8px">
+      <button onclick="saveGardenPlant()" style="flex:1;padding:12px;background:var(--garden);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Save Plant</button>
+      <button onclick="cancelAddPlant()" style="padding:12px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;font-size:15px;cursor:pointer;font-family:inherit">Cancel</button>
+    </div>
+  </div>
+  <button onclick="showAddPlantForm()" id="garden-add-btn" style="width:100%;padding:12px;background:var(--bg);border:1.5px dashed var(--garden);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--garden)">+ Add a plant</button>
 </div>
 <div id="fin-overlay" onclick="toggleFinPanel()"></div>
 <div id="fin-panel">
