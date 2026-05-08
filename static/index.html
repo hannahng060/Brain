@@ -1865,7 +1865,8 @@
     return {
       always:  ['💊 Vitamin', '🧘 Stretch', '🥑 Healthy snack'],
       workday: ['🥤 Smoothie'],
-      dayoff:  ['🏃 Exercise', '🥬 Green juice']
+      dayoff:  ['🏃 Exercise', '🥬 Green juice'],
+      sunday:  ['🪴 Water the plants']
     };
   }
 
@@ -1919,9 +1920,11 @@
     }
 
     // Build today's checklist: always + workday items on work days, dayoff items on days off
+    const isSunday = new Date().getDay() === 0;
     const activeItems = [
       ...items.always,
-      ...(isWorkDay ? (items.workday || []) : (items.dayoff || []))
+      ...(isWorkDay ? (items.workday || []) : (items.dayoff || [])),
+      ...(isSunday ? (items.sunday || []) : [])
     ];
 
     if (activeItems.length) {
