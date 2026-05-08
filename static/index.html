@@ -2030,7 +2030,21 @@
     _clSetDone(done);
     _clRender();
     _clUpdateNudges();
-    if (!wasChecked) _clLogRoutine(); // only log when checking, not unchecking
+    if (!wasChecked) {
+      // Determine if core item or custom
+      const defaults = _clDefaultItems();
+      const coreItems = [
+        ...defaults.always,
+        ...(defaults.workday || []),
+        ...(defaults.dayoff  || []),
+        ...(defaults.sunday  || [])
+      ];
+      if (coreItems.includes(item)) {
+        _clLogRoutine(); // core items → DAILY ROUTINE
+      } else {
+        _clLogActivity(item); // custom tasks → ACTIVITIES
+      }
+    }
   }
   function clToggleEdit() {
     const panel = $('cl-panel');
@@ -2078,18 +2092,37 @@
   async function _clLogRoutine() {
     const done = _clGetDone();
     if (!done || done.size === 0) return;
-    // Only log if checked items changed since last log
+    // Only include core/default items in routine
+    const defaults = _clDefaultItems();
+    const coreItems = [
+      ...defaults.always,
+      ...(defaults.workday || []),
+      ...(defaults.dayoff  || []),
+      ...(defaults.sunday  || [])
+    ];
+    const coreChecked = Array.from(done).filter(i => coreItems.includes(i));
+    if (coreChecked.length === 0) return;
+    // Only log if changed since last log
     const todayKey = 'brain_routine_logged_' + new Date().toISOString().split('T')[0];
     const lastLogged = localStorage.getItem(todayKey) || '';
-    const current = Array.from(done).sort().join('|||');
+    const current = coreChecked.sort().join('|||');
     if (lastLogged === current) return;
     localStorage.setItem(todayKey, current);
-    const itemList = Array.from(done).join('  ');
     try {
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Daily routine update: ' + itemList})
+        body: JSON.stringify({message: 'Daily routine update: ' + coreChecked.join('  ')})
+      });
+    } catch(e) { /* silent */ }
+  }
+
+  async function _clLogActivity(item) {
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: 'Activity completed: ' + item})
       });
     } catch(e) { /* silent */ }
   }

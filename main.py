@@ -722,7 +722,8 @@ NEVER write to this section from a mood check-in. Daytime Stress, Resilience, an
 [data or —]
 
 <strong><u>DAILY ROUTINE:</u></strong>
-[IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives, write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool]
+[IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives, write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool
+When an "Activity completed:" message arrives → add that item to the ACTIVITIES section instead, NOT here.]
 
 <strong><u>MOOD:</u></strong>
 [IMPORTANT: This section is always REPLACED (not appended). Every time you update MOOD, write ONE complete table containing ALL check-ins logged today — include previous entries from this conversation plus the new one.
