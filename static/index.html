@@ -973,8 +973,15 @@
     const row = $('subcat-row');
     if(cat !== 'all' && SUBCATS[cat]) {
       const subs = SUBCATS[cat];
-      row.innerHTML = `<div class="subcat-pill active" onclick="filterSubcat('all')">All</div>` +
-        subs.map(s=>`<div class="subcat-pill" onclick="filterSubcat('${s}')">${s}</div>`).join('');
+      const catNotes = allNotes.filter(n => n.category === cat);
+      const subcatCounts = {};
+      catNotes.forEach(n => { if(n.subcategory) subcatCounts[n.subcategory] = (subcatCounts[n.subcategory]||0)+1; });
+      const allCount = catNotes.length;
+      row.innerHTML = `<div class="subcat-pill active" onclick="filterSubcat('all')">All <span style="opacity:.6;font-size:11px">${allCount}</span></div>` +
+        subs.map(s => {
+          const c = subcatCounts[s] || 0;
+          return `<div class="subcat-pill" onclick="filterSubcat('${s}')">${s}${c ? ` <span style="opacity:.6;font-size:11px">${c}</span>` : ''}</div>`;
+        }).join('');
       row.classList.add('visible');
     } else {
       row.innerHTML = '';
@@ -986,7 +993,8 @@
   function filterSubcat(sub) {
     currentSubcat = sub;
     document.querySelectorAll('.subcat-pill').forEach(p=>{
-      p.classList.toggle('active', p.textContent===sub || (sub==='all' && p.textContent==='All'));
+      const label = p.getAttribute('onclick') || '';
+      p.classList.toggle('active', label.includes(`'${sub}'`) || (sub==='all' && label.includes("'all'")));
     });
     renderNotes();
   }
