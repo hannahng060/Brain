@@ -710,7 +710,9 @@ RULES:
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
 <strong><u>OURA RING METRICS:</u></strong>
-[data or —]
+[Format as a compact two-column table when data is available — label on left, value on right. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Readiness</td><td><strong>72</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Sleep Score</td><td><strong>65</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Hours Slept</td><td><strong>7.5h</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Deep Sleep</td><td><strong>1h 45m</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">REM Sleep</td><td><strong>1h 30m</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Daytime Stress</td><td><strong>Relaxed</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">HR</td><td><strong>68 bpm</strong></td></tr></table>
+Only include rows for data actually provided. Use — if no Oura data at all.]
 
 <strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
 [data or —]
