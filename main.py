@@ -721,13 +721,18 @@ Only include rows for data actually provided. Use — if no Oura data at all.]
 [data or —]
 
 <strong><u>MOOD:</u></strong>
-[data or —]
+[Format each mood check-in as a compact table row. If multiple check-ins in a day, stack them. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">9:30 AM</td><td><strong>😊 Happy</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">3:00 PM</td><td><strong>😤 Irritable</strong> — work was stressful</td></tr></table>]
 
 <strong><u>ENERGY:</u></strong>
-[data or —]
+[Format alongside mood as a table column. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">9:30 AM</td><td><strong>4/5</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">3:00 PM</td><td><strong>2/5</strong></td></tr></table>
+OR combine mood + energy + stress in one table if logged together:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="color:#888">Stress</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td><strong>Relaxed</strong></td></tr></table>]
 
 <strong><u>MEALS:</u></strong>
-[all meals with estimated calories — breakfast, lunch, dinner, snacks]
+[Format each meal as a table row with time, description, and estimated calories. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Breakfast</td><td><strong>Eggs and toast</strong> — ~350 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Lunch</td><td><strong>Salad with chicken</strong> — ~450 cal</td></tr></table>]
 
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
