@@ -146,8 +146,9 @@
     #mood-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:16px; }
     #mood-panel.open { display:flex; }
     .mood-row { display:flex; justify-content:space-around; align-items:center; }
-    .mood-btn { font-size:32px; background:none; border:2.5px solid transparent; border-radius:50%; width:52px; height:52px; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; }
-    .mood-btn.selected { border-color:var(--primary); background:var(--primary-light,#ede7f6); transform:scale(1.15); }
+    .mood-btn { font-size:13px; font-weight:600; background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:7px 12px; cursor:pointer; transition:all .15s; color:var(--text); white-space:nowrap; font-family:inherit; }
+    .mood-btn.selected { border-color:var(--primary); background:var(--primary); color:white; }
+    .mood-grid { display:flex; flex-wrap:wrap; gap:8px; }
     .energy-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--border); background:var(--bg); font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; color:var(--muted); }
     .energy-btn.selected { background:var(--primary); border-color:var(--primary); color:white; transform:scale(1.1); }
     #fin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
@@ -2321,17 +2322,24 @@
   </div>
   <div>
     <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Mood</div>
-    <div class="mood-row">
-      <button class="mood-btn" onclick="selectMood(this,'😔')" title="Low">😔</button>
-      <button class="mood-btn" onclick="selectMood(this,'😐')" title="Meh">😐</button>
-      <button class="mood-btn" onclick="selectMood(this,'🙂')" title="Okay">🙂</button>
-      <button class="mood-btn" onclick="selectMood(this,'😊')" title="Good">😊</button>
-      <button class="mood-btn" onclick="selectMood(this,'🤩')" title="Great">🤩</button>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectMood(this,'😊 Happy')">😊 Happy</button>
+      <button class="mood-btn" onclick="selectMood(this,'🙂 Content')">🙂 Content</button>
+      <button class="mood-btn" onclick="selectMood(this,'😐 Neutral')">😐 Neutral</button>
+      <button class="mood-btn" onclick="selectMood(this,'😔 Sad')">😔 Sad</button>
+      <button class="mood-btn" onclick="selectMood(this,'😤 Irritable')">😤 Irritable</button>
+      <button class="mood-btn" onclick="selectMood(this,'😠 Angry')">😠 Angry</button>
+      <button class="mood-btn" onclick="selectMood(this,'😟 Worried')">😟 Worried</button>
+      <button class="mood-btn" onclick="selectMood(this,'😰 Anxious')">😰 Anxious</button>
+      <button class="mood-btn" onclick="selectMood(this,'😩 Overwhelmed')">😩 Overwhelmed</button>
+      <button class="mood-btn" onclick="selectMood(this,'😴 Exhausted')">😴 Exhausted</button>
+      <button class="mood-btn" onclick="selectMood(this,'🤩 Elevated')">🤩 Elevated</button>
+      <button class="mood-btn" onclick="selectMood(this,'😤 Frustrated with myself')">😤 Frustrated with myself</button>
     </div>
   </div>
   <div>
     <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Energy</div>
-    <div class="mood-row">
+    <div style="display:flex;gap:10px;">
       <button class="energy-btn" onclick="selectEnergy(this,1)">1</button>
       <button class="energy-btn" onclick="selectEnergy(this,2)">2</button>
       <button class="energy-btn" onclick="selectEnergy(this,3)">3</button>
