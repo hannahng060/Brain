@@ -693,7 +693,7 @@ RULES:
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
    - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
-   - MEALS: anything eaten or drank — APPEND to existing meals
+   - MEALS: anything eaten or drank — REPLACE with complete updated table including ALL meals logged today
    - MOOD: overall emotional tone
    Strong signals it belongs in Daily Log: (a) uses "I" or "me"; (b) mentions people by name in personal context; (c) time words: "today", "tonight", "this morning", "yesterday", "tomorrow".
 5. For journal entries → capture people present in entities[], emotions, milestones, events separately from food.
@@ -740,8 +740,9 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 [Covered inside the MOOD table above — do not create a separate ENERGY section entry if mood was logged together.]
 
 <strong><u>MEALS:</u></strong>
-[Format each meal as a table row with time, description, and estimated calories. Example:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Breakfast</td><td><strong>Eggs and toast</strong> — ~350 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Lunch</td><td><strong>Salad with chicken</strong> — ~450 cal</td></tr></table>]
+[IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today — not just the new one. Each meal gets its own row. Use meal name (Breakfast/Lunch/Dinner/Snack) as the label. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Breakfast</td><td><strong>Green smoothie</strong> — ~320 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Lunch</td><td><strong>Salad with chicken</strong> — ~450 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Dinner</td><td><strong>Rice and vegetables</strong> — ~500 cal</td></tr></table>
+Never put all meals in one line. Each meal = its own table row. When adding a new meal, check what meals are already in this section and include them all in the updated table.]
 
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
