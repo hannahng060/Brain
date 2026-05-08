@@ -727,8 +727,9 @@ Only include rows for data actually provided. Use — if no Oura data at all.]
 <strong><u>ENERGY:</u></strong>
 [Format alongside mood as a table column. Example:
 <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">9:30 AM</td><td><strong>4/5</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">3:00 PM</td><td><strong>2/5</strong></td></tr></table>
-OR combine mood + energy + stress in one table if logged together:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="color:#888">Stress</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td><strong>Relaxed</strong></td></tr></table>]
+OR combine mood + energy + stress + resilience in one table if logged together:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="padding:2px 20px 2px 0;color:#888">Stress</td><td style="color:#888">Resilience</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Relaxed</strong></td><td><strong>🟢 Solid</strong></td></tr></table>
+Only include the Resilience column if resilience data was logged.]
 
 <strong><u>MEALS:</u></strong>
 [Format each meal as a table row with time, description, and estimated calories. Example:

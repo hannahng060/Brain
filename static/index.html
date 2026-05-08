@@ -2134,10 +2134,18 @@
     el.classList.add('selected');
   }
 
+  var _selectedResilience = '';
+  function selectResilience(el, val) {
+    _selectedResilience = val;
+    document.querySelectorAll('#mood-panel .mood-btn[id^="res-btn"]').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
   function resetMoodUI() {
     document.querySelectorAll('#mood-panel .mood-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
     _selectedStress = '';
+    _selectedResilience = '';
     var hr = $('mood-hr'); if (hr) hr.value = '';
     var btn = $('mood-save-btn');
     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
@@ -2177,6 +2185,7 @@
     var hr = ($('mood-hr') ? $('mood-hr').value.trim() : '');
     var msg = 'Mood check-in (' + timeStr + '): ' + _selectedMood + '  Energy: ' + _selectedEnergy + '/5'
       + (_selectedStress ? '  Daytime stress: ' + _selectedStress : '')
+      + (_selectedResilience ? '  Resilience: ' + _selectedResilience : '')
       + (hr ? '  HR: ' + hr + ' bpm' : '')
       + (note ? '  —  ' + note : '');
     try {
@@ -2461,6 +2470,16 @@
       <button class="mood-btn" id="stress-btn-relaxed" onclick="selectStress(this,'Relaxed')">😌 Relaxed</button>
       <button class="mood-btn" id="stress-btn-engaged" onclick="selectStress(this,'Engaged')">⚡ Engaged</button>
       <button class="mood-btn" id="stress-btn-stressed" onclick="selectStress(this,'Stressed')">🔴 Stressed</button>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Resilience <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — from Oura)</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="mood-btn" id="res-btn-limited"     onclick="selectResilience(this,'Limited')">🔴 Limited</button>
+      <button class="mood-btn" id="res-btn-adequate"    onclick="selectResilience(this,'Adequate')">🟡 Adequate</button>
+      <button class="mood-btn" id="res-btn-solid"       onclick="selectResilience(this,'Solid')">🟢 Solid</button>
+      <button class="mood-btn" id="res-btn-strong"      onclick="selectResilience(this,'Strong')">💪 Strong</button>
+      <button class="mood-btn" id="res-btn-exceptional" onclick="selectResilience(this,'Exceptional')">⭐ Exceptional</button>
     </div>
   </div>
   <div>
