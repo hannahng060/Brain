@@ -717,8 +717,15 @@ RULES:
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
 <strong><u>OURA RING METRICS:</u></strong>
-[ONLY written from the morning sleep check-in. Format as a two-column table: left column = Readiness, Sleep Score, Hours Slept; right column = Deep Sleep, REM Sleep, Sleep Debt. Example:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Readiness</td><td style="padding:2px 40px 2px 0"><strong>72</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Deep Sleep</td><td><strong>1h 45m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Score</td><td style="padding:2px 40px 2px 0"><strong>65</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">REM Sleep</td><td><strong>1h 30m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Hours Slept</td><td style="padding:2px 40px 2px 0"><strong>7h 30m</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Debt</td><td><strong>6h 30m</strong></td></tr></table>
+[ONLY written from the morning sleep check-in. Format as a two-column table: left column = Readiness, Sleep Score, Hours Slept; right column = Deep Sleep, REM Sleep, Sleep Debt.
+IMPORTANT: Sleep time values are entered in decimal shorthand where the digits after the decimal = minutes, NOT fractions. Convert before displaying:
+- 1.4 → 1h 4m (not 1h 24m)
+- 1.22 → 1h 22m
+- 1.45 → 1h 45m
+- 6.22 → 6h 22m
+- 0.45 → 45m
+Always display converted human-readable format (e.g. 1h 22m) in the table, never the raw decimal. Example:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Readiness</td><td style="padding:2px 40px 2px 0"><strong>72</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Deep Sleep</td><td><strong>1h 45m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Score</td><td style="padding:2px 40px 2px 0"><strong>65</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">REM Sleep</td><td><strong>1h 22m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Hours Slept</td><td style="padding:2px 40px 2px 0"><strong>6h 22m</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Debt</td><td><strong>6h 30m</strong></td></tr></table>
 NEVER write to this section from a mood check-in. Daytime Stress, Resilience, and HR from mood check-ins go in the MOOD section only. Use — if no sleep data logged at all.]
 
 <strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
