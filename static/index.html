@@ -2102,27 +2102,21 @@
         lastEl.textContent = 'No check-in yet — let\'s start!';
       }
     }
-    var list = $('fin-items');
-    if (list) {
-      list.innerHTML = _FIN_ITEMS.map(function(item) {
-        var checked = _finChecked.has(item);
-        var safe = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        return '<div class="fin-check-row' + (checked ? ' checked' : '') + '" onclick="finToggle(\'' + safe + '\')">' +
-          '<div class="fin-circle">' + (checked ? '✓' : '') + '</div>' +
-          '<div class="fin-row-label">' + item + '</div></div>';
-      }).join('');
-    }
+    // Reset all checkboxes when panel opens
+    var rows = document.querySelectorAll('#fin-items .fin-check-row');
+    rows.forEach(function(r) { r.classList.remove('checked'); r.querySelector('.fin-circle').textContent = ''; });
     renderFinSubs();
   }
 
-  function finToggle(item) {
-    if (_finChecked.has(item)) _finChecked.delete(item); else _finChecked.add(item);
-    renderFinPanel();
+  function finToggle(el) {
+    var checked = el.classList.toggle('checked');
+    el.querySelector('.fin-circle').textContent = checked ? '✓' : '';
   }
 
   function logFinCheckin() {
     localStorage.setItem('brain_fin_checkin', new Date().toISOString());
-    _finChecked = new Set();
+    var rows = document.querySelectorAll('#fin-items .fin-check-row');
+    rows.forEach(function(r) { r.classList.remove('checked'); r.querySelector('.fin-circle').textContent = ''; });
     renderFinPanel();
     showToast('💰 Finance check-in logged!');
   }
@@ -2195,7 +2189,13 @@
     <button onclick="toggleFinPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
   </div>
   <div id="fin-last-checkin" class="fin-last"></div>
-  <div id="fin-items"></div>
+  <div id="fin-items">
+    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked SoFi balance</div></div>
+    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked Chase balance</div></div>
+    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">💳 Paid off credit cards</div></div>
+    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">👀 Anything suspicious?</div></div>
+    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">📊 Opened Copilot for 5 mins</div></div>
+  </div>
   <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
   <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
     <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📋 Subscriptions & Memberships</div>
