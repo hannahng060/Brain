@@ -690,7 +690,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); var _qc=parseInt(localStorage.getItem(_quizCountKey())||'0'); if(_qc>0){var _qb=$('quick-win-btn');if(_qb)_qb.innerHTML='⚡ Quick Win <span style="background:var(--primary);color:white;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px">'+_qc+'</span>';} }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -1289,7 +1289,17 @@
     $('send-btn').disabled = false;
   }
 
+  function _quizCountKey() { return 'brain_quiz_count_' + new Date().toISOString().split('T')[0]; }
+  function _incrementQuizCount() {
+    var key = _quizCountKey();
+    var n = parseInt(localStorage.getItem(key) || '0') + 1;
+    localStorage.setItem(key, n);
+    var btn = $('quick-win-btn');
+    if (btn) btn.innerHTML = '⚡ Quick Win <span style="background:var(--primary);color:white;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px">' + n + '</span>';
+  }
+
   async function startQuiz(forceTopic) {
+    _incrementQuizCount();
     const topic = forceTopic || $('input').value.trim() || null;
     $('input').value = '';
     $('input').style.height = 'auto';
@@ -1792,6 +1802,7 @@
 
   // ── Quick Win ─────────────────────────────────────────────────────────
   async function doQuickWin() {
+    _incrementQuizCount();
     showTab('chat');
     try {
       const r = await fetch('/quiz/quick-win');
