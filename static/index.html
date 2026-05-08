@@ -2025,10 +2025,12 @@
 
   function clToggle(item) {
     const done = _clGetDone();
-    if (done.has(item)) done.delete(item); else done.add(item);
+    const wasChecked = done.has(item);
+    if (wasChecked) done.delete(item); else done.add(item);
     _clSetDone(done);
     _clRender();
     _clUpdateNudges();
+    if (!wasChecked) _clLogRoutine(); // only log when checking, not unchecking
   }
   function clToggleEdit() {
     const panel = $('cl-panel');
@@ -2071,7 +2073,6 @@
     const overlay = $('cl-overlay');
     if (panel) panel.classList.remove('open');
     if (overlay) overlay.style.display = 'none';
-    _clLogRoutine();
   }
 
   async function _clLogRoutine() {
