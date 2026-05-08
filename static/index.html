@@ -1783,6 +1783,7 @@
     panel.classList.toggle('open', opening);
     if (overlay) overlay.style.display = opening ? 'block' : 'none';
     if (opening) renderFocus();
+    else _updateFocusBadge();
   }
 
   function renderFocus(showEditor) {
@@ -1882,6 +1883,7 @@
     const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
     localStorage.setItem(key, JSON.stringify([..._focusDone]));
     renderFocus(false);
+    _updateFocusBadge();
   }
 
   // ── Quick Win ─────────────────────────────────────────────────────────
