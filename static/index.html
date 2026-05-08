@@ -135,8 +135,11 @@
     .cl-item.done { opacity:.5; }
     .cl-check { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
     .cl-item.done .cl-check { background:var(--primary); border-color:var(--primary); color:white; }
-    .cl-label { font-size:14px; color:var(--text); }
+    .cl-label { font-size:14px; color:var(--text); flex:1; }
     .cl-item.done .cl-label { text-decoration:line-through; }
+    .cl-delete { display:none; background:none; border:none; color:#bbb; font-size:18px; line-height:1; padding:0 2px; cursor:pointer; flex-shrink:0; }
+    .cl-delete:hover { color:#e53935; }
+    .cl-editing .cl-delete { display:block; }
     .cl-event { font-size:13px; color:var(--text); padding:5px 10px; background:var(--surface); border-radius:8px; margin-bottom:4px; }
     .cl-nudge { background:#fff8e1; border:1.5px solid #ffb300; border-radius:12px; padding:10px 12px; font-size:13px; color:#7a5800; margin:10px 0; line-height:1.5; }
     .cl-add { display:flex; gap:6px; margin-top:14px; }
@@ -1905,7 +1908,8 @@
       ? `Week of ${_weeklyPlan.week_of}`
       : 'Tell Brain your week to activate smart reminders';
 
-    let html = `<div class="cl-header"><span class="cl-today">${today} — ${dayType}</span><span class="cl-week">${weekLabel}</span></div>`;
+    const editing = panel.classList.contains('cl-editing');
+    let html = `<div class="cl-header"><span class="cl-today">${today} — ${dayType}</span><span class="cl-week">${weekLabel}</span><button onclick="clToggleEdit()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;padding:2px 6px;border-radius:8px;font-family:inherit">${editing ? 'done' : '✏️ edit'}</button></div>`;
 
     // Today's special events
     const todayEvents = _clEventsFor(0);
@@ -1927,7 +1931,8 @@
         const safeItem = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         html += `<label class="cl-item${isDone ? ' done' : ''}" onclick="clToggle('${safeItem}')">
           <span class="cl-check">${isDone ? '✓' : ''}</span>
-          <span class="cl-label">${item}</span></label>`;
+          <span class="cl-label">${item}</span>
+          <button class="cl-delete" onclick="event.preventDefault();event.stopPropagation();clDeleteItem('${safeItem}')">×</button></label>`;
       });
     } else if (!_weeklyPlan.work_days.length) {
       html += `<div class="cl-no-plan">Tell Brain your week schedule and I'll show the right reminders for each day 🗓️</div>`;
@@ -1959,6 +1964,20 @@
     _clSetDone(done);
     _clRender();
     _clUpdateNudges();
+  }
+  function clToggleEdit() {
+    const panel = $('cl-panel');
+    if (!panel) return;
+    panel.classList.toggle('cl-editing');
+    _clRender();
+  }
+  function clDeleteItem(item) {
+    const items = _clGetItems() || _clDefaultItems();
+    ['always','workday','dayoff'].forEach(k => {
+      if (items[k]) items[k] = items[k].filter(i => i !== item);
+    });
+    _clSaveItems(items);
+    _clRender();
   }
 
   function clAddItem() {
