@@ -440,16 +440,16 @@
       <button class="sign-out" onclick="loadNotes()">Refresh</button>
     </div>
     <div class="category-scroll">
-      <div class="cat-pill active" data-cat="all" onclick="filterNotes('all')">All</div>
-      <div class="cat-pill psychiatry"    data-cat="psychiatry"    onclick="filterNotes('psychiatry')">Psychiatry</div>
-      <div class="cat-pill psychotherapy" data-cat="psychotherapy" onclick="filterNotes('psychotherapy')">Psychotherapy</div>
-      <div class="cat-pill icu"           data-cat="icu"           onclick="filterNotes('icu')">ICU</div>
-      <div class="cat-pill np_fellowship" data-cat="np_fellowship" onclick="filterNotes('np_fellowship')">NP Fellowship</div>
-      <div class="cat-pill business"      data-cat="business"      onclick="filterNotes('business')">Business</div>
-      <div class="cat-pill resources"     data-cat="resources"     onclick="filterNotes('resources')">Resources</div>
-      <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">Personal</div>
-      <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">Lifestyle</div>
-      <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">🧡 Mom</div>
+      <div class="cat-pill active" data-cat="all" onclick="filterNotes('all')">🗂️ All</div>
+      <div class="cat-pill psychiatry"    data-cat="psychiatry"    onclick="filterNotes('psychiatry')">🧠 Psychiatry</div>
+      <div class="cat-pill psychotherapy" data-cat="psychotherapy" onclick="filterNotes('psychotherapy')">💬 Psychotherapy</div>
+      <div class="cat-pill icu"           data-cat="icu"           onclick="filterNotes('icu')">🏥 ICU</div>
+      <div class="cat-pill np_fellowship" data-cat="np_fellowship" onclick="filterNotes('np_fellowship')">🎓 NP Fellowship</div>
+      <div class="cat-pill business"      data-cat="business"      onclick="filterNotes('business')">💼 Business</div>
+      <div class="cat-pill resources"     data-cat="resources"     onclick="filterNotes('resources')">🔗 Resources</div>
+      <div class="cat-pill personal"      data-cat="personal"      onclick="filterNotes('personal')">🪞 Personal</div>
+      <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">🌿 Lifestyle</div>
+      <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">👩 Mom</div>
     </div>
     <div id="quiz-row">
       <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
@@ -1046,7 +1046,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'All',psychiatry:'Psychiatry',psychotherapy:'Psychotherapy',icu:'ICU',np_fellowship:'NP Fellowship',business:'Business',resources:'Resources',personal:'Personal',lifestyle:'Lifestyle',mom:'🧡 Mom'};
+  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👩 Mom'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};
