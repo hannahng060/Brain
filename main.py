@@ -307,8 +307,9 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
         return {"status": "error", "message": f"Section '{section}' not found in note {note_id}"}
 
     existing = match.group(2).strip()
-    # OURA RING METRICS should always replace (never append) to prevent duplicate tables
-    if section.upper().replace(' ', '') in ('OURARINGMETRICS', 'OURA RING METRICS', 'OURA'):
+    # These sections always replace (never append) to prevent duplicate tables
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS'}
+    if section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
         new_body = text
     elif existing and existing not in ('—', '-', ''):
         new_body = existing + '\n\n' + text
@@ -724,16 +725,14 @@ NEVER write to this section from a mood check-in. Daytime Stress, Resilience, an
 [data or —]
 
 <strong><u>MOOD:</u></strong>
-[Format each mood check-in as a compact table row. If multiple check-ins in a day, stack them. Example:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">9:30 AM</td><td><strong>😊 Happy</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">3:00 PM</td><td><strong>😤 Irritable</strong> — work was stressful</td></tr></table>]
+[IMPORTANT: This section is always REPLACED (not appended). Every time you update MOOD, write ONE complete table containing ALL check-ins logged today — include previous entries from this conversation plus the new one.
+Format as a single combined table with header row + one data row per check-in. Include only columns where at least one check-in has data. Example with all columns:
+<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="padding:2px 20px 2px 0;color:#888">Stress</td><td style="padding:2px 20px 2px 0;color:#888">Resilience</td><td style="padding:2px 20px 2px 0;color:#888">HR</td><td style="color:#888">BP</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Relaxed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>66 bpm</strong></td><td><strong>118/76</strong></td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">3:00 PM</td><td style="padding:2px 20px 2px 0"><strong>😤 Frustrated</strong> — work stress</td><td style="padding:2px 20px 2px 0"><strong>2/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Stressed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>72 bpm</strong></td><td>—</td></tr></table>
+Daytime Stress, Resilience, HR, and BP always go HERE — never in OURA RING METRICS.
+If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g. "Vyvanse (Brand) 30mg at 9:00 AM").]
 
 <strong><u>ENERGY:</u></strong>
-[Format alongside mood as a table column. Example:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">9:30 AM</td><td><strong>4/5</strong></td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">3:00 PM</td><td><strong>2/5</strong></td></tr></table>
-OR combine mood + energy + stress + resilience + HR + BP in one table if logged together (preferred when all data present):
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="padding:2px 20px 2px 0;color:#888">Stress</td><td style="padding:2px 20px 2px 0;color:#888">Resilience</td><td style="padding:2px 20px 2px 0;color:#888">HR</td><td style="color:#888">BP</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Relaxed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>66 bpm</strong></td><td><strong>118/76</strong></td></tr></table>
-Only include columns for data that was actually logged. Daytime Stress, Resilience, HR, and BP always go HERE — never in OURA RING METRICS.
-If Vyvanse dose is logged → add it to MEDICATIONS & SUPPLEMENTS section (e.g. "Vyvanse 50mg").]
+[Covered inside the MOOD table above — do not create a separate ENERGY section entry if mood was logged together.]
 
 <strong><u>MEALS:</u></strong>
 [Format each meal as a table row with time, description, and estimated calories. Example:
