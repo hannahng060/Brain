@@ -711,9 +711,8 @@ RULES:
 13. DAILY LOG: When user logs anything about their day (Oura metrics, medications, meals, activities, energy, mood, routine, anything that happened):
     a. You always know today's exact date from [Today's date: ...] at the top of the message. Use it.
     b. Call update_daily_log using the FULL date string from [Today's date:] as date_ref — for example "Wednesday, May 6, 2026". Never use "today" or short formats like "5/6/26". The note heading and the search both use this exact format so they always match.
-    c. If the update returns "not found" → ALWAYS create a brand new note with save_note under lifestyle → Daily Log. NEVER modify or rename a note from a different date. If the user says "I don't see today's log" or "fix my log" → create a NEW note for today with save_note. Do NOT touch any existing note from another date.
-    d. If no note found → create one with save_note under lifestyle → Daily Log.
-       Heading format: "Wednesday, May 6, 2026 - Workday" — use the full date from [Today's date:] plus the type of day. Example: "Wednesday, May 6, 2026 - Workday"
+    c. If the update returns "not found" → ALWAYS auto-create today's log immediately with save_note under lifestyle → Daily Log, then call update_daily_log again to add the data. Never skip the auto-create step. Never modify a note from a different date. This applies to ALL message types: sleep check-in, mood check-in, meal log, supplement log, routine update, activity — if there is no log yet for today, create it first, THEN update it.
+    d. Heading format: "Wednesday, May 6, 2026 - Workday" — use the full date from [Today's date:] plus the type of day (Workday or Day Off based on the day of week — Mon–Fri = Workday, Sat–Sun = Day Off).
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
 <strong><u>OURA RING METRICS:</u></strong>
