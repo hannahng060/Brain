@@ -756,7 +756,7 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
 [faith, prayer, scripture, gratitude to God, faith moments — preserve prayer: and my words: verbatim; summarize quoted text from others]
 
 <strong><u>LEARNING:</u></strong>
-[books, articles, podcasts, courses, study insights, things learned today]
+[books, articles, podcasts, courses, study insights, things learned today. IMPORTANT: When a "Learning log:" message arrives → ALWAYS call update_daily_log with section=LEARNING. APPEND the item. Never ignore a "Learning log:" message.]
 
 ⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY. Never write to them, never include them as placeholders with —, never create them. They do not exist.
 

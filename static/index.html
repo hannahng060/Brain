@@ -1951,10 +1951,27 @@
   }
 
   function toggleFocusItem(slot) {
-    if (_focus3Done.has(slot)) _focus3Done.delete(slot); else _focus3Done.add(slot);
+    const wasChecked = _focus3Done.has(slot);
+    if (wasChecked) _focus3Done.delete(slot); else _focus3Done.add(slot);
     _focus3SaveDone();
     renderFocus(false);
     _updateFocusBadge();
+    // Log to daily log when newly checked
+    if (!wasChecked) { _focus3Log(slot); }
+  }
+
+  async function _focus3Log(slot) {
+    const text = _focus3[slot];
+    if (!text) return;
+    const section = (slot === 'brain') ? 'LEARNING' : 'ACTIVITIES';
+    const prefix  = (slot === 'brain') ? 'Learning log: ' : 'Activity completed: ';
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: prefix + text })
+      });
+    } catch(e) { /* silent */ }
   }
 
   // ── Quick Win ─────────────────────────────────────────────────────────
