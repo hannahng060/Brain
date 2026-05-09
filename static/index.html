@@ -1431,7 +1431,9 @@
     $('send-btn').disabled = false;
   }
 
-  function _quizCountKey() { return 'brain_quiz_count_' + new Date().toISOString().split('T')[0]; }
+  // Use LOCAL date (not UTC) so keys reset at local midnight, not UTC midnight
+  function _localDateStr() { const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+  function _quizCountKey() { return 'brain_quiz_count_' + _localDateStr(); }
   function _incrementQuizCount() {
     var key = _quizCountKey();
     var n = parseInt(localStorage.getItem(key) || '0') + 1;
@@ -1852,7 +1854,7 @@
       const r = await fetch('/daily-focus');
       if (r.ok) { var d = await r.json(); _focusData = { date: d.date||'', priorities: d.priorities||[], study_focus: d.study_focus||'' }; }
     } catch(e) {}
-    const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
+    const key = 'brain_focus_done_' + _localDateStr();
     try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
     // Don't auto-open panel — user taps 🎯 Focus to open it
     _updateFocusBadge();
@@ -1871,7 +1873,7 @@
 
   function renderFocus(showEditor) {
     if (!_focusData) _focusData = { date:'', priorities:[], study_focus:'' };
-    const today = new Date().toISOString().split('T')[0];
+    const today = _localDateStr();
     const isToday = _focusData.date === today;
     const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
     const editor = $('fp-editor');
@@ -1939,7 +1941,7 @@
       var m = line.match(/^study:\s*(.+)/i);
       if (m) { sf = m[1]; } else if (ps.length < 3) { ps.push(line); }
     }
-    var ds = new Date().toISOString().split('T')[0];
+    var ds = _localDateStr();
     fetch('/daily-focus', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -1960,7 +1962,7 @@
 
   function toggleFocusItem(item) {
     if (_focusDone.has(item)) _focusDone.delete(item); else _focusDone.add(item);
-    const key = 'brain_focus_done_' + new Date().toISOString().split('T')[0];
+    const key = 'brain_focus_done_' + _localDateStr();
     localStorage.setItem(key, JSON.stringify([..._focusDone]));
     renderFocus(false);
     _updateFocusBadge();
@@ -2051,19 +2053,18 @@
   function _clSaveItems(items) { localStorage.setItem('brain_checklist', JSON.stringify(items)); }
   function _clDefaultItems() {
     return {
-      always:  ['💊 Vitamin', '🧘 Stretch', '🥑 Healthy snack', '🧘 Mindfulness', '🎓 Skool', '🔴 Red Light'],
-      workday: ['🥤 Smoothie'],
-      dayoff:  ['🏃 Exercise', '🥬 Green juice'],
+      always:  ['💊 Vitamin', '🧘 Stretch', '🥑 Healthy snack', '🧘 Mindfulness', '🎓 Skool', '🔴 Red Light', '🗓️ Planning', '🥤 Smoothie', '🥬 Green juice'],
+      dayoff:  ['🏃 Exercise'],
       sunday:  ['🪴 Water the plants']
     };
   }
 
   function _clGetDone() {
-    const key = 'brain_done_' + new Date().toISOString().split('T')[0];
+    const key = 'brain_done_' + _localDateStr();
     try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(e) { return new Set(); }
   }
   function _clSetDone(doneSet) {
-    const key = 'brain_done_' + new Date().toISOString().split('T')[0];
+    const key = 'brain_done_' + _localDateStr();
     localStorage.setItem(key, JSON.stringify([...doneSet]));
   }
 
@@ -2232,7 +2233,7 @@
     const coreChecked = Array.from(done).filter(i => coreItems.includes(i));
     if (coreChecked.length === 0) return;
     // Only log if changed since last log
-    const todayKey = 'brain_routine_logged_' + new Date().toISOString().split('T')[0];
+    const todayKey = 'brain_routine_logged_' + _localDateStr();
     const lastLogged = localStorage.getItem(todayKey) || '';
     const current = coreChecked.sort().join('|||');
     if (lastLogged === current) return;
@@ -2270,7 +2271,7 @@
     { item: '🏃 Exercise',      nudgeHour: 10, emoji: '🏃', label: 'Great day to exercise!',    workdayOnly: false },
   ];
 
-  function _clDismissedKey() { return 'brain_dismissed_' + new Date().toISOString().split('T')[0]; }
+  function _clDismissedKey() { return 'brain_dismissed_' + _localDateStr(); }
   function _clGetDismissed() { try { return new Set(JSON.parse(localStorage.getItem(_clDismissedKey()) || '[]')); } catch(e) { return new Set(); } }
   function _clDismiss(item) {
     const d = _clGetDismissed(); d.add(item);
@@ -2665,7 +2666,7 @@
     var plants = _gardenGetPlants();
     var plant = plants.find(p => p.id === id);
     if (!plant) return;
-    plant.lastWatered = new Date().toISOString().split('T')[0];
+    plant.lastWatered = _localDateStr();
     _gardenSavePlants(plants);
     _gardenRender();
     showToast('💧 ' + plant.name + ' watered!');
