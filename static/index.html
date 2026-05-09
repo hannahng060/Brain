@@ -2421,10 +2421,8 @@
     btn.style.opacity = ready ? '1' : '.5';
   }
 
-  async function saveMoodLog() {
+  function saveMoodLog() {
     if (!_selectedMood || !_selectedEnergy) return;
-    var btn = $('mood-save-btn');
-    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
     var now = new Date();
     var timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     var note = ($('mood-note') ? $('mood-note').value.trim() : '');
@@ -2439,18 +2437,14 @@
       + (bp ? '  BP: ' + bp + ' mmHg' : '')
       + (vyvanse ? '  Vyvanse' + (_vyvanseType ? ' (' + _vyvanseType + ')' : '') + ': ' + vyvanse + 'mg' + (vyvanseTime ? ' at ' + vyvanseTime : '') : '')
       + (note ? '  —  ' + note : '');
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({message: msg, local_date: _localLongDate()})
-      });
-      showToast('Mood logged! ' + _selectedMood);
-      toggleMoodPanel();
-    } catch(e) {
-      showToast('Could not save — try again');
-      if (btn) { btn.textContent = 'Log it'; btn.disabled = false; }
-    }
+    // Close immediately — save in background
+    showToast('Mood logged! ' + _selectedMood);
+    toggleMoodPanel();
+    fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg, local_date: _localLongDate()})
+    }).catch(() => {});
   }
 
   // ── Sleep Panel ───────────────────────────────────────────────────────
@@ -2468,9 +2462,7 @@
     document.querySelectorAll('#sleep-panel .mood-btn').forEach(b=>b.classList.remove('selected'));
     el.classList.add('selected');
   }
-  async function saveSleepLog() {
-    var btn = $('sleep-save-btn');
-    if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  function saveSleepLog() {
     var readiness = $('sleep-readiness') ? $('sleep-readiness').value : '';
     var score = $('sleep-score') ? $('sleep-score').value : '';
     var hours = $('sleep-hours') ? $('sleep-hours').value : '';
@@ -2486,14 +2478,10 @@
     if (rem) parts.push('REM sleep: ' + rem);
     if (debt) parts.push('Sleep debt: ' + debt);
     if (note) parts.push('Notes: ' + note);
-    try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  '), local_date: _localLongDate()}) });
-      showToast('🌙 Morning check-in logged!');
-      toggleSleepPanel();
-    } catch(e) {
-      showToast('Could not save — try again');
-      if (btn) { btn.textContent = 'Log Morning'; btn.disabled = false; }
-    }
+    // Close immediately — save in background
+    showToast('🌙 Morning check-in logged!');
+    toggleSleepPanel();
+    fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  '), local_date: _localLongDate()}) }).catch(() => {});
   }
 
   // ── Meal Panel ────────────────────────────────────────────────────────
@@ -2535,14 +2523,10 @@
       + (_mealType ? '  Type: ' + _mealType : '')
       + (isLate ? '  ⚠️ Late meal' : '')
       + (note ? '  — ' + note : '');
-    try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) });
-      showToast('🍽️ Meal logged!' + (isLate ? ' (late meal noted)' : ''));
-      toggleMealPanel();
-    } catch(e) {
-      showToast('Could not save — try again');
-      if (btn) { btn.textContent = 'Log Meal'; btn.disabled = false; }
-    }
+    // Close immediately — save in background
+    showToast('🍽️ Meal logged!' + (isLate ? ' (late meal noted)' : ''));
+    toggleMealPanel();
+    fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) }).catch(() => {});
   }
 
   // ── Call Log Panel ────────────────────────────────────────────────────
@@ -2583,14 +2567,10 @@
       + (phone ? ' — ' + phone : '')
       + '  What happened: ' + what
       + (next ? '  Next step: ' + next : '');
-    try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) });
-      showToast('📞 Call logged!');
-      toggleCallPanel();
-    } catch(e) {
-      showToast('Could not save — try again');
-      if (btn) { btn.textContent = 'Log Call'; btn.disabled = false; }
-    }
+    // Close immediately — save in background
+    showToast('📞 Call logged!');
+    toggleCallPanel();
+    fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) }).catch(() => {});
   }
 
   // ── Garden / Plant Tracker ────────────────────────────────────────────────────────────────────
