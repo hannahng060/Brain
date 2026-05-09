@@ -189,6 +189,12 @@
     .fsi-text { font-size:15px; flex:1; }
     .fi-check { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; color:var(--primary); transition:all .15s; }
     .focus-slot-item.done .fi-check { background:var(--primary); border-color:var(--primary); color:white; }
+    .fsi-done-note { font-size:12px; color:var(--muted); margin-top:4px; padding-left:30px; font-style:italic; }
+    .fsi-note-area { margin-top:10px; }
+    .fsi-note-input { width:100%; padding:9px 11px; border:1.5px solid var(--primary); border-radius:8px; font-size:14px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; box-sizing:border-box; }
+    .fsi-note-btns { display:flex; gap:8px; margin-top:8px; }
+    .fsi-btn-done { flex:1; padding:9px; background:var(--primary); color:white; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .fsi-btn-skip { padding:9px 16px; background:none; border:1.5px solid var(--border); border-radius:8px; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit; }
     .focus-empty { font-size:13px; color:#aaa; line-height:1.6; }
     #focus-editor { margin-top:10px; }
     #focus-editor textarea { width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); resize:none; outline:none; box-sizing:border-box; }
@@ -693,8 +699,9 @@
 
 <script>
   // Focus state declared first so it's always initialized
-  var _focus3 = { brain:'', home:'', world:'', date:'' };
+  var _focus3 = { brain:'', home:'', world:'', brainNote:'', homeNote:'', worldNote:'', date:'' };
   var _focus3Done = new Set();
+  var _focus3Expanding = null; // slot currently showing note input
 
   const $ = id => document.getElementById(id);
   let allNotes = [];
@@ -1920,11 +1927,43 @@
       const allDone = filled.length > 0 && filled.every(s => _focus3Done.has(s.key));
       list.innerHTML = filled.map(function(s) {
         const isDone = _focus3Done.has(s.key);
-        return '<div class="focus-slot-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + s.key + '\')">' +
+        const isExpanding = _focus3Expanding === s.key;
+        const savedNote = _focus3[s.key + 'Note'] || '';
+
+        if (isDone) {
+          // Done state — tap to uncheck
+          return '<div class="focus-slot-item done" onclick="toggleFocusItem(\'' + s.key + '\')">' +
+            '<div class="fsi-category">' + s.label + '</div>' +
+            '<div class="fsi-row"><span class="fi-check">✓</span><span class="fsi-text">' + s.text + '</span></div>' +
+            (savedNote ? '<div class="fsi-done-note">' + savedNote + '</div>' : '') +
+            '</div>';
+        }
+        if (isExpanding) {
+          // Note input expanded
+          return '<div class="focus-slot-item" style="border:1.5px solid var(--primary)">' +
+            '<div class="fsi-category">' + s.label + '</div>' +
+            '<div class="fsi-row"><span class="fi-check"></span><span class="fsi-text">' + s.text + '</span></div>' +
+            '<div class="fsi-note-area">' +
+            '<input id="fsi-note-' + s.key + '" type="text" class="fsi-note-input" placeholder="Add details... (optional)">' +
+            '<div class="fsi-note-btns">' +
+            '<button class="fsi-btn-done" onclick="confirmFocusItem(\'' + s.key + '\')">✓ Done</button>' +
+            '<button class="fsi-btn-skip" onclick="skipFocusNote(\'' + s.key + '\')">Skip</button>' +
+            '</div></div></div>';
+        }
+        // Default — tap to expand note input
+        return '<div class="focus-slot-item" onclick="expandFocusNote(\'' + s.key + '\')">' +
           '<div class="fsi-category">' + s.label + '</div>' +
-          '<div class="fsi-row"><span class="fi-check">' + (isDone ? '✓' : '') + '</span>' +
-          '<span class="fsi-text">' + s.text + '</span></div></div>';
+          '<div class="fsi-row"><span class="fi-check"></span><span class="fsi-text">' + s.text + '</span></div>' +
+          '</div>';
       }).join('') + (allDone ? '<div style="text-align:center;font-size:20px;margin-top:8px;opacity:.6">🎉 All done!</div>' : '');
+
+      // Auto-focus the note input if expanding
+      if (_focus3Expanding) {
+        setTimeout(function() {
+          const inp = $('fsi-note-' + _focus3Expanding);
+          if (inp) inp.focus();
+        }, 50);
+      }
     }
     _updateFocusBadge();
   }
@@ -1952,25 +1991,60 @@
   }
 
   function toggleFocusItem(slot) {
-    const wasChecked = _focus3Done.has(slot);
-    if (wasChecked) _focus3Done.delete(slot); else _focus3Done.add(slot);
-    _focus3SaveDone();
-    renderFocus(false);
-    _updateFocusBadge();
-    // Log to daily log when newly checked
-    if (!wasChecked) { _focus3Log(slot); }
+    if (_focus3Done.has(slot)) {
+      // Uncheck — no note prompt needed
+      _focus3Done.delete(slot);
+      _focus3[slot + 'Note'] = '';
+      _focus3Save();
+      _focus3SaveDone();
+      _focus3Expanding = null;
+      renderFocus(false);
+      _updateFocusBadge();
+    } else {
+      // Check — show note input first
+      expandFocusNote(slot);
+    }
   }
 
-  async function _focus3Log(slot) {
+  function expandFocusNote(slot) {
+    _focus3Expanding = slot;
+    renderFocus(false);
+  }
+
+  function confirmFocusItem(slot) {
+    const inp = $('fsi-note-' + slot);
+    const note = inp ? inp.value.trim() : '';
+    _focus3[slot + 'Note'] = note;
+    _focus3Save();
+    _focus3Expanding = null;
+    _focus3Done.add(slot);
+    _focus3SaveDone();
+    _focus3Log(slot, note);
+    renderFocus(false);
+    _updateFocusBadge();
+  }
+
+  function skipFocusNote(slot) {
+    _focus3[slot + 'Note'] = '';
+    _focus3Save();
+    _focus3Expanding = null;
+    _focus3Done.add(slot);
+    _focus3SaveDone();
+    _focus3Log(slot, '');
+    renderFocus(false);
+    _updateFocusBadge();
+  }
+
+  async function _focus3Log(slot, note) {
     const text = _focus3[slot];
     if (!text) return;
-    const section = (slot === 'brain') ? 'LEARNING' : 'ACTIVITIES';
     const prefix  = (slot === 'brain') ? 'Learning log: ' : 'Activity completed: ';
+    const detail  = note ? text + ' — ' + note : text;
     try {
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: prefix + text, local_date: _localLongDate() })
+        body: JSON.stringify({ message: prefix + detail, local_date: _localLongDate() })
       });
     } catch(e) { /* silent */ }
   }
