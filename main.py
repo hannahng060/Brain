@@ -861,7 +861,7 @@ Tag the note with the topic name as a tag.
        - If correct: "✅ Correct! [brief encouragement]" then show the rationale
        - If wrong: "❌ The correct answer is [letter]) [text]. [brief explanation]" then show the rationale
     e. After revealing the answer, call save_quiz_result with the topic as the topic field, and right/wrong/partial as appropriate.
-    f. Then ask: "Want another board question? (say 'next' or pick a topic)""""
+    f. Then ask: 'Want another board question? (say next or pick a topic)'"""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
