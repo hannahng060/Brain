@@ -176,11 +176,19 @@
     #dash-focus { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
     .focus-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#888; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
     .focus-title button { background:none; border:none; color:#aaa; font-size:13px; cursor:pointer; font-family:inherit; padding:0; }
-    .focus-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:14px; color:var(--text); cursor:pointer; border-radius:8px; }
-    .focus-item .fi-check { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; color:var(--primary); transition:all .15s; }
-    .focus-item.done .fi-check { background:var(--primary); border-color:var(--primary); color:white; }
-    .focus-item.done span { text-decoration:line-through; opacity:.5; }
-    .focus-study { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:13px; color:var(--primary); font-weight:600; }
+    .fp-slot { margin-bottom:16px; }
+    .fp-slot-label { font-size:15px; font-weight:700; margin-bottom:2px; }
+    .fp-slot-hint { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .fp-input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); color:var(--text); outline:none; box-sizing:border-box; transition:border-color .15s; }
+    .fp-input:focus { border-color:var(--primary); }
+    .focus-slot-item { padding:12px 14px; border-radius:12px; background:var(--bg); margin-bottom:10px; cursor:pointer; transition:opacity .15s; }
+    .focus-slot-item.done { opacity:0.45; }
+    .focus-slot-item.done .fsi-text { text-decoration:line-through; }
+    .fsi-category { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+    .fsi-row { display:flex; align-items:center; gap:10px; }
+    .fsi-text { font-size:15px; flex:1; }
+    .fi-check { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; color:var(--primary); transition:all .15s; }
+    .focus-slot-item.done .fi-check { background:var(--primary); border-color:var(--primary); color:white; }
     .focus-empty { font-size:13px; color:#aaa; line-height:1.6; }
     #focus-editor { margin-top:10px; }
     #focus-editor textarea { width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); resize:none; outline:none; box-sizing:border-box; }
@@ -685,8 +693,8 @@
 
 <script>
   // Focus state declared first so it's always initialized
-  var _focusData = { date:'', priorities:[], study_focus:'' };
-  var _focusDone = new Set();
+  var _focus3 = { brain:'', home:'', world:'', date:'' };
+  var _focus3Done = new Set();
 
   const $ = id => document.getElementById(id);
   let allNotes = [];
@@ -1847,16 +1855,27 @@
     } catch(e) { /* silent */ }
   }
 
-  // ── Today's Focus ─────────────────────────────────────────────────────
+  // ── Today's Focus (Brain / Home / World) ──────────────────────────────
+  function _focus3Load() {
+    const today = _localDateStr();
+    try {
+      const d = JSON.parse(localStorage.getItem('brain_focus3_' + today) || 'null');
+      _focus3 = d || { brain:'', home:'', world:'', date: today };
+    } catch(e) { _focus3 = { brain:'', home:'', world:'', date: today }; }
+    try {
+      _focus3Done = new Set(JSON.parse(localStorage.getItem('brain_focus3_done_' + today) || '[]'));
+    } catch(e) { _focus3Done = new Set(); }
+  }
+  function _focus3Save() {
+    _focus3.date = _localDateStr();
+    localStorage.setItem('brain_focus3_' + _localDateStr(), JSON.stringify(_focus3));
+  }
+  function _focus3SaveDone() {
+    localStorage.setItem('brain_focus3_done_' + _localDateStr(), JSON.stringify([..._focus3Done]));
+  }
 
   async function loadDailyFocus() {
-    try {
-      const r = await fetch('/daily-focus');
-      if (r.ok) { var d = await r.json(); _focusData = { date: d.date||'', priorities: d.priorities||[], study_focus: d.study_focus||'' }; }
-    } catch(e) {}
-    const key = 'brain_focus_done_' + _localDateStr();
-    try { _focusDone = new Set(JSON.parse(localStorage.getItem(key)||'[]')); } catch(e) { _focusDone = new Set(); }
-    // Don't auto-open panel — user taps 🎯 Focus to open it
+    _focus3Load();
     _updateFocusBadge();
   }
 
@@ -1872,98 +1891,68 @@
   }
 
   function renderFocus(showEditor) {
-    if (!_focusData) _focusData = { date:'', priorities:[], study_focus:'' };
-    const today = _localDateStr();
-    const isToday = _focusData.date === today;
-    const hasFocus = isToday && (_focusData.priorities.length || _focusData.study_focus);
+    _focus3Load();
+    const hasContent = _focus3.brain || _focus3.home || _focus3.world;
     const editor = $('fp-editor');
     const items  = $('fp-items');
-    const list   = $('fp-list');
     if (!editor || !items) return;
 
-    if (!hasFocus || showEditor) {
-      // Show editor, fill textarea with existing data if any
-      const ta = $('focus-input');
-      if (ta) {
-        ta.value = hasFocus
-          ? [...(_focusData.priorities||[]), _focusData.study_focus ? 'study: ' + _focusData.study_focus : ''].filter(Boolean).join('\n')
-          : '';
-      }
+    if (!hasContent || showEditor) {
+      const b = $('fp-brain'); if (b) b.value = _focus3.brain || '';
+      const h = $('fp-home');  if (h) h.value = _focus3.home  || '';
+      const w = $('fp-world'); if (w) w.value = _focus3.world || '';
       editor.style.display = 'block';
       items.style.display  = 'none';
       return;
     }
 
-    // Show filled/items state
     editor.style.display = 'none';
     items.style.display  = 'block';
+    const slots = [
+      { key:'brain', label:'🧠 Brain', text: _focus3.brain },
+      { key:'home',  label:'🏠 Home',  text: _focus3.home  },
+      { key:'world', label:'🌍 World', text: _focus3.world },
+    ];
+    const list = $('fp-list');
     if (list) {
-      const rows = (_focusData.priorities||[]).map(function(p) {
-        const isDone = _focusDone.has(p);
-        const safe = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        return '<div class="focus-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + safe + '\')">' +
-          '<span class="fi-check">' + (isDone ? '✓' : '') + '</span><span>' + p + '</span></div>';
-      }).join('');
-      const study = _focusData.study_focus
-        ? '<div class="focus-study">📚 Study: ' + _focusData.study_focus + '</div>' : '';
-      list.innerHTML = rows + study;
+      const filled = slots.filter(s => s.text);
+      const allDone = filled.length > 0 && filled.every(s => _focus3Done.has(s.key));
+      list.innerHTML = filled.map(function(s) {
+        const isDone = _focus3Done.has(s.key);
+        return '<div class="focus-slot-item' + (isDone ? ' done' : '') + '" onclick="toggleFocusItem(\'' + s.key + '\')">' +
+          '<div class="fsi-category">' + s.label + '</div>' +
+          '<div class="fsi-row"><span class="fi-check">' + (isDone ? '✓' : '') + '</span>' +
+          '<span class="fsi-text">' + s.text + '</span></div></div>';
+      }).join('') + (allDone ? '<div style="text-align:center;font-size:20px;margin-top:8px;opacity:.6">🎉 All done!</div>' : '');
     }
-    // Update focus badge
     _updateFocusBadge();
   }
 
   function _updateFocusBadge() {
     const badge = $('focus-badge');
     if (!badge) return;
-    const priorities = (_focusData && _focusData.priorities) || [];
-    const done = (_focusDone || new Set()).size;
-    const remaining = priorities.length - done;
-    if (remaining > 0) {
-      badge.textContent = remaining;
-      badge.style.display = 'flex';
-    } else {
-      badge.style.display = 'none';
-    }
+    _focus3Load();
+    const remaining = ['brain','home','world'].filter(k => _focus3[k] && !_focus3Done.has(k)).length;
+    if (remaining > 0) { badge.textContent = remaining; badge.style.display = 'flex'; }
+    else { badge.style.display = 'none'; }
   }
 
   function showFocusEditor() { renderFocus(true); }
 
   function saveFocusFromEditor() {
-    var ta = document.getElementById('focus-input');
-    if (!ta) { showToast('No input found'); return; }
-    var raw = ta.value;
-    var lines = raw.split('\n');
-    var sf = '';
-    var ps = [];
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (!line) continue;
-      var m = line.match(/^study:\s*(.+)/i);
-      if (m) { sf = m[1]; } else if (ps.length < 3) { ps.push(line); }
-    }
-    var ds = _localDateStr();
-    fetch('/daily-focus', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ priorities: ps, study_focus: sf, date_str: ds })
-    }).then(function(resp) {
-      if (resp && resp.ok) {
-        loadDailyFocus().then(function() {
-          renderFocus();
-          showToast('🎯 Focus set!');
-        });
-      } else {
-        showToast('Save failed: ' + (resp ? resp.status : 'no response'));
-      }
-    }).catch(function(err) {
-      showToast('Network error: ' + err.message);
-    });
+    const b = $('fp-brain'); const h = $('fp-home'); const w = $('fp-world');
+    _focus3.brain = b ? b.value.trim() : '';
+    _focus3.home  = h ? h.value.trim() : '';
+    _focus3.world = w ? w.value.trim() : '';
+    if (!_focus3.brain && !_focus3.home && !_focus3.world) { showToast('Add at least one focus item'); return; }
+    _focus3Save();
+    renderFocus(false);
+    showToast('🎯 Focus set!');
   }
 
-  function toggleFocusItem(item) {
-    if (_focusDone.has(item)) _focusDone.delete(item); else _focusDone.add(item);
-    const key = 'brain_focus_done_' + _localDateStr();
-    localStorage.setItem(key, JSON.stringify([..._focusDone]));
+  function toggleFocusItem(slot) {
+    if (_focus3Done.has(slot)) _focus3Done.delete(slot); else _focus3Done.add(slot);
+    _focus3SaveDone();
     renderFocus(false);
     _updateFocusBadge();
   }
@@ -3211,17 +3200,30 @@
 <div id="focus-panel">
   <!-- Editor view -->
   <div id="fp-editor">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div style="font-size:16px;font-weight:700">🎯 Today's Focus</div>
       <button onclick="toggleFocusPanel()" style="background:none;border:none;font-size:24px;color:#aaa;cursor:pointer;line-height:1;padding:0">×</button>
     </div>
-    <p style="font-size:13px;color:#888;margin:0 0 10px">One item per line. Start a line with <strong>study:</strong> for your study topic.</p>
-    <textarea id="focus-input" style="width:100%;min-height:130px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);resize:none;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Submit credentialing docs&#10;Call insurance&#10;study: ADHD Medications"></textarea>
-    <button onclick="saveFocusFromEditor()" style="margin-top:10px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;" id="fp-save-btn">Save Focus</button>
+    <div class="fp-slot">
+      <div class="fp-slot-label">🧠 Brain</div>
+      <div class="fp-slot-hint">What will you learn or study today?</div>
+      <input id="fp-brain" type="text" class="fp-input" placeholder="e.g. Review lithium toxicity">
+    </div>
+    <div class="fp-slot">
+      <div class="fp-slot-label">🏠 Home</div>
+      <div class="fp-slot-hint">One thing for your space today?</div>
+      <input id="fp-home" type="text" class="fp-input" placeholder="e.g. Clean bathroom">
+    </div>
+    <div class="fp-slot">
+      <div class="fp-slot-label">🌍 World</div>
+      <div class="fp-slot-hint">One thing to handle today?</div>
+      <input id="fp-world" type="text" class="fp-input" placeholder="e.g. Call IEHP">
+    </div>
+    <button onclick="saveFocusFromEditor()" style="margin-top:4px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Set Focus</button>
   </div>
   <!-- Items view -->
   <div id="fp-items" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:16px;font-weight:700">🎯 Today's Focus</div>
       <div style="display:flex;gap:12px;align-items:center">
         <button onclick="showFocusEditor()" style="background:none;border:none;font-size:14px;color:#888;cursor:pointer;font-family:inherit;padding:0">✏️ edit</button>
