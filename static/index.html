@@ -1441,6 +1441,7 @@
 
   // Use LOCAL date (not UTC) so keys reset at local midnight, not UTC midnight
   function _localDateStr() { const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+  function _localLongDate() { return new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}); }
   function _quizCountKey() { return 'brain_quiz_count_' + _localDateStr(); }
   function _incrementQuizCount() {
     var key = _quizCountKey();
@@ -1969,7 +1970,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: prefix + text })
+        body: JSON.stringify({ message: prefix + text, local_date: _localLongDate() })
       });
     } catch(e) { /* silent */ }
   }
@@ -2254,7 +2255,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Daily routine update: ' + routineItems.join('  ')})
+        body: JSON.stringify({message: 'Daily routine update: ' + routineItems.join('  '), local_date: _localLongDate()})
       });
     } catch(e) { /* silent */ }
   }
@@ -2266,7 +2267,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Meal log: ' + item + ' at ' + timeStr})
+        body: JSON.stringify({message: 'Meal log: ' + item + ' at ' + timeStr, local_date: _localLongDate()})
       });
     } catch(e) { /* silent */ }
   }
@@ -2278,7 +2279,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Supplement log: Took ' + item + ' at ' + timeStr})
+        body: JSON.stringify({message: 'Supplement log: Took ' + item + ' at ' + timeStr, local_date: _localLongDate()})
       });
     } catch(e) { /* silent */ }
   }
@@ -2288,7 +2289,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Activity completed: ' + item})
+        body: JSON.stringify({message: 'Activity completed: ' + item, local_date: _localLongDate()})
       });
     } catch(e) { /* silent */ }
   }
@@ -2442,7 +2443,7 @@
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({message: msg})
+        body: JSON.stringify({message: msg, local_date: _localLongDate()})
       });
       showToast('Mood logged! ' + _selectedMood);
       toggleMoodPanel();
@@ -2486,7 +2487,7 @@
     if (debt) parts.push('Sleep debt: ' + debt);
     if (note) parts.push('Notes: ' + note);
     try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  ')}) });
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: parts.join('  '), local_date: _localLongDate()}) });
       showToast('🌙 Morning check-in logged!');
       toggleSleepPanel();
     } catch(e) {
@@ -2535,7 +2536,7 @@
       + (isLate ? '  ⚠️ Late meal' : '')
       + (note ? '  — ' + note : '');
     try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) });
       showToast('🍽️ Meal logged!' + (isLate ? ' (late meal noted)' : ''));
       toggleMealPanel();
     } catch(e) {
@@ -2583,7 +2584,7 @@
       + '  What happened: ' + what
       + (next ? '  Next step: ' + next : '');
     try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) });
       showToast('📞 Call logged!');
       toggleCallPanel();
     } catch(e) {
@@ -2709,7 +2710,7 @@
     // Log to Brain
     try {
       await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message: 'Garden log: watered ' + plant.name + ' today.'}) });
+        body: JSON.stringify({message: 'Garden log: watered ' + plant.name + ' today.', local_date: _localLongDate()}) });
     } catch(e) {}
   }
 
@@ -2793,7 +2794,7 @@
       + (_boardSource ? ' | Source: ' + _boardSource : '')
       + (rationale.trim() ? ' | Rationale: ' + rationale.trim() : '');
     try {
-      const res = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) });
+      const res = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, local_date: _localLongDate()}) });
       if (res.ok) {
         showToast('📋 Question saved!');
         toggleBoardQPanel();
