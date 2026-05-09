@@ -841,9 +841,9 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
 
 Tag the note with the topic name as a tag.
 
-19. BOARD QUIZ: When a message starts with "Board quiz:" →
-    a. Search notes in the boards category for a question to use. Pick one that Hannah hasn't recently answered, or pick randomly.
-    b. Present it in this EXACT format:
+19. BOARD QUIZ: When a message starts with "[BOARD QUIZ - SAVED QUESTION]" →
+    a. The message contains the question, choices, LOCKED CORRECT ANSWER, and rationale from Hannah's saved notes.
+    b. Present it in this EXACT format — do NOT reveal the answer yet:
 
     📋 **Board Question** *(topic name)*
 
@@ -856,12 +856,17 @@ Tag the note with the topic name as a tag.
 
     *Type A, B, C, or D to answer.*
 
-    c. Do NOT reveal the correct answer yet. Wait for her response.
-    d. When she responds with a letter (A/B/C/D):
-       - If correct: "✅ Correct! [brief encouragement]" then show the rationale
-       - If wrong: "❌ The correct answer is [letter]) [text]. [brief explanation]" then show the rationale
-    e. After revealing the answer, call save_quiz_result with the topic as the topic field, and right/wrong/partial as appropriate.
-    f. Then ask: 'Want another board question? (say next or pick a topic)'"""
+    c. When she responds with a letter (A/B/C/D), grade her answer ONLY against the LOCKED CORRECT ANSWER in the message.
+       ⛔ NEVER override the locked answer with your own clinical reasoning. The stored answer IS correct for this question — period.
+       ⛔ Even if you believe a different answer is more clinically accurate, you MUST honor the locked answer. Hannah submitted this question herself and the locked answer is what she is studying.
+       - If her answer matches LOCKED CORRECT ANSWER: "✅ Correct! [brief encouragement]" then show the rationale
+       - If her answer does NOT match: "❌ The correct answer is [locked letter]) [locked text]. [show the stored rationale]"
+    d. After revealing the answer, call save_quiz_result with the topic, and right/wrong as appropriate.
+    e. Then ask: 'Want another board question? (say next or pick a topic)'
+
+    When a message starts with "Board quiz:" (no saved question) →
+    a. Generate your own board-style question on a random or specified topic.
+    b. Present in the same A/B/C/D format. Grade using your own reasoning for these Brain-generated questions only."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
@@ -1139,6 +1144,67 @@ async def last_error():
     if not _last_error:
         return {"ok": True, "message": "No errors recorded since last deploy."}
     return _last_error
+
+@app.get("/board-quiz/random")
+async def board_quiz_random(request: Request, topic: str = None):
+    """Return a random saved board question with locked correct answer."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    if topic:
+        cur.execute(
+            """SELECT id, content, subcategory FROM notes
+               WHERE category='boards' AND subcategory ILIKE %s
+               ORDER BY RANDOM() LIMIT 1""", (f"%{topic}%",))
+    else:
+        cur.execute(
+            """SELECT id, content, subcategory FROM notes
+               WHERE category='boards'
+               ORDER BY RANDOM() LIMIT 1""")
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    if not row:
+        return {"found": False}
+
+    content = row["content"]
+    subcategory = row["subcategory"] or ""
+
+    # Parse question
+    q_match = re.search(r'\*\*Q:\*\*\s*(.+?)(?=\n\s*[A-D]\))', content, re.DOTALL)
+    question = q_match.group(1).strip() if q_match else ""
+
+    # Parse choices
+    choices = {}
+    for letter in ['A','B','C','D']:
+        m = re.search(rf'\n\s*{letter}\)\s*(.+?)(?=\n\s*[B-D]\)|\n\s*✅|\Z)', content, re.DOTALL)
+        if m:
+            choices[letter] = m.group(1).strip()
+
+    # Parse correct answer  e.g. "✅ **Correct: B) Some text**"
+    correct_match = re.search(r'✅[^\n]*Correct:\s*([A-D])\)\s*(.+?)(?:\*\*|$)', content, re.IGNORECASE)
+    correct_letter = correct_match.group(1).upper() if correct_match else ""
+    correct_text   = correct_match.group(2).strip() if correct_match else choices.get(correct_letter, "")
+
+    # Parse rationale
+    rat_match = re.search(r'\*\*Rationale:\*\*\s*(.+?)(?=\n\*Source|\*Source|\Z)', content, re.DOTALL)
+    rationale = rat_match.group(1).strip() if rat_match else ""
+
+    # Parse source
+    src_match = re.search(r'\*Source:\s*(.+?)\*', content)
+    source = src_match.group(1).strip() if src_match else ""
+
+    return {
+        "found": True,
+        "note_id": row["id"],
+        "topic": subcategory,
+        "question": question,
+        "choices": choices,
+        "correct_letter": correct_letter,
+        "correct_text": correct_text,
+        "rationale": rationale,
+        "source": source
+    }
 
 @app.get("/weekly-plan")
 async def get_weekly_plan(request: Request):

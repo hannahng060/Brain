@@ -2857,10 +2857,9 @@
     } catch(e) { showToast('Save failed'); }
   }
 
-  function startBoardQuiz() {
+  async function _sendBoardQuizMsg(msg) {
     toggleBoardQPanel();
     showTab('chat');
-    var msg = 'Board quiz: Give me a random multiple choice question from my board question bank. Present it exactly in A/B/C/D format — show the question and all choices but do NOT reveal the answer yet. Wait for me to respond with my answer choice.';
     setTimeout(function() {
       var input = document.getElementById('input');
       if (input) {
@@ -2871,19 +2870,37 @@
     }, 300);
   }
 
-  function startBoardQuizByTopic(topic) {
-    toggleBoardQPanel();
-    showTab('chat');
-    var msg = 'Board quiz: Give me a multiple choice question from my board question bank on the topic: ' + topic + '. Present it exactly in A/B/C/D format — show the question and all choices but do NOT reveal the answer yet. Wait for me to respond with my answer choice.';
-    setTimeout(function() {
-      var input = document.getElementById('input');
-      if (input) {
-        input.value = msg;
-        input.dispatchEvent(new Event('input'));
-        if (typeof sendMessage === 'function') sendMessage();
+  async function _fetchAndStartQuiz(topic) {
+    var url = '/board-quiz/random' + (topic ? '?topic=' + encodeURIComponent(topic) : '');
+    try {
+      var r = await fetch(url);
+      var data = await r.json();
+      if (!data.found) {
+        // No saved questions — fall back to Brain generating one
+        var fallback = topic
+          ? 'Board quiz: Give me a multiple choice question on the topic: ' + topic + '. Present in A/B/C/D format, do not reveal the answer yet.'
+          : 'Board quiz: Give me a random multiple choice question. Present in A/B/C/D format, do not reveal the answer yet.';
+        _sendBoardQuizMsg(fallback);
+        return;
       }
-    }, 300);
+      // Build locked-answer message
+      var choiceLines = ['A','B','C','D'].filter(function(l){ return data.choices[l]; })
+        .map(function(l){ return l + ') ' + data.choices[l]; }).join('\n');
+      var msg = '[BOARD QUIZ - SAVED QUESTION]\n'
+        + 'Topic: ' + data.topic + '\n'
+        + 'Question: ' + data.question + '\n'
+        + choiceLines + '\n'
+        + 'LOCKED CORRECT ANSWER: ' + data.correct_letter + ') ' + data.correct_text + '\n'
+        + (data.rationale ? 'RATIONALE: ' + data.rationale + '\n' : '')
+        + (data.source    ? 'SOURCE: ' + data.source + '\n' : '');
+      _sendBoardQuizMsg(msg);
+    } catch(e) {
+      showToast('Could not load question — try again');
+    }
   }
+
+  function startBoardQuiz() { _fetchAndStartQuiz(null); }
+  function startBoardQuizByTopic(topic) { _fetchAndStartQuiz(topic); }
 
   // ── Finance Panel ─────────────────────────────────────────────────────
   var _finChecked = new Set();
