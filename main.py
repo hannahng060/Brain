@@ -744,9 +744,9 @@ If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g
 If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under mom → the relevant subcategory (e.g. IEHP, Social Security, Medi-Cal) capturing what happened, the emotional impact, and any relevant details. Use mom → Quick Reference for phone numbers and account info.]
 
 <strong><u>MEALS:</u></strong>
-[IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today — not just the new one. Each meal gets its own row. Use meal name (Breakfast/Lunch/Dinner/Snack) as the label. Example:
+[IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today. NEVER write meals as plain text or one line. ALWAYS use the HTML table format below. Each meal = its own row. Label each row with the meal type: Breakfast, Lunch, Dinner, or Snack. If the user does not specify which meal it is, infer from the time of day (before 11am=Breakfast, 11am-3pm=Lunch, after 5pm=Dinner, between=Snack). Example:
 <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Breakfast</td><td><strong>Green smoothie</strong> — ~320 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Lunch</td><td><strong>Salad with chicken</strong> — ~450 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Dinner</td><td><strong>Rice and vegetables</strong> — ~500 cal</td></tr></table>
-Never put all meals in one line. Each meal = its own table row. When adding a new meal, check what meals are already in this section and include them all in the updated table.]
+NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the table with a meal label.]
 
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
@@ -756,6 +756,8 @@ Never put all meals in one line. Each meal = its own table row. When adding a ne
 
 <strong><u>LEARNING:</u></strong>
 [books, articles, podcasts, courses, study insights, things learned today]
+
+⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY. Never write to them, never include them as placeholders with —, never create them. They do not exist.
 
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
