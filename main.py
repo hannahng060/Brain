@@ -729,7 +729,7 @@ Always display converted human-readable format (e.g. 1h 22m) in the table, never
 NEVER write to this section from a mood check-in. Daytime Stress, Resilience, and HR from mood check-ins go in the MOOD section only. Use — if no sleep data logged at all.]
 
 <strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
-[data or —]
+[IMPORTANT: When a "Supplement log:" message arrives → ALWAYS call update_daily_log with section=MEDICATIONS & SUPPLEMENTS. APPEND the item with the time provided. Example format: "✅ 💊 Vitamin — 8:30 AM". Do not replace existing entries, only append. Never ignore a "Supplement log:" message.]
 
 <strong><u>DAILY ROUTINE:</u></strong>
 [IMPORTANT: Always REPLACE this section. When a "Daily routine update:" message arrives → ALWAYS call update_daily_log with section=DAILY ROUTINE. If no daily log exists yet for today, create one first with save_note under lifestyle → Daily Log, then update it. Write a clean inline list of all checked items using ✅ emoji. Example: ✅ Vitamin  ✅ Stretch  ✅ Mindfulness  ✅ Red Light  ✅ Skool
@@ -744,7 +744,8 @@ If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g
 If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under mom → the relevant subcategory (e.g. IEHP, Social Security, Medi-Cal) capturing what happened, the emotional impact, and any relevant details. Use mom → Quick Reference for phone numbers and account info.]
 
 <strong><u>MEALS:</u></strong>
-[IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today. NEVER write meals as plain text or one line. ALWAYS use the HTML table format below. Each meal = its own row. Label each row with the meal type: Breakfast, Lunch, Dinner, or Snack. If the user does not specify which meal it is, infer from the time of day (before 11am=Breakfast, 11am-3pm=Lunch, after 5pm=Dinner, between=Snack). Example:
+[IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today. NEVER write meals as plain text or one line. ALWAYS use the HTML table format below. Each meal = its own row. Label each row with the meal type: Breakfast, Lunch, Dinner, or Snack. If the user does not specify which meal it is, infer from the time of day (before 11am=Breakfast, 11am-3pm=Lunch, after 5pm=Dinner, between=Snack).
+When a "Meal log:" message arrives → ALWAYS call update_daily_log with section=MEALS. First call get_today_logs to read any existing MEALS rows, then REPLACE with a complete updated table that includes the previous meals PLUS the new item. Infer the meal type from the time provided. Example:
 <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Breakfast</td><td><strong>Green smoothie</strong> — ~320 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Lunch</td><td><strong>Salad with chicken</strong> — ~450 cal</td></tr><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Dinner</td><td><strong>Rice and vegetables</strong> — ~500 cal</td></tr></table>
 NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the table with a meal label.]
 

@@ -2152,6 +2152,15 @@
     if (badge) { badge.textContent = unchecked || ''; badge.style.display = unchecked ? 'flex' : 'none'; }
   }
 
+  // Which section each checklist item logs to (omitted = DAILY ROUTINE)
+  var _CL_ITEM_SECTIONS = {
+    '🥤 Smoothie':         'MEALS',
+    '🥬 Green juice':      'MEALS',
+    '💊 Vitamin':          'MEDICATIONS',
+    '🏃 Exercise':         'ACTIVITIES',
+    '🪴 Water the plants': 'ACTIVITIES',
+  };
+
   function clToggle(item) {
     const done = _clGetDone();
     const wasChecked = done.has(item);
@@ -2160,18 +2169,16 @@
     _clRender();
     _clUpdateNudges();
     if (!wasChecked) {
-      // Determine if core item or custom
-      const defaults = _clDefaultItems();
-      const coreItems = [
-        ...defaults.always,
-        ...(defaults.workday || []),
-        ...(defaults.dayoff  || []),
-        ...(defaults.sunday  || [])
-      ];
-      if (coreItems.includes(item)) {
-        _clLogRoutine(); // core items → DAILY ROUTINE
-      } else {
-        _clLogActivity(item); // custom tasks → ACTIVITIES
+      const section = _CL_ITEM_SECTIONS[item];
+      if (section === 'MEALS')       { _clLogMeal(item); }
+      else if (section === 'MEDICATIONS') { _clLogMedication(item); }
+      else if (section === 'ACTIVITIES')  { _clLogActivity(item); }
+      else {
+        // Default core items (Stretch, Mindfulness, Red Light, Skool, etc.) → DAILY ROUTINE
+        const defaults = _clDefaultItems();
+        const coreItems = [...defaults.always, ...(defaults.dayoff||[]), ...(defaults.sunday||[])];
+        if (coreItems.includes(item)) { _clLogRoutine(); }
+        else { _clLogActivity(item); } // custom added items → ACTIVITIES
       }
     }
   }
@@ -2221,7 +2228,6 @@
   async function _clLogRoutine() {
     const done = _clGetDone();
     if (!done || done.size === 0) return;
-    // Only include core/default items in routine
     const defaults = _clDefaultItems();
     const coreItems = [
       ...defaults.always,
@@ -2229,19 +2235,44 @@
       ...(defaults.dayoff  || []),
       ...(defaults.sunday  || [])
     ];
-    const coreChecked = Array.from(done).filter(i => coreItems.includes(i));
-    if (coreChecked.length === 0) return;
+    // Only batch items that belong in DAILY ROUTINE (exclude MEALS, MEDICATIONS, ACTIVITIES)
+    const routineItems = Array.from(done).filter(i => coreItems.includes(i) && !_CL_ITEM_SECTIONS[i]);
+    if (routineItems.length === 0) return;
     // Only log if changed since last log
     const todayKey = 'brain_routine_logged_' + _localDateStr();
     const lastLogged = localStorage.getItem(todayKey) || '';
-    const current = coreChecked.sort().join('|||');
+    const current = routineItems.sort().join('|||');
     if (lastLogged === current) return;
     localStorage.setItem(todayKey, current);
     try {
       await fetch('/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Daily routine update: ' + coreChecked.join('  ')})
+        body: JSON.stringify({message: 'Daily routine update: ' + routineItems.join('  ')})
+      });
+    } catch(e) { /* silent */ }
+  }
+
+  async function _clLogMeal(item) {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: 'Meal log: ' + item + ' at ' + timeStr})
+      });
+    } catch(e) { /* silent */ }
+  }
+
+  async function _clLogMedication(item) {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
+    try {
+      await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: 'Supplement log: Took ' + item + ' at ' + timeStr})
       });
     } catch(e) { /* silent */ }
   }
