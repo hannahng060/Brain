@@ -866,7 +866,9 @@ Tag the note with the topic name as a tag.
 
     When a message starts with "Board quiz:" (no saved question) →
     a. Generate your own board-style question on a random or specified topic.
-    b. Present in the same A/B/C/D format. Grade using your own reasoning for these Brain-generated questions only."""
+    b. Present in the same A/B/C/D format. Grade using your own reasoning for these Brain-generated questions only.
+
+    ⛔ GLOBAL RULE FOR ALL QUIZZES: If you retrieve a question from Hannah's saved notes (boards category) and the note contains a ✅ Correct: answer, that stored answer IS the correct answer — always. Never override it with your own clinical reasoning, regardless of context. This applies whether the quiz was started from the board tab or from regular chat."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
