@@ -308,7 +308,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE'}
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY'}
     if section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
         new_body = text
     elif existing and existing not in ('—', '-', ''):
@@ -562,7 +562,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, ENERGY, DAILY ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEALS, MEDICATIONS & SUPPLEMENTS, MOOD, DAILY ROUTINE, SPIRITUAL, LEARNING, OURA RING METRICS, ANALYSIS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -694,7 +694,7 @@ RULES:
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
    - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
    - MEALS: anything eaten or drank — REPLACE with complete updated table including ALL meals logged today
-   - MOOD: overall emotional tone
+   - MOOD: overall emotional tone, energy level, stress, resilience, HR, BP — Energy is always logged here inside the MOOD table, never as a separate section
    Strong signals it belongs in Daily Log: (a) uses "I" or "me"; (b) mentions people by name in personal context; (c) time words: "today", "tonight", "this morning", "yesterday", "tomorrow".
 5. For journal entries → capture people present in entities[], emotions, milestones, events separately from food.
 5. When user asks a question → call search_notes or get_person FIRST, then give a clear synthesized answer based on what you find. Always show what you retrieved before asking follow-up questions.
@@ -742,9 +742,6 @@ Format as a single combined table with header row + one data row per check-in. I
 Daytime Stress, Resilience, HR, and BP always go HERE — never in OURA RING METRICS.
 If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g. "Vyvanse (Brand) 30mg at 9:00 AM").
 If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under mom → the relevant subcategory (e.g. IEHP, Social Security, Medi-Cal) capturing what happened, the emotional impact, and any relevant details. Use mom → Quick Reference for phone numbers and account info.]
-
-<strong><u>ENERGY:</u></strong>
-[Covered inside the MOOD table above — do not create a separate ENERGY section entry if mood was logged together.]
 
 <strong><u>MEALS:</u></strong>
 [IMPORTANT: Always REPLACE with the complete updated table containing ALL meals logged today — not just the new one. Each meal gets its own row. Use meal name (Breakfast/Lunch/Dinner/Snack) as the label. Example:
