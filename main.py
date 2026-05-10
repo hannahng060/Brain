@@ -1381,6 +1381,7 @@ async def logout(request: Request, response: Response):
 class ChatRequest(BaseModel):
     message: str
     local_date: Optional[str] = None
+    local_time: Optional[str] = None
 
 @app.post("/chat")
 async def chat(body: ChatRequest, request: Request):
@@ -1391,7 +1392,8 @@ async def chat(body: ChatRequest, request: Request):
     try:
         msg = body.message.strip()
         if body.local_date:
-            msg = f"[Today's date: {body.local_date}]\n{msg}"
+            time_str = f" · {body.local_time}" if body.local_time else ""
+            msg = f"[Today's date: {body.local_date}{time_str}]\n{msg}"
         result = run_agent(msg)
         return result
     except Exception as e:

@@ -1538,6 +1538,7 @@
   // Use LOCAL date (not UTC) so keys reset at local midnight, not UTC midnight
   function _localDateStr() { const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
   function _localLongDate() { return new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}); }
+  function _localTimeStr() { return new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}); }
   function _quizCountKey() { return 'brain_quiz_count_' + _localDateStr(); }
   function _incrementQuizCount() {
     var key = _quizCountKey();
@@ -1624,7 +1625,7 @@
         clearFile();
       } else {
         const localDate = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, local_date: localDate})});
+        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, local_date: localDate, local_time: _localTimeStr()})});
       }
       removeTyping();
       if(res.status === 401) { location.reload(); return; }
