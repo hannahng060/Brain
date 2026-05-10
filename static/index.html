@@ -779,7 +779,11 @@
       if (container.querySelectorAll('.msg').length > 0) return;
       msgs.forEach(function(m) {
         var role = m.role === 'assistant' ? 'brain' : 'user';
-        appendMessage(role, m.content);
+        var content = m.content;
+        // Strip [Today's date: ...]\n prefix added for Brain context
+        content = content.replace(/^\[Today's date:[^\]]+\]\n?/, '');
+        if (!content.trim()) return; // skip empty after strip
+        appendMessage(role, content);
       });
       // Add a subtle divider showing history was loaded
       var div = document.createElement('div');
@@ -905,6 +909,7 @@
   }
   async function doLogout() {
     localStorage.removeItem('brain_last_active');
+    localStorage.removeItem('brain_last_briefing');
     await fetch('/logout', {method:'POST'}); location.reload();
   }
 
