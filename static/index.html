@@ -3015,8 +3015,7 @@
       var notes = await r.json();
       var note = notes.find(function(n) {
         var s = (n.summary || '').toLowerCase();
-        var c = (n.content || '').toLowerCase();
-        return s.includes('subscri') || s.includes('member') || c.includes('subscri') || c.includes('member');
+        return s.includes('subscription');
       });
       if (note) { openNoteDirectly(note); }
       else { showToast('No subscriptions note yet — add your first subscription and Brain will create it!'); }
@@ -3076,8 +3075,7 @@
       var notes = await r.json();
       var note = notes.find(function(n) {
         var s = (n.summary || '').toLowerCase();
-        var c = (n.content || '').toLowerCase();
-        return s.includes('bill') || s.includes('account') || c.includes('bill') || c.includes('account');
+        return s.includes('bills & accounts') || s.includes('bills and accounts') || (s.includes('bill') && s.includes('account'));
       });
       if (note) { openNoteDirectly(note); }
       else { showToast('No bills note yet — add your first bill and Brain will create it!'); }
@@ -3137,8 +3135,7 @@
       var notes = await r.json();
       var note = notes.find(function(n) {
         var s = (n.summary || '').toLowerCase();
-        var c = (n.content || '').toLowerCase();
-        return s.includes('debt') || s.includes('loan') || c.includes('debt') || c.includes('loan');
+        return s.includes('debts & loans') || s.includes('debts and loans') || (s.includes('debt') && s.includes('loan'));
       });
       if (note) { openNoteDirectly(note); }
       else { showToast('No debts note yet — add your first debt and Brain will create it!'); }
