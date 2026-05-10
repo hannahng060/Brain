@@ -836,6 +836,15 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
     d. Never create duplicate rows for the same service — update existing row instead.
     e. Do not add to the daily log. This is a standalone reference note.
 
+22. DEBTS & LOANS: When a message starts with "Debt/loan added:" →
+    a. Search for an existing note with summary containing "Debt" or "Loan" under lifestyle → Finance.
+    b. If found: update it by adding or updating a row for this debt. Keep all existing rows.
+    c. If not found: create a new note under lifestyle → Finance titled "Debts & Loans" with a table:
+       <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Account</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Type</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Balance</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Min Payment</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">APR</td><td style="color:#888;font-weight:700">Notes</td></tr>...</table>
+       Parse naturally — extract account name, type (credit card/personal loan/medical/student loan/etc.), current balance, minimum monthly payment, interest rate, and any notes.
+    d. Never duplicate rows — if the same account name exists, update that row instead.
+    e. Do not add to the daily log. This is a standalone reference note.
+
 21. BILLS & ACCOUNTS: When a message starts with "Bill/account added:" →
     a. Search for an existing note with summary containing "Bills" or "Accounts" under lifestyle → Finance.
     b. If found: update it by adding or updating a row for this account. Keep all existing rows.

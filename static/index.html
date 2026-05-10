@@ -161,6 +161,12 @@
     #bills-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
     #bills-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
     #bills-panel.open { display:flex; }
+    #subs-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #subs-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
+    #subs-panel.open { display:flex; }
+    #debts-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #debts-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
+    #debts-panel.open { display:flex; }
     .fin-check-row { display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
     .fin-check-row:last-of-type { border-bottom:none; }
     .fin-circle { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
@@ -445,7 +451,9 @@
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
+          <div onclick="toggleSubsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Subs</div>
           <div onclick="toggleBillsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🏦 Bills</div>
+          <div onclick="toggleDebtsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💳 Debts</div>
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
           <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
@@ -2939,7 +2947,6 @@
     // Reset all checkboxes when panel opens
     var rows = document.querySelectorAll('#fin-items .fin-check-row');
     rows.forEach(function(r) { r.classList.remove('checked'); r.querySelector('.fin-circle').textContent = ''; });
-    renderFinSubs();
   }
 
   function finToggle(el) {
@@ -2990,8 +2997,17 @@
     renderFinSubs();
   }
 
+  function toggleSubsPanel() {
+    var panel = $('subs-panel'), overlay = $('subs-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open');
+    overlay.style.display = opening ? 'block' : 'none';
+    if (opening) renderFinSubs();
+  }
+
   async function finManageSubs() {
-    toggleFinPanel();
+    toggleSubsPanel();
     showTab('notes');
     // Find and open the subscriptions note directly
     try {
@@ -3061,6 +3077,66 @@
         var s = (n.summary || '').toLowerCase();
         var c = (n.content || '').toLowerCase();
         return s.includes('bills') || s.includes('accounts') || c.includes('bills & accounts');
+      });
+      if (note) { openNoteDirectly(note); }
+    } catch(e) {}
+  }
+
+  // ── Debts & Loans ────────────────────────────────────────────────────
+  function toggleDebtsPanel() {
+    var panel = $('debts-panel'), overlay = $('debts-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open');
+    overlay.style.display = opening ? 'block' : 'none';
+    if (opening) renderFinDebts();
+  }
+
+  function renderFinDebts() {
+    var debts = JSON.parse(localStorage.getItem('brain_fin_debts') || '[]');
+    var el = $('fin-debts-list');
+    if (!el) return;
+    if (!debts.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;padding:4px 0">No debts added yet</div>'; return; }
+    el.innerHTML = debts.map(function(d, i) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px">' +
+        '<span>' + esc(d) + '</span>' +
+        '<button onclick="finDeleteDebt(' + i + ')" style="background:none;border:none;color:#bbb;font-size:17px;cursor:pointer;padding:0 2px">×</button></div>';
+    }).join('');
+  }
+
+  function finAddDebt() {
+    var input = $('fin-debt-input');
+    var val = input ? input.value.trim() : '';
+    if (!val) return;
+    var debts = JSON.parse(localStorage.getItem('brain_fin_debts') || '[]');
+    debts.push(val);
+    localStorage.setItem('brain_fin_debts', JSON.stringify(debts));
+    if (input) input.value = '';
+    renderFinDebts();
+    fetch('/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: 'Debt/loan added: ' + val, local_date: _localLongDate() })
+    }).catch(() => {});
+  }
+
+  function finDeleteDebt(i) {
+    var debts = JSON.parse(localStorage.getItem('brain_fin_debts') || '[]');
+    debts.splice(i, 1);
+    localStorage.setItem('brain_fin_debts', JSON.stringify(debts));
+    renderFinDebts();
+  }
+
+  async function finManageDebts() {
+    toggleDebtsPanel();
+    showTab('notes');
+    try {
+      var r = await fetch('/notes?category=lifestyle&limit=200');
+      if (!r.ok) return;
+      var notes = await r.json();
+      var note = notes.find(function(n) {
+        var s = (n.summary || '').toLowerCase();
+        var c = (n.content || '').toLowerCase();
+        return s.includes('debt') || s.includes('loan') || c.includes('debts & loans');
       });
       if (note) { openNoteDirectly(note); }
     } catch(e) {}
@@ -3361,17 +3437,35 @@
     <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">📊 Opened Copilot for 5 mins</div></div>
   </div>
   <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
-  <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">📋 Subscriptions & Memberships</div>
-      <button onclick="finManageSubs()" style="background:none;border:none;font-size:13px;color:var(--primary);font-weight:600;cursor:pointer;font-family:inherit;padding:0">Manage full list →</button>
-    </div>
-    <div id="fin-subs-list" style="margin-bottom:8px"></div>
-    <div style="display:flex;gap:8px">
-      <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
-      <button onclick="finAddSub()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
-    </div>
+</div>
+<div id="subs-overlay" onclick="toggleSubsPanel()"></div>
+<div id="subs-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="font-size:17px;font-weight:700">📋 Subscriptions & Memberships</div>
+    <button onclick="toggleSubsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
   </div>
+  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Streaming, apps, memberships — anything recurring.</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo, Master Card 8600" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
+    <button onclick="finAddSub()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+  </div>
+  <div id="fin-subs-list" style="margin-bottom:12px"></div>
+  <button onclick="finManageSubs()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
+</div>
+<div id="debts-overlay" onclick="toggleDebtsPanel()"></div>
+<div id="debts-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="font-size:17px;font-weight:700">💳 Debts & Loans</div>
+    <button onclick="toggleDebtsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
+  </div>
+  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Credit cards, loans, medical bills — all in one place.</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input id="fin-debt-input" type="text" placeholder="e.g. Chase Sapphire, balance $2400, min $65/mo, 24% APR" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddDebt()">
+    <button onclick="finAddDebt()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+  </div>
+  <div style="font-size:11px;color:#aaa;margin-bottom:14px">Examples: "SoFi personal loan, $8000 balance, $210/mo" · "Medical bill ARMC, $450 total, payment plan $50/mo" · "Student loan, $12000, $130/mo, 5.5%"</div>
+  <div id="fin-debts-list" style="margin-bottom:12px"></div>
+  <button onclick="finManageDebts()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
 </div>
 <div id="bills-overlay" onclick="toggleBillsPanel()"></div>
 <div id="bills-panel">
