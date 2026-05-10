@@ -3161,19 +3161,24 @@
     if (banner) banner.style.display = (day === 0) ? 'block' : 'none';
   }
 
-  function startWeeklyReview() {
+  async function startWeeklyReview() {
     showTab('chat');
     var msg = 'WEEKLY REVIEW REQUEST: It\'s Sunday ' + _localLongDate() + '. Please review my last 7 days:\n' +
       '1. Summarize patterns — sleep, mood, habits completed, meals, clinical study, activities\n' +
       '2. Give 2-3 key insights or observations\n' +
       '3. One thing I did well, one thing to improve next week\n' +
       'Keep it honest but encouraging.';
-    fetch('/chat', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ message: msg, local_date: _localLongDate() })
-    }).then(function(r) { return r.json(); }).then(function(d) {
-      if (d.response) appendMessage('Brain', d.response);
-    }).catch(() => {});
+    appendMessage('user', '📊 Weekly review — last 7 days');
+    showTyping();
+    try {
+      var r = await fetch('/chat', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: msg, local_date: _localLongDate() })
+      });
+      removeTyping();
+      var d = await r.json();
+      appendMessage('brain', d.reply);
+    } catch(e) { removeTyping(); }
   }
 
   function toggleWeeklyPlan() {
@@ -3183,20 +3188,24 @@
     if (el.style.display === 'block') { var ta = $('weekly-plan-text'); if (ta) ta.focus(); }
   }
 
-  function submitWeeklyPlan() {
+  async function submitWeeklyPlan() {
     var ta = $('weekly-plan-text');
     var val = ta ? ta.value.trim() : '';
     if (!val) return;
     showTab('chat');
     if (ta) ta.value = '';
     toggleWeeklyPlan();
-    var msg = 'WEEKLY PLAN: ' + val;
-    fetch('/chat', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ message: msg, local_date: _localLongDate() })
-    }).then(function(r) { return r.json(); }).then(function(d) {
-      if (d.response) appendMessage('Brain', d.response);
-    }).catch(() => {});
+    appendMessage('user', '📆 Next week: ' + val);
+    showTyping();
+    try {
+      var r = await fetch('/chat', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: val, local_date: _localLongDate() })
+      });
+      removeTyping();
+      var d = await r.json();
+      appendMessage('brain', d.reply);
+    } catch(e) { removeTyping(); }
   }
 
   // Nudge on dashboard if no finance check-in in 10+ days
