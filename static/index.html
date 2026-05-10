@@ -30,6 +30,7 @@
       --mom:           #c0770a; --mom-bg:           #fff8e1;
       --garden: #2e7d32; --garden-bg: #e8f5e9;
       --boards: #1a237e; --boards-bg: #e8eaf6;
+      --people: #d45d00; --people-bg: #fff3e0;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 
@@ -471,6 +472,7 @@
       <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">👵🏼 Mom</div>
       <div class="cat-pill garden" data-cat="garden" onclick="filterNotes('garden')">🌱 Garden</div>
       <div class="cat-pill boards" data-cat="boards" onclick="filterNotes('boards')">🎓 Boards</div>
+      <div class="cat-pill people" data-cat="people" onclick="filterNotes('people')">👥 People</div>
     </div>
     <div id="quiz-row">
       <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
@@ -614,6 +616,7 @@
           <option value="mom">🧡 Mom</option>
           <option value="garden">🌱 Garden</option>
           <option value="boards">🎓 Boards</option>
+          <option value="people">👥 People</option>
         </select>
         <span class="edit-label">Subcategory</span>
         <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
@@ -694,7 +697,8 @@
     mom:           ['Quick Reference','IEHP','Medi-Cal','Medicare','Social Security','Primary Doc','Eye Care','Pharmacy','Cash Benefits','Vietnam Travel'],
     garden:        ['Orchids','House Plants','Outdoor Flowers','Notes & Learning'],
     boards:        ['Assessment & Diagnosis','Psychopharmacology','Psychotherapy','Medical Management','Special Populations','Professional & Ethics'],
-    lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening']
+    lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening'],
+    people:        ['Family','Friends','Work','Community']
   };
 
   // ── Profile ───────────────────────────────────────────────────────────

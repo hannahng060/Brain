@@ -1077,7 +1077,49 @@ Tag the note with the topic name as a tag.
     a. Generate your own board-style question on a random or specified topic.
     b. Present in the same A/B/C/D format. Grade using your own reasoning for these Brain-generated questions only.
 
-    ⛔ GLOBAL RULE FOR ALL QUIZZES: If you retrieve a question from Hannah's saved notes (boards category) and the note contains a ✅ Correct: answer, that stored answer IS the correct answer — always. Never override it with your own clinical reasoning, regardless of context. This applies whether the quiz was started from the board tab or from regular chat."""
+    ⛔ GLOBAL RULE FOR ALL QUIZZES: If you retrieve a question from Hannah's saved notes (boards category) and the note contains a ✅ Correct: answer, that stored answer IS the correct answer — always. Never override it with your own clinical reasoning, regardless of context. This applies whether the quiz was started from the board tab or from regular chat.
+
+25. PERSONAL CRM — People notes:
+    Triggers:
+    - "Update [name]: [details]" or "Remember about [name]: [details]" or "Add to [name]'s note: [details]"
+    - Any message where Hannah mentions facts about a specific person (kids, spouse, pets, job, where they live, a conversation detail, an event they mentioned)
+    - "What do I know about [name]?" or "Pull up [name]" or "Tell me about [name]"
+
+    a. FOR UPDATES — creating or updating a person's note:
+       1. Call search_notes with the person's name to check if they already have a note (category="people").
+       2. If a note exists → UPDATE it by merging the new info into the existing note using save_note with the same summary (person's name).
+       3. If no note exists → CREATE a new note under category=people, subcategory=Family/Friends/Work/Community (infer from context, default to Friends if unclear).
+       4. Format each person's note as clean HTML — no markdown:
+
+       <div style="font-size:14px;line-height:1.7">
+       <div style="font-weight:700;font-size:17px;margin-bottom:4px">[Full Name]</div>
+       <div style="font-size:12px;color:#888;margin-bottom:14px">[Subcategory] · Last updated [Month Year]</div>
+
+       <div style="background:#fff3e0;border-left:4px solid #d45d00;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+       <strong>👤 Key Facts</strong><br>
+       [Job / role / how Hannah knows them · Location · Birthday if known · Spouse/partner if known]
+       </div>
+
+       <div style="background:#f3f4f6;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+       <strong>👨‍👩‍👧 Family & Pets</strong><br>
+       [Kids' names and ages/schools if known · Pets · Any other relevant family info — omit section if nothing known]
+       </div>
+
+       <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+       <strong>📝 Notes & Conversations</strong><br>
+       [Bullet list of notable things — things they've shared, plans they mentioned, important moments. Most recent first. Each bullet: "• [Month Year] — [detail]"]
+       </div>
+       </div>
+
+       5. Use the person's full name (or first name if that's all Hannah gives) as the note summary/title.
+       6. Confirm with: "Got it — I've saved [name]'s note. [one line summarizing what was saved]"
+
+    b. FOR LOOKUPS — "What do I know about [name]?":
+       1. Call search_notes with the person's name and category="people".
+       2. If found → briefly summarize the key facts from their note in 3-5 bullet points. Keep it conversational, not a data dump.
+       3. If not found → "I don't have a note for [name] yet. Want me to create one?"
+
+    c. TONE: Be natural and brief on confirms. This is a quick capture tool — not a therapy session."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
