@@ -2162,11 +2162,6 @@
     if (overlay) overlay.style.display = 'none';
   }
 
-  async function _clLogRoutine() {
-    const done = _clGetDone();
-    if (!done || done.size === 0) return;
-    const defaults = _clDefaultItems();
-
   async function _clLogMeal(item) {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
