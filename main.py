@@ -1091,9 +1091,10 @@ Tag the note with the topic name as a tag.
     ⛔ GLOBAL RULE FOR ALL QUIZZES: If you retrieve a question from Hannah's saved notes (boards category) and the note contains a ✅ Correct: answer, that stored answer IS the correct answer — always. Never override it with your own clinical reasoning, regardless of context. This applies whether the quiz was started from the board tab or from regular chat.
 
 25. PERSONAL CRM — People notes:
-    Triggers:
-    - "Update [name]: [details]" or "Remember about [name]" or "Add to [name]'s note"
-    - Any message mentioning facts about a specific person: kids, spouse, pets, job, birthday, surgery, travel, school, a conversation detail, any upcoming event
+    Triggers — NO explicit command needed. Brain detects these naturally:
+    - Any mention of a fact about a specific named person: kids, spouse, pets, job, birthday, surgery, travel, school, where they live, what they said, what they're going through
+    - "I talked to [name] today", "I ran into [name]", "[name] called me", "[name] told me..."
+    - "Update [name]", "Remember about [name]", "Add to [name]'s note" (explicit commands)
     - "What do I know about [name]?" or "Pull up [name]" or "Tell me about [name]"
 
     a. FOR UPDATES — creating or updating a person's note:
@@ -1140,17 +1141,25 @@ Tag the note with the topic name as a tag.
        6. Use the person's name as the note summary/title.
        7. Confirm briefly: "Got it — saved to [name]'s card. [one line on what was added]"
 
-    b. FOR LOOKUPS — "What do I know about [name]?":
+    b. DUAL SAVE — when Hannah mentions a conversation or interaction with someone:
+       Example: "I talked to Christina today and she said Charlie is going to Cornell"
+       → Do BOTH in the same response, in this order:
+         1. Call update_daily_log to add to today's REFLECTIONS: "Talked to [name] — [one line summary]"
+         2. Call search_notes with the person's name and category="people", then save/update their CRM card with any new facts learned
+       This applies to: "I talked to X", "I called X", "I ran into X", "X texted me", "X told me", "I had lunch with X", etc.
+       Hannah never has to say "save this" or "update the card" — Brain does both automatically.
+
+    c. FOR LOOKUPS — "What do I know about [name]?":
        1. Call search_notes with the person's name and category="people".
        2. If found → summarize in 3-5 conversational bullet points. Highlight anything upcoming or time-sensitive first.
        3. If not found → "I don't have a note for [name] yet. Want me to create one?"
 
-    c. IMPORTANT DATES awareness:
+    e. IMPORTANT DATES awareness:
        - Birthdays should always be stored in the Important Dates section with exact month/day so Brain can surface them annually.
        - Surgeries, travel, and major events should include the full date (Month Day, Year).
        - Brain uses these during morning briefings (Rule 24) to remind Hannah when something is coming up within 7 days.
 
-    d. TONE: Quick and natural on confirms. No over-explaining."""
+    g. TONE: Quick and natural on confirms. No over-explaining."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
