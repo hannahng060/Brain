@@ -116,11 +116,6 @@
     .quote-insight { display:inline; font-style:normal; color:#666; }
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
 
-    /* ── Pomodoro ── */
-    #pomo-widget { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:4px 12px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; user-select:none; transition:background .3s,border-color .3s; }
-    #pomo-widget.focus { background:#fff3e0; border-color:#e65100; color:#e65100; }
-    #pomo-widget.break { background:#e8f5e9; border-color:#2e7d32; color:#2e7d32; }
-
     /* ── Checklist widget ── */
     #cl-btn { display:inline-flex; align-items:center; gap:5px; background:var(--surface); border:1.5px solid var(--border); border-radius:20px; padding:4px 12px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; user-select:none; position:relative; }
     #cl-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; }
@@ -158,15 +153,6 @@
     #fin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
     #fin-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
     #fin-panel.open { display:flex; }
-    #bills-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #bills-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
-    #bills-panel.open { display:flex; }
-    #subs-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #subs-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
-    #subs-panel.open { display:flex; }
-    #debts-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
-    #debts-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
-    #debts-panel.open { display:flex; }
     .fin-check-row { display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
     .fin-check-row:last-of-type { border-bottom:none; }
     .fin-circle { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
@@ -226,38 +212,6 @@
     .reminder-chip:hover { opacity:.75; }
     .reminder-chip .chip-x { font-size:15px; font-weight:400; color:#bbb; margin-left:2px; }
 
-    /* ── Quick Capture ── */
-    .tab.qc-tab { color:var(--primary); font-weight:700; }
-    .tab.qc-tab:active { transform:scale(.92); }
-    #qc-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:300; }
-    #qc-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:301; display:none; flex-direction:column; gap:12px; }
-    /* Mode toggle */
-    #qc-mode-toggle { display:flex; gap:3px; background:var(--bg); border-radius:10px; padding:3px; }
-    .qc-mode-btn { flex:1; padding:8px 12px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted); transition:all .15s; }
-    .qc-mode-btn.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
-    /* Brain mode */
-    #qc-brain-content { display:flex; flex-direction:column; gap:12px; }
-    #qc-brain-content h3 { font-size:16px; font-weight:700; color:var(--text); }
-    #qc-brain-content p  { font-size:12px; color:var(--muted); margin-top:-6px; }
-    #qc-input { width:100%; min-height:100px; max-height:220px; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; font-family:inherit; resize:none; outline:none; background:var(--bg); line-height:1.5; }
-    #qc-input:focus { border-color:var(--primary); }
-    #qc-btn { background:var(--primary); color:white; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
-    #qc-btn:disabled { opacity:.5; cursor:default; }
-    /* Log mode */
-    #qc-log-content { display:none; flex-direction:column; gap:12px; }
-    #qc-log-content h3 { font-size:16px; font-weight:700; color:var(--text); }
-    #qc-log-content p  { font-size:12px; color:var(--muted); margin-top:-6px; }
-    #qc-log-date-row { display:flex; gap:8px; }
-    #qc-log-date-select { flex:1; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; color:var(--text); }
-    #qc-log-date-custom { flex:1; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; display:none; color:var(--text); }
-    #qc-log-date-custom:focus, #qc-log-date-select:focus { border-color:var(--lifestyle); }
-    #qc-log-section { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:inherit; background:var(--bg); outline:none; color:var(--text); }
-    #qc-log-section:focus { border-color:var(--lifestyle); }
-    #qc-log-text { width:100%; min-height:90px; max-height:180px; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; font-family:inherit; resize:none; outline:none; background:var(--bg); line-height:1.5; }
-    #qc-log-text:focus { border-color:var(--lifestyle); }
-    #qc-log-btn { background:var(--lifestyle); color:white; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
-    #qc-log-btn:disabled { opacity:.5; cursor:default; }
-    #qc-log-status { font-size:13px; color:var(--lifestyle); font-weight:600; text-align:center; display:none; }
     #input-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
     #input-row { display:flex; align-items:flex-end; gap:10px; }
     #input { flex:1; border:1.5px solid var(--border); border-radius:20px; padding:10px 16px; font-size:16px; font-family:inherit; resize:none; outline:none; max-height:120px; line-height:1.4; background:var(--bg); }
@@ -394,6 +348,10 @@
 
     /* ── Daily Log Analyze ── */
     #sidebar-analyze:disabled { opacity:.6; cursor:default; }
+
+    /* ── Finance tabs ── */
+    .fin-tab { flex:1; padding:8px 4px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted); transition:all .15s; font-family:inherit; }
+    .fin-tab.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
   </style>
 </head>
 <body>
@@ -426,16 +384,11 @@
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span>Notes</span>
       </button>
-      <button id="top-tab-capture" class="top-tab" onclick="openQC()" title="Capture">
-        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        <span>Capture</span>
-      </button>
       <button id="top-tab-profile" class="top-tab" onclick="showTab('profile')" title="Profile">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         <span>Profile</span>
       </button>
       <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-      <button class="sign-out" onclick="loadDashboard()" title="New spark">↻ 💡</button>
       <button class="sign-out" onclick="doLogout()">Sign out</button>
     </div>
   </div>
@@ -446,14 +399,10 @@
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
         <div id="dash-tools">
-          <div id="pomo-widget" onclick="togglePomo()" title="Pomodoro timer — click to start 25 min focus">🍅</div>
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
-          <div onclick="toggleSubsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Subs</div>
-          <div onclick="toggleBillsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🏦 Bills</div>
-          <div onclick="toggleDebtsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💳 Debts</div>
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
           <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
@@ -623,10 +572,6 @@
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Notes
     </button>
-    <button class="tab qc-tab" onclick="openQC()">
-      <span style="font-size:22px;line-height:1">⚡</span>
-      Capture
-    </button>
     <button class="tab profile-tab" onclick="showTab('profile')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       Profile
@@ -733,10 +678,6 @@
   // Surprise Me state
   let _surpriseSeen    = new Set();
   let _surpriseLastCat = null;
-  // Pomodoro state
-  let _pomoState = 'idle';
-  let _pomoSecs  = 25 * 60;
-  let _pomoTimer = null;
   // Weekly plan + checklist state
   let _weeklyPlan = { work_days: [], events: [], week_of: '', notes: '' };
   let currentSubcat = 'all';
@@ -1076,7 +1017,7 @@
 
       // Log nudge
       if(!todayLog) {
-        chips.push({ text:"📅 No daily log yet today — start one!", color:'var(--lifestyle)', fn:"switchQCMode('log');openQC()" });
+        chips.push({ text:"📅 No daily log yet today — start one!", color:'var(--lifestyle)', fn:"showTab('chat');$('input').value='Log: ';$('input').dispatchEvent(new Event('input'));$('input').focus()" });
       }
 
       // Quiz nudge
@@ -1714,191 +1655,13 @@
     setTimeout(() => { t.style.opacity = '0'; }, 3000);
   }
 
-  // ── Quick Capture ─────────────────────────────────────────────────────
-  let _qcOpen = false;
-  let _qcMode = 'brain'; // 'brain' or 'log'
-
-  function switchQCMode(mode) {
-    _qcMode = mode;
-    $('qc-mode-brain').classList.toggle('active', mode === 'brain');
-    $('qc-mode-log').classList.toggle('active',   mode === 'log');
-    $('qc-brain-content').style.display = mode === 'brain' ? 'flex' : 'none';
-    $('qc-log-content').style.display   = mode === 'log'   ? 'flex' : 'none';
-    setTimeout(() => {
-      if(mode === 'brain') $('qc-input').focus();
-      else $('qc-log-text').focus();
-    }, 50);
-  }
-
-  function resetQC() {
-    // Brain mode
-    $('qc-input').value       = '';
-    $('qc-input').disabled    = false;
-    $('qc-input').placeholder = "What's on your mind?";
-    $('qc-btn').disabled      = true;
-    $('qc-btn').textContent   = 'Save it';
-    $('qc-saved-where').style.display = 'none';
-    $('qc-saved-where').textContent   = '';
-    // Log mode
-    $('qc-log-text').value       = '';
-    $('qc-log-text').disabled    = false;
-    $('qc-log-text').placeholder = 'Add your entry here…';
-    $('qc-log-btn').disabled     = true;
-    $('qc-log-btn').textContent  = 'Add to Log';
-    $('qc-log-date-select').value = 'today';
-    $('qc-log-date-custom').style.display = 'none';
-    $('qc-log-date-custom').value = '';
-    $('qc-log-status').style.display = 'none';
-    $('qc-log-status').textContent   = '';
-  }
-
-  function openQC() {
-    resetQC();
-    $('qc-overlay').style.display = 'block';
-    $('qc-sheet').style.display   = 'flex';
-    _qcOpen = true;
-    // Show the currently active mode panel
-    $('qc-brain-content').style.display = _qcMode === 'brain' ? 'flex' : 'none';
-    $('qc-log-content').style.display   = _qcMode === 'log'   ? 'flex' : 'none';
-    setTimeout(() => {
-      if(_qcMode === 'brain') $('qc-input').focus();
-      else $('qc-log-text').focus();
-    }, 50);
-  }
-  function closeQC() {
-    $('qc-overlay').style.display = 'none';
-    $('qc-sheet').style.display   = 'none';
-    _qcOpen = false;
-    resetQC();
-  }
-
-  // Cmd+Enter on document level — routes to whichever mode is active
+  // Escape key handler
   document.addEventListener('keydown', e => {
-    if(_qcOpen && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      if(_qcMode === 'brain') submitQC();
-      else submitQCLog();
-    }
     if(e.key === 'Escape') {
       const activePage = document.querySelector('.page.active');
       if(activePage && activePage.id !== 'chat-page') showTab('chat');
     }
   });
-
-  // ── Brain mode helpers ─────────────────────────────────────────────────
-  function qcCheckBtn() { $('qc-btn').disabled = !$('qc-input').value.trim(); }
-  $('qc-input').addEventListener('input',   qcCheckBtn);
-  $('qc-input').addEventListener('keyup',   qcCheckBtn);
-  $('qc-input').addEventListener('change',  qcCheckBtn);
-  $('qc-input').addEventListener('paste',   () => setTimeout(qcCheckBtn, 50));
-
-  async function submitQC() {
-    const text = $('qc-input').value.trim();
-    if(!text || $('qc-btn').disabled) return;
-    $('qc-btn').disabled    = true;
-    $('qc-btn').textContent = 'Saving…';
-    $('qc-saved-where').style.display = 'none';
-    try {
-      const localDate = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      const message = `[QUICK CAPTURE — MUST SAVE] ${text}`;
-      const res = await fetch('/chat', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message, local_date: localDate})
-      });
-      const data = await res.json();
-
-      // Build a "saved to" label from saves metadata
-      let savedLabel = '';
-      if (data.saves && data.saves.length > 0) {
-        const CAT_ICONS   = {psychiatry:'🧠',psychotherapy:'💬',icu:'🏥',np_fellowship:'🌟',lifestyle:'📅',personal:'🌱',business:'💼',resources:'📚'};
-        const CAT_NAMES   = {psychiatry:'Psychiatry',psychotherapy:'Psychotherapy',icu:'ICU',np_fellowship:'NP Fellowship',lifestyle:'Lifestyle',personal:'Personal',business:'Business',resources:'Resources'};
-        savedLabel = data.saves.map(s => {
-          const icon = CAT_ICONS[s.category] || '📝';
-          const cat  = CAT_NAMES[s.category] || (s.category ? (s.category.charAt(0).toUpperCase() + s.category.slice(1)) : 'Notes');
-          const sub  = s.subcategory ? ` › ${s.subcategory}` : '';
-          return `${icon} Saved to ${cat}${sub}`;
-        }).join('\n');
-      }
-
-      $('qc-btn').textContent   = 'Saved ✓';
-      $('qc-input').disabled    = true;
-      $('qc-input').value       = '';
-      $('qc-input').placeholder = "What's on your mind?";
-
-      if (savedLabel) {
-        $('qc-saved-where').style.display = 'block';
-        $('qc-saved-where').textContent   = savedLabel;
-      }
-
-      loadNotes();
-      setTimeout(() => closeQC(), 3000);
-    } catch(e) {
-      $('qc-btn').disabled    = false;
-      $('qc-btn').textContent = 'Save it';
-      showToast('Something went wrong — try again');
-    }
-  }
-
-  // ── Log mode helpers ───────────────────────────────────────────────────
-  function qcLogDateChange() {
-    const val = $('qc-log-date-select').value;
-    $('qc-log-date-custom').style.display = val === 'custom' ? 'block' : 'none';
-    if(val === 'custom') $('qc-log-date-custom').focus();
-  }
-  function qcLogCheckBtn() { $('qc-log-btn').disabled = !$('qc-log-text').value.trim(); }
-  $('qc-log-text').addEventListener('input',   qcLogCheckBtn);
-  $('qc-log-text').addEventListener('keyup',   qcLogCheckBtn);
-  $('qc-log-text').addEventListener('change',  qcLogCheckBtn);
-  $('qc-log-text').addEventListener('paste',   () => setTimeout(qcLogCheckBtn, 50));
-
-  async function submitQCLog() {
-    const logText = $('qc-log-text').value.trim();
-    if(!logText || $('qc-log-btn').disabled) return;
-
-    let dateRef = $('qc-log-date-select').value;
-    if(dateRef === 'custom') {
-      dateRef = $('qc-log-date-custom').value.trim() || 'today';
-    }
-    const section = $('qc-log-section').value;
-    const sectionLabel = $('qc-log-section').options[$('qc-log-section').selectedIndex].text.replace(/^[^\w]+/, '').trim();
-
-    $('qc-log-btn').disabled    = true;
-    $('qc-log-btn').textContent = 'Saving…';
-    $('qc-log-status').style.display   = 'none';
-
-    try {
-      const res = await fetch('/log-append', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({date_ref: dateRef, section, text: logText})
-      });
-
-      if(!res.ok) {
-        const err = await res.json().catch(() => ({detail:'Unknown error'}));
-        $('qc-log-btn').disabled    = false;
-        $('qc-log-btn').textContent = 'Add to Log';
-        $('qc-log-status').textContent   = '⚠️ ' + (err.detail || 'Could not update — check the date');
-        $('qc-log-status').style.color   = '#c62828';
-        $('qc-log-status').style.display = 'block';
-        return;
-      }
-
-      $('qc-log-btn').textContent          = 'Added ✓';
-      $('qc-log-status').textContent       = `✓ Added to ${sectionLabel} (${dateRef})`;
-      $('qc-log-status').style.color       = 'var(--lifestyle)';
-      $('qc-log-status').style.display     = 'block';
-      $('qc-log-text').disabled            = true;
-      $('qc-log-text').value               = '';
-      $('qc-log-text').placeholder         = `Added to ${sectionLabel}!`;
-      loadNotes();
-      setTimeout(() => closeQC(), 2200);
-    } catch(e) {
-      $('qc-log-btn').disabled    = false;
-      $('qc-log-btn').textContent = 'Add to Log';
-      showToast('Something went wrong — try again');
-    }
-  }
 
   // ── Surprise Me ──────────────────────────────────────────────────────
   async function surpriseMe() {
@@ -1932,52 +1695,6 @@
       console.error('surpriseMe error:', e);
       showToast('⚠️ ' + (e.message || 'Unknown error'));
     }
-  }
-
-  // ── Pomodoro Timer ────────────────────────────────────────────────────
-  function togglePomo() {
-    if (_pomoState === 'idle') {
-      _pomoState = 'focus';
-      _pomoSecs  = 25 * 60;
-      _pomoTimer = setInterval(_pomoTick, 1000);
-    } else {
-      // Stop & reset
-      clearInterval(_pomoTimer);
-      _pomoTimer = null;
-      _pomoState = 'idle';
-      _pomoSecs  = 25 * 60;
-    }
-    _pomoRender();
-  }
-
-  function _pomoTick() {
-    _pomoSecs--;
-    if (_pomoSecs <= 0) {
-      clearInterval(_pomoTimer);
-      if (_pomoState === 'focus') {
-        showToast('🍅 Focus done! 5-min break starting…');
-        _pomoState = 'break';
-        _pomoSecs  = 5 * 60;
-        _pomoTimer = setInterval(_pomoTick, 1000);
-      } else {
-        showToast('☕ Break over — ready for another round?');
-        _pomoState = 'idle';
-        _pomoSecs  = 25 * 60;
-        _pomoTimer = null;
-      }
-    }
-    _pomoRender();
-  }
-
-  function _pomoRender() {
-    const w = $('pomo-widget');
-    if (!w) return;
-    const m = Math.floor(_pomoSecs / 60);
-    const s = String(_pomoSecs % 60).padStart(2, '0');
-    w.className = _pomoState === 'idle' ? '' : _pomoState;
-    if (_pomoState === 'idle')  { w.textContent = '🍅'; w.title = 'Start 25-min focus timer'; }
-    if (_pomoState === 'focus') { w.textContent = `🍅 ${m}:${s}`; w.title = 'Tap to stop'; }
-    if (_pomoState === 'break') { w.textContent = `☕ ${m}:${s}`; w.title = 'Tap to stop break'; }
   }
 
   // ── Weak areas dashboard ──────────────────────────────────────────────
@@ -3034,7 +2751,25 @@
     var opening = !panel.classList.contains('open');
     panel.classList.toggle('open', opening);
     if (overlay) overlay.style.display = opening ? 'block' : 'none';
-    if (opening) { _finChecked = new Set(); renderFinPanel(); }
+    if (opening) { _finChecked = new Set(); renderFinPanel(); showFinTab('checkin'); }
+  }
+
+  function showFinTab(tab) {
+    ['checkin','subs','bills','debts'].forEach(function(t) {
+      var pane = $('fin-pane-' + t);
+      var btn  = $('fin-tab-'  + t);
+      if (pane) pane.style.display = t === tab ? 'flex' : 'none';
+      if (btn)  btn.classList.toggle('active', t === tab);
+    });
+    // checkin pane uses flex column
+    if (tab === 'checkin') {
+      var cp = $('fin-pane-checkin');
+      if (cp) cp.style.display = 'flex';
+    }
+    // Render data for the active pane
+    if (tab === 'subs')  renderFinSubs();
+    if (tab === 'bills') renderFinBills();
+    if (tab === 'debts') renderFinDebts();
   }
 
   function renderFinPanel() {
@@ -3101,17 +2836,7 @@
     renderFinSubs();
   }
 
-  function toggleSubsPanel() {
-    var panel = $('subs-panel'), overlay = $('subs-overlay');
-    if (!panel) return;
-    var opening = !panel.classList.contains('open');
-    panel.classList.toggle('open');
-    overlay.style.display = opening ? 'block' : 'none';
-    if (opening) renderFinSubs();
-  }
-
   async function finManageSubs() {
-    toggleSubsPanel();
     showTab('notes');
     try {
       var r = await fetch('/notes?category=lifestyle&limit=200');
@@ -3127,15 +2852,6 @@
   }
 
   // ── Bills & Accounts ─────────────────────────────────────────────────
-  function toggleBillsPanel() {
-    var panel = $('bills-panel'), overlay = $('bills-overlay');
-    if (!panel) return;
-    var opening = !panel.classList.contains('open');
-    panel.classList.toggle('open');
-    overlay.style.display = opening ? 'block' : 'none';
-    if (opening) renderFinBills();
-  }
-
   function renderFinBills() {
     var bills = JSON.parse(localStorage.getItem('brain_fin_bills') || '[]');
     var el = $('fin-bills-list');
@@ -3171,7 +2887,6 @@
   }
 
   async function finManageBills() {
-    toggleBillsPanel();
     showTab('notes');
     try {
       var r = await fetch('/notes?category=lifestyle&limit=200');
@@ -3187,15 +2902,6 @@
   }
 
   // ── Debts & Loans ────────────────────────────────────────────────────
-  function toggleDebtsPanel() {
-    var panel = $('debts-panel'), overlay = $('debts-overlay');
-    if (!panel) return;
-    var opening = !panel.classList.contains('open');
-    panel.classList.toggle('open');
-    overlay.style.display = opening ? 'block' : 'none';
-    if (opening) renderFinDebts();
-  }
-
   function renderFinDebts() {
     var debts = JSON.parse(localStorage.getItem('brain_fin_debts') || '[]');
     var el = $('fin-debts-list');
@@ -3231,7 +2937,6 @@
   }
 
   async function finManageDebts() {
-    toggleDebtsPanel();
     showTab('notes');
     try {
       var r = await fetch('/notes?category=lifestyle&limit=200');
@@ -3564,63 +3269,61 @@
 </div>
 <div id="fin-overlay" onclick="toggleFinPanel()"></div>
 <div id="fin-panel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div style="font-size:16px;font-weight:700">💰 Finance Check-in</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:16px;font-weight:700">💰 Finance</div>
     <button onclick="toggleFinPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
   </div>
-  <div id="fin-last-checkin" class="fin-last"></div>
-  <div id="fin-items">
-    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked SoFi balance</div></div>
-    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked Chase balance</div></div>
-    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">💳 Paid off credit cards</div></div>
-    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">👀 Anything suspicious?</div></div>
-    <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">📊 Opened Copilot for 5 mins</div></div>
+  <!-- Tab bar -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;background:var(--bg);border-radius:10px;padding:3px">
+    <button class="fin-tab active" onclick="showFinTab('checkin')" id="fin-tab-checkin">Check-in</button>
+    <button class="fin-tab" onclick="showFinTab('subs')" id="fin-tab-subs">📋 Subs</button>
+    <button class="fin-tab" onclick="showFinTab('bills')" id="fin-tab-bills">🏦 Bills</button>
+    <button class="fin-tab" onclick="showFinTab('debts')" id="fin-tab-debts">💳 Debts</button>
   </div>
-  <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
-</div>
-<div id="subs-overlay" onclick="toggleSubsPanel()"></div>
-<div id="subs-panel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-    <div style="font-size:17px;font-weight:700">📋 Subscriptions & Memberships</div>
-    <button onclick="toggleSubsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
+  <!-- Check-in pane -->
+  <div id="fin-pane-checkin" style="display:flex;flex-direction:column">
+    <div id="fin-last-checkin" class="fin-last"></div>
+    <div id="fin-items">
+      <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked SoFi balance</div></div>
+      <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">🏦 Checked Chase balance</div></div>
+      <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">💳 Paid off credit cards</div></div>
+      <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">👀 Anything suspicious?</div></div>
+      <div class="fin-check-row" onclick="finToggle(this)"><div class="fin-circle"></div><div class="fin-row-label">📊 Opened Copilot for 5 mins</div></div>
+    </div>
+    <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
   </div>
-  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Streaming, apps, memberships — anything recurring.</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px">
-    <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo, Master Card 8600" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
-    <button onclick="finAddSub()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+  <!-- Subs pane -->
+  <div id="fin-pane-subs" style="display:none;flex-direction:column;gap:8px">
+    <div style="font-size:13px;color:#aaa;margin-bottom:6px">Streaming, apps, memberships — anything recurring.</div>
+    <div style="display:flex;gap:8px">
+      <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo, Master Card 8600" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
+      <button onclick="finAddSub()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+    </div>
+    <div id="fin-subs-list" style="margin-bottom:4px"></div>
+    <button onclick="finManageSubs()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
   </div>
-  <div id="fin-subs-list" style="margin-bottom:12px"></div>
-  <button onclick="finManageSubs()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
-</div>
-<div id="debts-overlay" onclick="toggleDebtsPanel()"></div>
-<div id="debts-panel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-    <div style="font-size:17px;font-weight:700">💳 Debts & Loans</div>
-    <button onclick="toggleDebtsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
+  <!-- Bills pane -->
+  <div id="fin-pane-bills" style="display:none;flex-direction:column;gap:8px">
+    <div style="font-size:13px;color:#aaa;margin-bottom:6px">Type naturally — Brain will format and save it for you.</div>
+    <div style="display:flex;gap:8px">
+      <input id="fin-bill-input" type="text" placeholder="e.g. GEICO auto, policy #ABC123, $89/mo, geico.com" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddBill()">
+      <button onclick="finAddBill()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+    </div>
+    <div style="font-size:11px;color:#aaa">Examples: "Water utility, acct #98765, ~$40/mo, mywater.com" · "Chase mortgage, acct #11223, $2100/mo"</div>
+    <div id="fin-bills-list" style="margin-bottom:4px"></div>
+    <button onclick="finManageBills()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
   </div>
-  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Credit cards, loans, medical bills — all in one place.</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px">
-    <input id="fin-debt-input" type="text" placeholder="e.g. Chase Sapphire, balance $2400, min $65/mo, 24% APR" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddDebt()">
-    <button onclick="finAddDebt()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+  <!-- Debts pane -->
+  <div id="fin-pane-debts" style="display:none;flex-direction:column;gap:8px">
+    <div style="font-size:13px;color:#aaa;margin-bottom:6px">Credit cards, loans, medical bills — all in one place.</div>
+    <div style="display:flex;gap:8px">
+      <input id="fin-debt-input" type="text" placeholder="e.g. Chase Sapphire, balance $2400, min $65/mo, 24% APR" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddDebt()">
+      <button onclick="finAddDebt()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+    </div>
+    <div style="font-size:11px;color:#aaa">Examples: "SoFi personal loan, $8000 balance, $210/mo" · "Medical bill ARMC, $450 total, payment plan $50/mo"</div>
+    <div id="fin-debts-list" style="margin-bottom:4px"></div>
+    <button onclick="finManageDebts()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
   </div>
-  <div style="font-size:11px;color:#aaa;margin-bottom:14px">Examples: "SoFi personal loan, $8000 balance, $210/mo" · "Medical bill ARMC, $450 total, payment plan $50/mo" · "Student loan, $12000, $130/mo, 5.5%"</div>
-  <div id="fin-debts-list" style="margin-bottom:12px"></div>
-  <button onclick="finManageDebts()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
-</div>
-<div id="bills-overlay" onclick="toggleBillsPanel()"></div>
-<div id="bills-panel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-    <div style="font-size:17px;font-weight:700">🏦 Bills & Accounts</div>
-    <button onclick="toggleBillsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
-  </div>
-  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Type naturally — Brain will format and save it for you.</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px">
-    <input id="fin-bill-input" type="text" placeholder="e.g. GEICO auto, policy #ABC123, $89/mo, geico.com" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddBill()">
-    <button onclick="finAddBill()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
-  </div>
-  <div style="font-size:11px;color:#aaa;margin-bottom:14px">Examples: "Water utility, acct #98765, ~$40/mo, mywater.com" · "Chase mortgage, acct #11223, $2100/mo" · "IEHP insurance, member #ABC, $0/mo, iehp.org"</div>
-  <div id="fin-bills-list" style="margin-bottom:12px"></div>
-  <button onclick="finManageBills()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
 </div>
 <div id="focus-overlay" onclick="toggleFocusPanel()"></div>
 <div id="focus-panel">
@@ -3660,47 +3363,5 @@
   </div>
 </div>
 
-<div id="qc-overlay" onclick="closeQC()"></div>
-<div id="qc-sheet">
-  <!-- Mode toggle -->
-  <div id="qc-mode-toggle">
-    <button id="qc-mode-brain" class="qc-mode-btn active" onclick="switchQCMode('brain')">⚡ Brain</button>
-    <button id="qc-mode-log"   class="qc-mode-btn"        onclick="switchQCMode('log')">📅 Daily Log</button>
-  </div>
-
-  <!-- Brain mode -->
-  <div id="qc-brain-content">
-    <h3>⚡ Quick Capture</h3>
-    <p>Just type — Brain will figure out where to save it.</p>
-    <textarea id="qc-input" placeholder="What's on your mind?" oninput="qcCheckBtn()"></textarea>
-    <div id="qc-saved-where" style="display:none;font-size:13px;font-weight:600;color:var(--primary);background:var(--primary-light);border-radius:10px;padding:10px 14px;line-height:1.5"></div>
-    <button id="qc-btn" onclick="submitQC()" disabled>Save it</button>
-  </div>
-
-  <!-- Log mode — bypasses Brain entirely, 100% reliable -->
-  <div id="qc-log-content">
-    <h3>📅 Daily Log</h3>
-    <p>Direct update — no AI involved, goes straight to the note.</p>
-    <div id="qc-log-date-row">
-      <select id="qc-log-date-select" onchange="qcLogDateChange()">
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="custom">Specific date…</option>
-      </select>
-      <input id="qc-log-date-custom" type="text" placeholder="e.g. 5/1 or 4.28.26">
-    </div>
-    <select id="qc-log-section">
-      <option value="ACTIVITIES">🏃 Activities</option>
-      <option value="REFLECTIONS">💭 Reflections</option>
-      <option value="MEALS">🍽 Meals</option>
-      <option value="SPIRITUAL">✝️ Spiritual</option>
-      <option value="LEARNING">📚 Learning</option>
-      <option value="ANALYSIS">📊 Analysis</option>
-    </select>
-    <textarea id="qc-log-text" placeholder="Add your entry here…" oninput="qcLogCheckBtn()"></textarea>
-    <div id="qc-log-status"></div>
-    <button id="qc-log-btn" onclick="submitQCLog()" disabled>Add to Log</button>
-  </div>
-</div>
 </body>
 </html>
