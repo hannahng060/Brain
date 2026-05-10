@@ -417,8 +417,9 @@ def db_update_profile_section(section: str, content: str):
     conn.close()
 
 def build_profile_context() -> str:
+    import json as _json
     profile = db_get_profile()
-    filled = {k: v for k, v in profile.items() if v.strip()}
+    filled = {k: v for k, v in profile.items() if v and str(v).strip()}
     if not filled:
         return ""
     labels = {
@@ -432,7 +433,31 @@ def build_profile_context() -> str:
     }
     lines = ["USER PROFILE (always use this context when responding):"]
     for k, v in filled.items():
+        if k in ("weekly_plan", "daily_focus"):
+            continue  # handled separately below
         lines.append(f"[{labels.get(k, k)}]: {v}")
+
+    # Inject weekly plan with today's events highlighted
+    wp_raw = profile.get("weekly_plan", "")
+    if wp_raw and wp_raw.strip():
+        try:
+            wp = _json.loads(wp_raw) if isinstance(wp_raw, str) else wp_raw
+            today = datetime.now().strftime("%A")  # e.g. "Monday"
+            work_days = wp.get("work_days", [])
+            events = wp.get("events", [])
+            week_of = wp.get("week_of", "")
+            plan_lines = [f"[This Week's Plan{' (week of ' + week_of + ')' if week_of else ''}]:"]
+            plan_lines.append(f"  Work days: {', '.join(work_days) if work_days else 'not set'}")
+            today_events = [e for e in events if e.get("day", "").capitalize() == today]
+            if today_events:
+                plan_lines.append(f"  ⚡ TODAY ({today}) events: " + "; ".join(e.get("note", "") for e in today_events))
+            other_events = [e for e in events if e.get("day", "").capitalize() != today]
+            if other_events:
+                plan_lines.append("  Other events: " + "; ".join(f"{e.get('day')}: {e.get('note','')}" for e in other_events))
+            lines.append("\n".join(plan_lines))
+        except Exception:
+            lines.append(f"[Weekly Plan]: {wp_raw}")
+
     return "\n".join(lines)
 
 def db_save_quiz_result(topic: str, question: str, result: str) -> dict:
