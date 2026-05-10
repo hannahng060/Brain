@@ -789,6 +789,21 @@
     } catch(e) {}
   }
 
+  function checkDailyBriefing() {
+    var today = _localDateStr();
+    if (localStorage.getItem('brain_last_briefing') === today) return;
+    localStorage.setItem('brain_last_briefing', today);
+    showTab('chat');
+    setTimeout(function() {
+      var inp = document.getElementById('input');
+      if (inp) {
+        inp.value = 'Good morning — what does today look like?';
+        inp.dispatchEvent(new Event('input'));
+        if (typeof sendMessage === 'function') sendMessage();
+      }
+    }, 800);
+  }
+
   async function loadProfile() {
     const res = await fetch('/profile');
     if(res.status===401){location.reload();return;}
@@ -885,7 +900,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); loadChatHistory(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); loadChatHistory(); setTimeout(checkDailyBriefing, 2000); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
