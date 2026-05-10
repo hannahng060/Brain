@@ -1442,7 +1442,9 @@
   function appendMessage(role,text){
     const msgs=$('messages'), div=document.createElement('div');
     div.className=`msg ${role}`;
-    const bubble=document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
+    const bubble=document.createElement('div'); bubble.className='bubble';
+    if (role === 'brain' || role === 'Brain') { bubble.innerHTML = text; }
+    else { bubble.textContent = text; }
     const meta=document.createElement('div'); meta.className='msg-meta';
     meta.textContent=role==='user'?`You · ${timeStr()}`:`Brain · ${timeStr()}`;
     div.appendChild(bubble); div.appendChild(meta);
