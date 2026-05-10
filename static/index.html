@@ -463,6 +463,18 @@
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+        <div id="sunday-banner" style="display:none;background:linear-gradient(135deg,#667eea22,#764ba222);border:1.5px solid #667eea55;border-radius:16px;padding:14px 16px;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">📅 It's Sunday — weekly review time</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="startWeeklyReview()" style="padding:9px 16px;background:#667eea;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📊 Review Last Week</button>
+            <button onclick="toggleWeeklyPlan()" style="padding:9px 16px;background:none;border:1.5px solid #667eea;color:#667eea;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📆 Plan Next Week</button>
+          </div>
+          <div id="weekly-plan-input" style="display:none;margin-top:12px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tell Brain your schedule — work days, days off, appointments, anything coming up</div>
+            <textarea id="weekly-plan-text" placeholder="e.g. Monday work, Tuesday off, Wednesday work, Thursday appointment with Dr. Smith at 2pm, Friday work. Also have a family dinner Saturday." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;box-sizing:border-box;min-height:80px"></textarea>
+            <button onclick="submitWeeklyPlan()" style="margin-top:8px;width:100%;padding:11px;background:#667eea;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Send to Brain →</button>
+          </div>
+        </div>
         <div id="dash-weak" style="display:none;margin-bottom:10px"></div>
         <div class="banner-wrap" id="wrap-quote" style="display:none">
           <div class="quote-card" id="dash-quote"></div>
@@ -851,7 +863,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
@@ -3140,6 +3152,51 @@
       if (note) { openNoteDirectly(note); }
       else { showToast('No debts note yet — add your first debt and Brain will create it!'); }
     } catch(e) { showToast('Could not load notes'); }
+  }
+
+  // ── Sunday Weekly Review ─────────────────────────────────────────────
+  function sundayReviewCheck() {
+    var day = new Date().getDay(); // 0 = Sunday
+    var banner = $('sunday-banner');
+    if (banner) banner.style.display = (day === 0) ? 'block' : 'none';
+  }
+
+  function startWeeklyReview() {
+    showTab('chat');
+    var msg = 'WEEKLY REVIEW REQUEST: It\'s Sunday ' + _localLongDate() + '. Please review my last 7 days:\n' +
+      '1. Summarize patterns — sleep, mood, habits completed, meals, clinical study, activities\n' +
+      '2. Give 2-3 key insights or observations\n' +
+      '3. One thing I did well, one thing to improve next week\n' +
+      'Keep it honest but encouraging.';
+    fetch('/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: msg, local_date: _localLongDate() })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.response) appendMessage('Brain', d.response);
+    }).catch(() => {});
+  }
+
+  function toggleWeeklyPlan() {
+    var el = $('weekly-plan-input');
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') { var ta = $('weekly-plan-text'); if (ta) ta.focus(); }
+  }
+
+  function submitWeeklyPlan() {
+    var ta = $('weekly-plan-text');
+    var val = ta ? ta.value.trim() : '';
+    if (!val) return;
+    showTab('chat');
+    if (ta) ta.value = '';
+    toggleWeeklyPlan();
+    var msg = 'WEEKLY PLAN: ' + val;
+    fetch('/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: msg, local_date: _localLongDate() })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.response) appendMessage('Brain', d.response);
+    }).catch(() => {});
   }
 
   // Nudge on dashboard if no finance check-in in 10+ days
