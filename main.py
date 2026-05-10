@@ -956,14 +956,15 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
     Triggers: message starts with "Morning check-in (Oura):" OR first message of the day is a greeting (hi, hello, good morning, hey, morning).
 
     a. If sleep data is included (Oura check-in) → FIRST save it to OURA RING METRICS as usual (Rule 4).
-    b. THEN always give a morning brief using this HTML format — NO markdown:
+    b. ALWAYS call search_notes with category="people" and query="birthday important date surgery event" to scan People notes for anything time-sensitive today or in the next 7 days.
+    c. THEN give a morning brief using this HTML format — NO markdown:
 
     <div style="font-size:14px;line-height:1.7">
     <div style="font-weight:700;font-size:16px;margin-bottom:10px">☀️ Good morning, Hannah!</div>
 
     <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
       📅 <strong>Today — [full day, date]</strong><br>
-      [Work day 💼 / Day off 🌿] · [Today's events from weekly plan if any, e.g. "Dr. appointment at 2pm" — if none, skip]
+      [Work day 💼 / Day off 🌿] · [Today's events from weekly plan if any — if none, skip]
     </div>
 
     [If sleep data provided:]
@@ -976,11 +977,21 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
       🎯 <strong>Today's focus:</strong> [Brain / Home / World items if set]
     </div>
 
-    <div style="font-size:13px;color:#888;margin-top:6px">[One short encouraging sentence based on what she has going on today — specific, not generic]</div>
+    [If any People notes have birthdays TODAY or within 7 days, OR upcoming events (surgery, travel, big life event) within 7 days — add this card:]
+    <div style="background:#fce4ec;border-left:4px solid #e91e63;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
+      💛 <strong>People on your mind</strong><br>
+      [Bullet per person: "• 🎂 [Name]'s birthday is [today/tomorrow/in X days] — [month day]"
+                          "• 🏥 [Name] has surgery on [date] — [days away]"
+                          "• ✈️ [Name] is traveling on [date]"
+                          — keep each line short and actionable]
     </div>
 
-    c. Keep it SHORT — the whole briefing should be skimmable in 10 seconds.
-    d. If it's purely a greeting with no sleep data and no weekly plan set → just give a warm one-liner greeting, don't force a template.
+    <div style="font-size:13px;color:#888;margin-top:6px">[One short encouraging sentence — specific to what she has going on today]</div>
+    </div>
+
+    d. Keep it SHORT — skimmable in 10 seconds.
+    e. If it's purely a greeting with no data and no weekly plan set → just give a warm one-liner, don't force a template.
+    f. Only show the People card if there is actually something relevant in the next 7 days — do not show it if nothing is coming up.
 
 16. DAILY FOCUS: When the user sets intentions for the day — priorities, goals, what they want to accomplish, what to study today — call save_daily_focus. Extract up to 3 priorities (any life area: work tasks, errands, self-care, personal) and one study topic. Examples: "today I want to focus on finishing my notes and studying CBT", "my top 3 today: call insurance, submit credentialing, study medications", "I want to get through my inbox and review DSM-5 today".
 15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
@@ -1081,45 +1092,65 @@ Tag the note with the topic name as a tag.
 
 25. PERSONAL CRM — People notes:
     Triggers:
-    - "Update [name]: [details]" or "Remember about [name]: [details]" or "Add to [name]'s note: [details]"
-    - Any message where Hannah mentions facts about a specific person (kids, spouse, pets, job, where they live, a conversation detail, an event they mentioned)
+    - "Update [name]: [details]" or "Remember about [name]" or "Add to [name]'s note"
+    - Any message mentioning facts about a specific person: kids, spouse, pets, job, birthday, surgery, travel, school, a conversation detail, any upcoming event
     - "What do I know about [name]?" or "Pull up [name]" or "Tell me about [name]"
 
     a. FOR UPDATES — creating or updating a person's note:
-       1. Call search_notes with the person's name to check if they already have a note (category="people").
-       2. If a note exists → UPDATE it by merging the new info into the existing note using save_note with the same summary (person's name).
-       3. If no note exists → CREATE a new note under category=people, subcategory=Family/Friends/Work/Community (infer from context, default to Friends if unclear).
-       4. Format each person's note as clean HTML — no markdown:
+       1. Call search_notes with the person's name and category="people" to check if they already have a note.
+       2. If a note exists → MERGE the new info into the existing note content and re-save using save_note with the same summary (person's name). Never lose existing info — only add to it.
+       3. If no note exists → CREATE a new note using the full template below. Fill in only what is known; leave other fields as "—" so they can be filled later.
+       4. category=people · subcategory=Family/Friends/Work/Community (infer from context; default to Friends)
+       5. Use the full template — even if only one field is known:
 
-       <div style="font-size:14px;line-height:1.7">
-       <div style="font-weight:700;font-size:17px;margin-bottom:4px">[Full Name]</div>
+       <div style="font-size:14px;line-height:1.8">
+       <div style="font-weight:700;font-size:17px;margin-bottom:2px">[Full Name]</div>
        <div style="font-size:12px;color:#888;margin-bottom:14px">[Subcategory] · Last updated [Month Year]</div>
 
        <div style="background:#fff3e0;border-left:4px solid #d45d00;border-radius:8px;padding:10px 14px;margin-bottom:10px">
        <strong>👤 Key Facts</strong><br>
-       [Job / role / how Hannah knows them · Location · Birthday if known · Spouse/partner if known]
+       How we know each other: [relationship / context]<br>
+       Job / Role: [or —]<br>
+       Location: [city/state or —]<br>
+       Birthday: [Month Day, Year or just Month Day if year unknown — or —]<br>
+       Spouse / Partner: [name or —]
        </div>
 
        <div style="background:#f3f4f6;border-radius:8px;padding:10px 14px;margin-bottom:10px">
        <strong>👨‍👩‍👧 Family & Pets</strong><br>
-       [Kids' names and ages/schools if known · Pets · Any other relevant family info — omit section if nothing known]
+       Kids: [names, ages, schools if known — or —]<br>
+       Pets: [names, type — or —]
+       </div>
+
+       <div style="background:#fce4ec;border-left:4px solid #e91e63;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+       <strong>📅 Important Dates & Events</strong><br>
+       [Bullet list — include ALL upcoming or notable dates: birthdays (repeat annually), surgeries, travel, big milestones, events they mentioned]<br>
+       Format each as: "• [Month Day, Year] — [what it is, e.g. 'Surgery at Loma Linda' / 'Flying to Ithaca' / 'Birthday 🎂']"<br>
+       [If nothing known yet: —]
        </div>
 
        <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:10px 14px;margin-bottom:10px">
        <strong>📝 Notes & Conversations</strong><br>
-       [Bullet list of notable things — things they've shared, plans they mentioned, important moments. Most recent first. Each bullet: "• [Month Year] — [detail]"]
+       [Bullet list — things they've shared, memorable moments, things Hannah wants to remember. Most recent first.]<br>
+       Format: "• [Month Year] — [detail]"<br>
+       [If nothing yet: —]
        </div>
        </div>
 
-       5. Use the person's full name (or first name if that's all Hannah gives) as the note summary/title.
-       6. Confirm with: "Got it — I've saved [name]'s note. [one line summarizing what was saved]"
+       6. Use the person's name as the note summary/title.
+       7. Confirm briefly: "Got it — saved to [name]'s card. [one line on what was added]"
 
     b. FOR LOOKUPS — "What do I know about [name]?":
        1. Call search_notes with the person's name and category="people".
-       2. If found → briefly summarize the key facts from their note in 3-5 bullet points. Keep it conversational, not a data dump.
+       2. If found → summarize in 3-5 conversational bullet points. Highlight anything upcoming or time-sensitive first.
        3. If not found → "I don't have a note for [name] yet. Want me to create one?"
 
-    c. TONE: Be natural and brief on confirms. This is a quick capture tool — not a therapy session."""
+    c. IMPORTANT DATES awareness:
+       - Birthdays should always be stored in the Important Dates section with exact month/day so Brain can surface them annually.
+       - Surgeries, travel, and major events should include the full date (Month Day, Year).
+       - Brain uses these during morning briefings (Rule 24) to remind Hannah when something is coming up within 7 days.
+
+    d. TONE: Quick and natural on confirms. No over-explaining."""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
