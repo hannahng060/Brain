@@ -231,6 +231,45 @@ def db_update_section_by_id(note_id: int, section: str, text: str) -> dict:
     cur.close(); conn.close()
     return {"status": "updated", "id": note_id, "section": section}
 
+def _merge_meals(existing_html: str, new_html: str) -> str:
+    """Merge meal table rows by meal type — new rows replace same type, new types are appended."""
+    MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'desert']
+    TABLE_STYLE = 'style="border-collapse:collapse;font-size:14px;margin:4px 0"'
+
+    def extract_rows(html):
+        return re.findall(r'<tr>.*?</tr>', html, re.DOTALL | re.IGNORECASE)
+
+    def row_label(row):
+        for label in MEAL_ORDER:
+            if label in row.lower():
+                return label
+        return None
+
+    existing_rows = extract_rows(existing_html) if existing_html and existing_html not in ('—', '-', '') else []
+    new_rows = extract_rows(new_html)
+
+    if not new_rows:
+        return existing_html or new_html  # Nothing parseable in new — keep existing
+
+    # Build ordered dict: label → row (existing first)
+    merged = {}
+    for row in existing_rows:
+        lbl = row_label(row) or ('_x_' + str(len(merged)))
+        merged[lbl] = row
+    # New rows replace same label or add new
+    for row in new_rows:
+        lbl = row_label(row) or ('_n_' + str(len(merged)))
+        merged[lbl] = row
+
+    # Output in canonical meal order, then any extras
+    result = []
+    for lbl in MEAL_ORDER:
+        if lbl in merged:
+            result.append(merged.pop(lbl))
+    result.extend(v for k, v in merged.items() if not k.startswith('_x_') or True)
+
+    return f'<table {TABLE_STYLE}>{"".join(result)}</table>'
+
 def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
     """Find a daily log by date reference and append text to a section — all in one step."""
     conn = get_db()
@@ -308,8 +347,11 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'MEALS', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY'}
-    if section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY'}
+    if section.upper() == 'MEALS':
+        # Smart merge: keep existing meal rows, add/replace new ones by meal type
+        new_body = _merge_meals(existing, text)
+    elif section.upper().replace(' ', '') in replace_sections or section.upper() in replace_sections:
         new_body = text
     elif existing and existing not in ('—', '-', ''):
         new_body = existing + '\n\n' + text
