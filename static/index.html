@@ -2936,6 +2936,7 @@
     var rows = document.querySelectorAll('#fin-items .fin-check-row');
     rows.forEach(function(r) { r.classList.remove('checked'); r.querySelector('.fin-circle').textContent = ''; });
     renderFinSubs();
+    renderFinBills();
   }
 
   function finToggle(el) {
@@ -2997,6 +2998,57 @@
       var note = notes.find(function(n) {
         return (n.summary || '').toLowerCase().includes('subscri') ||
                (n.content || '').toLowerCase().includes('subscriptions & memberships');
+      });
+      if (note) { openNoteDirectly(note); }
+    } catch(e) {}
+  }
+
+  // ── Bills & Accounts ─────────────────────────────────────────────────
+  function renderFinBills() {
+    var bills = JSON.parse(localStorage.getItem('brain_fin_bills') || '[]');
+    var el = $('fin-bills-list');
+    if (!el) return;
+    if (!bills.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;padding:4px 0">No accounts added yet</div>'; return; }
+    el.innerHTML = bills.map(function(b, i) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px">' +
+        '<span>' + esc(b) + '</span>' +
+        '<button onclick="finDeleteBill(' + i + ')" style="background:none;border:none;color:#bbb;font-size:17px;cursor:pointer;padding:0 2px">×</button></div>';
+    }).join('');
+  }
+
+  function finAddBill() {
+    var input = $('fin-bill-input');
+    var val = input ? input.value.trim() : '';
+    if (!val) return;
+    var bills = JSON.parse(localStorage.getItem('brain_fin_bills') || '[]');
+    bills.push(val);
+    localStorage.setItem('brain_fin_bills', JSON.stringify(bills));
+    if (input) input.value = '';
+    renderFinBills();
+    fetch('/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: 'Bill/account added: ' + val, local_date: _localLongDate() })
+    }).catch(() => {});
+  }
+
+  function finDeleteBill(i) {
+    var bills = JSON.parse(localStorage.getItem('brain_fin_bills') || '[]');
+    bills.splice(i, 1);
+    localStorage.setItem('brain_fin_bills', JSON.stringify(bills));
+    renderFinBills();
+  }
+
+  async function finManageBills() {
+    toggleFinPanel();
+    showTab('notes');
+    try {
+      var r = await fetch('/notes?category=lifestyle&limit=200');
+      if (!r.ok) return;
+      var notes = await r.json();
+      var note = notes.find(function(n) {
+        var s = (n.summary || '').toLowerCase();
+        var c = (n.content || '').toLowerCase();
+        return s.includes('bills') || s.includes('accounts') || c.includes('bills & accounts');
       });
       if (note) { openNoteDirectly(note); }
     } catch(e) {}
@@ -3306,6 +3358,18 @@
     <div style="display:flex;gap:8px">
       <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
       <button onclick="finAddSub()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+    </div>
+  </div>
+  <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">🏦 Bills & Accounts</div>
+      <button onclick="finManageBills()" style="background:none;border:none;font-size:13px;color:var(--primary);font-weight:600;cursor:pointer;font-family:inherit;padding:0">Manage full list →</button>
+    </div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:8px">Type naturally — e.g. "GEICO auto, policy #ABC123, $89/mo, geico.com"</div>
+    <div id="fin-bills-list" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input id="fin-bill-input" type="text" placeholder="e.g. GEICO auto, policy #ABC123, $89/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddBill()">
+      <button onclick="finAddBill()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
     </div>
   </div>
 </div>

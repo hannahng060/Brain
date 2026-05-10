@@ -836,6 +836,15 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
     d. Never create duplicate rows for the same service — update existing row instead.
     e. Do not add to the daily log. This is a standalone reference note.
 
+21. BILLS & ACCOUNTS: When a message starts with "Bill/account added:" →
+    a. Search for an existing note with summary containing "Bills" or "Accounts" under lifestyle → Finance.
+    b. If found: update it by adding or updating a row for this account. Keep all existing rows.
+    c. If not found: create a new note under lifestyle → Finance titled "Bills & Accounts" with a table:
+       <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Account</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Type</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Policy / Acct #</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Amount</td><td style="padding:2px 20px 2px 0;color:#888;font-weight:700">Website</td><td style="color:#888;font-weight:700">Notes</td></tr>...</table>
+       Parse the text naturally — extract account name, type (insurance/utility/mortgage/etc.), policy or account number, monthly amount, website, and any extra notes.
+    d. Never duplicate rows — if the same account name exists, update that row instead.
+    e. Do not add to the daily log. This is a standalone reference note.
+
 16. DAILY FOCUS: When the user sets intentions for the day — priorities, goals, what they want to accomplish, what to study today — call save_daily_focus. Extract up to 3 priorities (any life area: work tasks, errands, self-care, personal) and one study topic. Examples: "today I want to focus on finishing my notes and studying CBT", "my top 3 today: call insurance, submit credentialing, study medications", "I want to get through my inbox and review DSM-5 today".
 15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
