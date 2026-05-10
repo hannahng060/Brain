@@ -1439,11 +1439,50 @@
 
   function timeStr(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 
+  function _mdInline(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g,'<em>$1</em>')
+            .replace(/`(.+?)`/g,'<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:13px">$1</code>');
+  }
+  function _mdToHtml(md) {
+    if (!md) return '';
+    // If already HTML, render as-is
+    if (md.trim().startsWith('<') || /<(div|ul|table|p|strong|h[1-6])\b/i.test(md)) return md;
+    var lines = md.split('\n'), html = [], inUl = false, inOl = false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var h3 = line.match(/^### (.+)/), h2 = line.match(/^## (.+)/), h1 = line.match(/^# (.+)/);
+      var ul = line.match(/^[-*] (.+)/), ol = line.match(/^\d+\. (.+)/);
+      if (h3||h2||h1) {
+        if (inUl){html.push('</ul>');inUl=false;} if(inOl){html.push('</ol>');inOl=false;}
+        var lvl=h1?'16px':h2?'15px':'14px', txt=h1?h1[1]:h2?h2[1]:h3[1];
+        html.push('<div style="font-weight:700;font-size:'+lvl+';color:var(--primary);margin:14px 0 5px">'+_mdInline(txt)+'</div>');
+      } else if (ul) {
+        if(inOl){html.push('</ol>');inOl=false;}
+        if(!inUl){html.push('<ul style="margin:4px 0 8px;padding-left:20px;font-size:14px">');inUl=true;}
+        html.push('<li style="margin:3px 0">'+_mdInline(ul[1])+'</li>');
+      } else if (ol) {
+        if(inUl){html.push('</ul>');inUl=false;}
+        if(!inOl){html.push('<ol style="margin:4px 0 8px;padding-left:20px;font-size:14px">');inOl=true;}
+        html.push('<li style="margin:3px 0">'+_mdInline(ol[1])+'</li>');
+      } else if (line.trim()==='') {
+        if(inUl){html.push('</ul>');inUl=false;} if(inOl){html.push('</ol>');inOl=false;}
+        html.push('<div style="height:6px"></div>');
+      } else {
+        if(inUl){html.push('</ul>');inUl=false;} if(inOl){html.push('</ol>');inOl=false;}
+        html.push('<div style="margin:2px 0;font-size:14px;line-height:1.6">'+_mdInline(line)+'</div>');
+      }
+    }
+    if(inUl)html.push('</ul>'); if(inOl)html.push('</ol>');
+    return html.join('');
+  }
+
   function appendMessage(role,text){
     const msgs=$('messages'), div=document.createElement('div');
     div.className=`msg ${role}`;
     const bubble=document.createElement('div'); bubble.className='bubble';
-    if (role === 'brain' || role === 'Brain') { bubble.innerHTML = text; }
+    if (role === 'brain' || role === 'Brain') { bubble.innerHTML = _mdToHtml(text); }
     else { bubble.textContent = text; }
     const meta=document.createElement('div'); meta.className='msg-meta';
     meta.textContent=role==='user'?`You · ${timeStr()}`:`Brain · ${timeStr()}`;
