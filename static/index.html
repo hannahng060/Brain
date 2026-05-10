@@ -2972,6 +2972,11 @@
     localStorage.setItem('brain_fin_subs', JSON.stringify(subs));
     if (input) input.value = '';
     renderFinSubs();
+    // Also save to permanent Brain note
+    fetch('/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: 'Finance subscription added: ' + val, local_date: _localLongDate() })
+    }).catch(() => {});
   }
 
   function finDeleteSub(i) {
@@ -2979,6 +2984,22 @@
     subs.splice(i, 1);
     localStorage.setItem('brain_fin_subs', JSON.stringify(subs));
     renderFinSubs();
+  }
+
+  async function finManageSubs() {
+    toggleFinPanel();
+    showTab('notes');
+    // Find and open the subscriptions note directly
+    try {
+      var r = await fetch('/notes?category=lifestyle&limit=200');
+      if (!r.ok) return;
+      var notes = await r.json();
+      var note = notes.find(function(n) {
+        return (n.summary || '').toLowerCase().includes('subscri') ||
+               (n.content || '').toLowerCase().includes('subscriptions & memberships');
+      });
+      if (note) { openNoteDirectly(note); }
+    } catch(e) {}
   }
 
   // Nudge on dashboard if no finance check-in in 10+ days
@@ -3277,7 +3298,10 @@
   </div>
   <button onclick="logFinCheckin()" style="margin-top:16px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">✅ Log Check-in</button>
   <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
-    <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📋 Subscriptions & Memberships</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">📋 Subscriptions & Memberships</div>
+      <button onclick="finManageSubs()" style="background:none;border:none;font-size:13px;color:var(--primary);font-weight:600;cursor:pointer;font-family:inherit;padding:0">Manage full list →</button>
+    </div>
     <div id="fin-subs-list" style="margin-bottom:8px"></div>
     <div style="display:flex;gap:8px">
       <input id="fin-sub-input" type="text" placeholder="e.g. Netflix $15.99/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddSub()">
