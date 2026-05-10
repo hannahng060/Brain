@@ -1098,11 +1098,16 @@ Tag the note with the topic name as a tag.
     - "What do I know about [name]?" or "Pull up [name]" or "Tell me about [name]"
 
     a. FOR UPDATES — creating or updating a person's note:
-       1. Call search_notes with the person's name and category="people" to check if they already have a note.
-       2. If a note exists → MERGE the new info into the existing note content and re-save using save_note with the same summary (person's name). Never lose existing info — only add to it.
-       3. If no note exists → CREATE a new note using the full template below. Fill in only what is known; leave other fields as "—" so they can be filled later.
-       4. category=people · subcategory=Family/Friends/Work/Community (infer from context; default to Friends)
-       5. Use the full template — even if only one field is known:
+       1. Identify ALL named people in the message — both the person Hannah is talking about AND any other people mentioned by name who have their own facts stated about them.
+          Example: "I talked to Christina and she said Charlie goes to Cornell" → two people: Christina and Charlie.
+          - Christina's card: log in Notes & Conversations: "• [Month Year] — said Charlie goes to Cornell"
+          - Charlie's card: log under Key Facts: "School: Cornell University, Ithaca NY"
+          Each person gets their own card updated with the facts that are ABOUT THEM specifically.
+       2. For each person identified: call search_notes with their name and category="people" to check if they already have a note.
+       3. If a note exists → MERGE the new info into the existing note content and re-save using save_note with the same summary (person's name). Never lose existing info — only add to it.
+       4. If no note exists → CREATE a new note using the full template below. Fill in only what is known; leave other fields as "—" so they can be filled later.
+       5. category=people · subcategory=Family/Friends/Work/Community (infer from context; default to Friends)
+       6. Use the full template — even if only one field is known:
 
        <div style="font-size:14px;line-height:1.8">
        <div style="font-weight:700;font-size:17px;margin-bottom:2px">[Full Name]</div>
