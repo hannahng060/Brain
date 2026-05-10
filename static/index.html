@@ -767,6 +767,28 @@
     { key:'routines', icon:'🌅', title:'Daily Routines',        placeholder:'Morning routine, sleep schedule, habits...' }
   ];
 
+  async function loadChatHistory() {
+    try {
+      var r = await fetch('/chat-history?limit=40');
+      if (!r.ok) return;
+      var msgs = await r.json();
+      if (!msgs || !msgs.length) return;
+      var container = $('messages');
+      if (!container) return;
+      // Only load if chat is empty (don't duplicate on re-login)
+      if (container.querySelectorAll('.msg').length > 0) return;
+      msgs.forEach(function(m) {
+        var role = m.role === 'assistant' ? 'brain' : 'user';
+        appendMessage(role, m.content);
+      });
+      // Add a subtle divider showing history was loaded
+      var div = document.createElement('div');
+      div.style.cssText = 'text-align:center;font-size:11px;color:#bbb;padding:6px 0;margin:4px 0';
+      div.textContent = '— earlier —';
+      container.insertBefore(div, container.firstChild);
+    } catch(e) {}
+  }
+
   async function loadProfile() {
     const res = await fetch('/profile');
     if(res.status===401){location.reload();return;}
@@ -863,7 +885,7 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
+    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); loadChatHistory(); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {

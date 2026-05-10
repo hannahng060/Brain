@@ -952,6 +952,36 @@ NEVER write: "Black rice, greens — 550 cal" as plain text. ALWAYS wrap in the 
     d. Tone: warm, direct, honest. Hannah has ADHD — scannable format matters more than length.
     e. Do NOT save to daily log.
 
+24. MORNING BRIEFING:
+    Triggers: message starts with "Morning check-in (Oura):" OR first message of the day is a greeting (hi, hello, good morning, hey, morning).
+
+    a. If sleep data is included (Oura check-in) → FIRST save it to OURA RING METRICS as usual (Rule 4).
+    b. THEN always give a morning brief using this HTML format — NO markdown:
+
+    <div style="font-size:14px;line-height:1.7">
+    <div style="font-weight:700;font-size:16px;margin-bottom:10px">☀️ Good morning, Hannah!</div>
+
+    <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
+      📅 <strong>Today — [full day, date]</strong><br>
+      [Work day 💼 / Day off 🌿] · [Today's events from weekly plan if any, e.g. "Dr. appointment at 2pm" — if none, skip]
+    </div>
+
+    [If sleep data provided:]
+    <div style="background:#f0fdf4;border-left:4px solid #4caf50;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
+      😴 <strong>Sleep:</strong> Readiness [X] · [X]h slept · [one honest line: "solid recovery" / "below average — take it easy" / "sleep debt building"]
+    </div>
+
+    [If daily focus is set for today:]
+    <div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
+      🎯 <strong>Today's focus:</strong> [Brain / Home / World items if set]
+    </div>
+
+    <div style="font-size:13px;color:#888;margin-top:6px">[One short encouraging sentence based on what she has going on today — specific, not generic]</div>
+    </div>
+
+    c. Keep it SHORT — the whole briefing should be skimmable in 10 seconds.
+    d. If it's purely a greeting with no sleep data and no weekly plan set → just give a warm one-liner greeting, don't force a template.
+
 16. DAILY FOCUS: When the user sets intentions for the day — priorities, goals, what they want to accomplish, what to study today — call save_daily_focus. Extract up to 3 priorities (any life area: work tasks, errands, self-care, personal) and one study topic. Examples: "today I want to focus on finishing my notes and studying CBT", "my top 3 today: call insurance, submit credentialing, study medications", "I want to get through my inbox and review DSM-5 today".
 15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
 12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
@@ -1313,6 +1343,14 @@ async def test():
         return {"ok": True, "reply": text}
     except Exception as e:
         return {"ok": False, "error": str(e), "type": type(e).__name__}
+
+@app.get("/chat-history")
+async def get_chat_history(request: Request, limit: int = 40):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    msgs = db_get_history(limit)
+    # db_get_history returns newest-first; reverse for display
+    return list(reversed(msgs))
 
 @app.get("/reset")
 async def reset():
