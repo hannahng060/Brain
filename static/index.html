@@ -158,6 +158,9 @@
     #fin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
     #fin-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
     #fin-panel.open { display:flex; }
+    #bills-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:403; }
+    #bills-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-radius:20px 20px 0 0; padding:20px 16px 32px; z-index:404; display:none; flex-direction:column; gap:0; max-height:85dvh; overflow-y:auto; }
+    #bills-panel.open { display:flex; }
     .fin-check-row { display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
     .fin-check-row:last-of-type { border-bottom:none; }
     .fin-circle { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:var(--primary); background:var(--bg); transition:all .15s; }
@@ -442,6 +445,7 @@
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
           <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
           <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
+          <div onclick="toggleBillsPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🏦 Bills</div>
           <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
           <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
           <div onclick="toggleMealPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🍽️ Meal</div>
@@ -2936,7 +2940,6 @@
     var rows = document.querySelectorAll('#fin-items .fin-check-row');
     rows.forEach(function(r) { r.classList.remove('checked'); r.querySelector('.fin-circle').textContent = ''; });
     renderFinSubs();
-    renderFinBills();
   }
 
   function finToggle(el) {
@@ -3004,6 +3007,15 @@
   }
 
   // ── Bills & Accounts ─────────────────────────────────────────────────
+  function toggleBillsPanel() {
+    var panel = $('bills-panel'), overlay = $('bills-overlay');
+    if (!panel) return;
+    var opening = !panel.classList.contains('open');
+    panel.classList.toggle('open');
+    overlay.style.display = opening ? 'block' : 'none';
+    if (opening) renderFinBills();
+  }
+
   function renderFinBills() {
     var bills = JSON.parse(localStorage.getItem('brain_fin_bills') || '[]');
     var el = $('fin-bills-list');
@@ -3039,7 +3051,7 @@
   }
 
   async function finManageBills() {
-    toggleFinPanel();
+    toggleBillsPanel();
     showTab('notes');
     try {
       var r = await fetch('/notes?category=lifestyle&limit=200');
@@ -3360,18 +3372,21 @@
       <button onclick="finAddSub()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
     </div>
   </div>
-  <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:13px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">🏦 Bills & Accounts</div>
-      <button onclick="finManageBills()" style="background:none;border:none;font-size:13px;color:var(--primary);font-weight:600;cursor:pointer;font-family:inherit;padding:0">Manage full list →</button>
-    </div>
-    <div style="font-size:12px;color:#aaa;margin-bottom:8px">Type naturally — e.g. "GEICO auto, policy #ABC123, $89/mo, geico.com"</div>
-    <div id="fin-bills-list" style="margin-bottom:8px"></div>
-    <div style="display:flex;gap:8px">
-      <input id="fin-bill-input" type="text" placeholder="e.g. GEICO auto, policy #ABC123, $89/mo" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddBill()">
-      <button onclick="finAddBill()" style="padding:9px 14px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
-    </div>
+</div>
+<div id="bills-overlay" onclick="toggleBillsPanel()"></div>
+<div id="bills-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="font-size:17px;font-weight:700">🏦 Bills & Accounts</div>
+    <button onclick="toggleBillsPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;padding:0 4px;line-height:1">×</button>
   </div>
+  <div style="font-size:13px;color:#aaa;margin-bottom:14px">Type naturally — Brain will format and save it for you.</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input id="fin-bill-input" type="text" placeholder="e.g. GEICO auto, policy #ABC123, $89/mo, geico.com" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none" onkeydown="if(event.key==='Enter')finAddBill()">
+    <button onclick="finAddBill()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--primary);color:white;font-size:16px;font-weight:700;cursor:pointer">+</button>
+  </div>
+  <div style="font-size:11px;color:#aaa;margin-bottom:14px">Examples: "Water utility, acct #98765, ~$40/mo, mywater.com" · "Chase mortgage, acct #11223, $2100/mo" · "IEHP insurance, member #ABC, $0/mo, iehp.org"</div>
+  <div id="fin-bills-list" style="margin-bottom:12px"></div>
+  <button onclick="finManageBills()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;font-family:inherit;">📋 Manage full list →</button>
 </div>
 <div id="focus-overlay" onclick="toggleFocusPanel()"></div>
 <div id="focus-panel">
