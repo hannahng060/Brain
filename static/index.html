@@ -3161,24 +3161,13 @@
     if (banner) banner.style.display = (day === 0) ? 'block' : 'none';
   }
 
-  async function startWeeklyReview() {
+  function startWeeklyReview() {
     showTab('chat');
-    var msg = 'WEEKLY REVIEW REQUEST: It\'s Sunday ' + _localLongDate() + '. Please review my last 7 days:\n' +
-      '1. Summarize patterns — sleep, mood, habits completed, meals, clinical study, activities\n' +
-      '2. Give 2-3 key insights or observations\n' +
-      '3. One thing I did well, one thing to improve next week\n' +
-      'Keep it honest but encouraging.';
-    appendMessage('user', '📊 Weekly review — last 7 days');
-    showTyping();
-    try {
-      var r = await fetch('/chat', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: msg, local_date: _localLongDate() })
-      });
-      removeTyping();
-      var d = await r.json();
-      appendMessage('brain', d.reply);
-    } catch(e) { removeTyping(); }
+    var msg = 'WEEKLY REVIEW REQUEST: It\'s Sunday ' + _localLongDate() + '. Please review my last 7 days: summarize patterns (sleep, mood, habits, meals, study, activities), give 2-3 key insights, one win and one to improve. Keep it honest and encouraging.';
+    setTimeout(function() {
+      var inp = document.getElementById('input');
+      if (inp) { inp.value = msg; inp.dispatchEvent(new Event('input')); if (typeof sendMessage === 'function') sendMessage(); }
+    }, 300);
   }
 
   function toggleWeeklyPlan() {
@@ -3188,24 +3177,17 @@
     if (el.style.display === 'block') { var ta = $('weekly-plan-text'); if (ta) ta.focus(); }
   }
 
-  async function submitWeeklyPlan() {
+  function submitWeeklyPlan() {
     var ta = $('weekly-plan-text');
     var val = ta ? ta.value.trim() : '';
     if (!val) return;
-    showTab('chat');
     if (ta) ta.value = '';
     toggleWeeklyPlan();
-    appendMessage('user', '📆 Next week: ' + val);
-    showTyping();
-    try {
-      var r = await fetch('/chat', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: val, local_date: _localLongDate() })
-      });
-      removeTyping();
-      var d = await r.json();
-      appendMessage('brain', d.reply);
-    } catch(e) { removeTyping(); }
+    showTab('chat');
+    setTimeout(function() {
+      var inp = document.getElementById('input');
+      if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); if (typeof sendMessage === 'function') sendMessage(); }
+    }, 300);
   }
 
   // Nudge on dashboard if no finance check-in in 10+ days
