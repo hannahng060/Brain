@@ -900,14 +900,48 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: $('pw-input').value})
     });
-    if (res.ok) { $('login-screen').style.display='none'; $('app').style.display='flex'; loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan(); loadStreak(); loadWeakAreas(); loadDailyFocus(); loadChatHistory(); setTimeout(checkDailyBriefing, 2000); setTimeout(finNudge, 3000); setTimeout(_updateFocusBadge, 1500); setTimeout(sundayReviewCheck, 500); }
+    if (res.ok) { _appReady(); }
     else $('login-error').style.display='block';
   }
   async function doLogout() {
+    localStorage.removeItem('brain_last_active');
     await fetch('/logout', {method:'POST'}); location.reload();
   }
+
+  // ── Session timeout (8 hours inactivity → auto-logout) ───────────────
+  var _SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
+  function _touchActive() { localStorage.setItem('brain_last_active', Date.now()); }
+  async function _checkSessionTimeout() {
+    var last = parseInt(localStorage.getItem('brain_last_active') || '0');
+    if (!last) return; // never logged in via this device
+    if (Date.now() - last > _SESSION_TIMEOUT) {
+      localStorage.removeItem('brain_last_active');
+      await fetch('/logout', {method:'POST'});
+      location.reload();
+    }
+  }
+  // Check on tab/window focus
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') _checkSessionTimeout();
+  });
+
+  function _appReady() {
+    $('login-screen').style.display='none'; $('app').style.display='flex';
+    _touchActive();
+    loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan();
+    loadStreak(); loadWeakAreas(); loadDailyFocus(); loadChatHistory();
+    setTimeout(checkDailyBriefing, 2000);
+    setTimeout(finNudge, 3000);
+    setTimeout(_updateFocusBadge, 1500);
+    setTimeout(sundayReviewCheck, 500);
+  }
+
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  (async()=>{ const r=await fetch('/notes?limit=1'); if(r.ok){$('login-screen').style.display='none';$('app').style.display='flex';loadNotes();loadProfile();loadDashboard();loadWeeklyPlan();loadStreak();loadWeakAreas();loadDailyFocus();setTimeout(_updateFocusBadge,1500);}})();
+  (async()=>{
+    await _checkSessionTimeout(); // check timeout before auto-login
+    const r=await fetch('/notes?limit=1');
+    if(r.ok){ _appReady(); }
+  })();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -1620,6 +1654,7 @@
   async function sendMessage(){
     const text = input.value.trim();
     if((!text && !_attachedFile) || sending) return;
+    _touchActive();
     sending = true; input.value = ''; input.style.height = 'auto'; $('send-btn').disabled = true;
 
     const displayText = text || (_attachedFile ? `📎 ${_attachedFile.name}` : '');
