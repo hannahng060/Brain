@@ -2397,11 +2397,8 @@
       else if (section === 'MEDICATIONS') { _clLogMedication(item); }
       else if (section === 'ACTIVITIES')  { _clLogActivity(item); }
       else {
-        // Default core items (Stretch, Mindfulness, Red Light, Skool, etc.) → DAILY ROUTINE
-        const defaults = _clDefaultItems();
-        const coreItems = [...defaults.always, ...(defaults.dayoff||[]), ...(defaults.sunday||[])];
-        if (coreItems.includes(item)) { _clLogRoutine(); }
-        else { _clLogActivity(item); } // custom added items → ACTIVITIES
+        // Custom added items → ACTIVITIES
+        _clLogActivity(item);
       }
     }
   }
@@ -2452,29 +2449,6 @@
     const done = _clGetDone();
     if (!done || done.size === 0) return;
     const defaults = _clDefaultItems();
-    const coreItems = [
-      ...defaults.always,
-      ...(defaults.workday || []),
-      ...(defaults.dayoff  || []),
-      ...(defaults.sunday  || [])
-    ];
-    // Only batch items that belong in DAILY ROUTINE (exclude MEALS, MEDICATIONS, ACTIVITIES)
-    const routineItems = Array.from(done).filter(i => coreItems.includes(i) && !_CL_ITEM_SECTIONS[i]);
-    if (routineItems.length === 0) return;
-    // Only log if changed since last log
-    const todayKey = 'brain_routine_logged_' + _localDateStr();
-    const lastLogged = localStorage.getItem(todayKey) || '';
-    const current = routineItems.sort().join('|||');
-    if (lastLogged === current) return;
-    localStorage.setItem(todayKey, current);
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Daily routine update: ' + routineItems.join('  '), local_date: _localLongDate()})
-      });
-    } catch(e) { /* silent */ }
-  }
 
   async function _clLogMeal(item) {
     const now = new Date();
@@ -3722,8 +3696,6 @@
       <option value="MEDICATIONS & SUPPLEMENTS">💊 Medications &amp; Supplements</option>
       <option value="MOOD">🌤 Mood</option>
       <option value="ENERGY">⚡ Energy</option>
-      <option value="MORNING ROUTINE">🌅 Morning Routine</option>
-      <option value="EVENING ROUTINE">🌙 Evening Routine</option>
       <option value="SPIRITUAL">✝️ Spiritual</option>
       <option value="LEARNING">📚 Learning</option>
       <option value="OURA RING METRICS">💍 Oura Ring Metrics</option>
