@@ -98,16 +98,10 @@
     .dot:nth-child(2) { animation-delay:.2s; }
     .dot:nth-child(3) { animation-delay:.4s; }
     @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-    .dashboard { background:var(--surface); border-radius:16px; padding:0; margin:8px 0; border:1px solid var(--border); overflow:hidden; }
-    .dash-hero { background:linear-gradient(135deg,#5b5bd6 0%,#7c3aed 50%,#a855f7 100%); padding:18px 18px 16px; position:relative; overflow:hidden; }
-    .dash-hero::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; background:rgba(255,255,255,0.07); border-radius:50%; }
-    .dash-hero::after  { content:''; position:absolute; bottom:-30px; left:30px; width:80px; height:80px; background:rgba(255,255,255,0.05); border-radius:50%; }
-    .dash-hero-date { font-size:11px; color:rgba(255,255,255,0.7); font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-bottom:6px; }
-    .dash-hero-greeting { font-size:18px; font-weight:800; color:white; line-height:1.4; margin-bottom:4px; }
-    .dash-hero-affirmation { font-size:13px; color:rgba(255,255,255,0.85); font-style:italic; line-height:1.5; }
-    .dash-body { padding:14px 16px 16px; }
-    .dashboard-date { font-size:13px; color:var(--muted); margin-bottom:10px; }
+    .dashboard { background:var(--surface); border-radius:16px; padding:16px 18px; margin:8px 0; border:1px solid var(--border); }
+    .dashboard-date { font-size:11px; color:var(--muted); margin-bottom:8px; font-weight:600; letter-spacing:.3px; text-transform:uppercase; }
     .dashboard-greeting { font-size:17px; font-weight:700; color:var(--text); margin-bottom:12px; }
+    #dash-greeting { background:linear-gradient(135deg,#5b5bd6,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:18px; font-weight:800; }
     .stats-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
     .stat-chip { background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s; }
     .stat-chip:hover { opacity:.8; }
@@ -120,7 +114,7 @@
     .banner-refresh:hover { border-color:var(--primary); color:var(--primary); transform:rotate(45deg); }
     .quote-card { background:linear-gradient(135deg,#ede9fe,#f5f3ff); border-radius:12px; padding:12px 14px; font-size:13px; color:#4c1d95; line-height:1.6; border-left:3px solid #7c3aed; transition:opacity .15s; }
     .quote-card:hover { opacity:.85; }
-    #dash-knowledge { background:linear-gradient(135deg,#e0f2fe,#f0f9ff); border-left-color:var(--psychiatry) !important; color:#0c4a6e; }
+    #dash-knowledge { background:linear-gradient(135deg,#e0f2fe,#f0f9ff) !important; border-left-color:#1565c0 !important; color:#0c4a6e !important; }
     .quote-text { font-style:italic; font-weight:500; }
     .quote-insight { display:inline; font-style:normal; color:#6d28d9; }
     #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#2e7d32; color:white; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
@@ -409,12 +403,7 @@
   <div class="page active" id="chat-page">
     <div id="messages">
       <div class="dashboard" id="dashboard">
-        <div class="dash-hero" id="dash-hero">
-          <div class="dash-hero-date" id="dash-date"></div>
-          <div class="dash-hero-greeting" id="dash-greeting"></div>
-          <div class="dash-hero-affirmation" id="dash-affirmation" style="display:none"></div>
-        </div>
-        <div class="dash-body">
+        <div class="dashboard-date" id="dash-date"></div>
         <div id="dash-tools">
           <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
           <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
@@ -427,6 +416,8 @@
           <div onclick="toggleGardenPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌱 Garden</div>
           <div onclick="toggleBoardQPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Board Q</div>
         </div>
+        <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.5"></div>
+        <div id="dash-affirmation" style="display:none;font-size:13px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:12px"></div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="sunday-banner" style="display:none;background:linear-gradient(135deg,#667eea22,#764ba222);border:1.5px solid #667eea55;border-radius:16px;padding:14px 16px;margin-bottom:14px">
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">📅 It's Sunday — weekly review time</div>
@@ -449,7 +440,6 @@
           <div class="quote-card" id="dash-knowledge" style="border-left-color:var(--psychiatry)"></div>
           <button class="banner-refresh" onclick="refreshBanner('knowledge')" title="New insight">↻</button>
         </div>
-        </div><!-- end dash-body -->
       </div>
     </div>
     <div id="input-bar">
