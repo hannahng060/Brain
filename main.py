@@ -1513,16 +1513,31 @@ async def last_error():
     return _last_error
 
 @app.get("/board-quiz/random")
-async def board_quiz_random(request: Request, topic: str = None):
-    """Return a spaced-repetition-weighted board question."""
+async def board_quiz_random(request: Request, topic: str = None, exclude: str = None):
+    """Return a spaced-repetition-weighted board question.
+    exclude: comma-separated note IDs to skip (avoids duplicates in a drill set).
+    """
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     conn = get_db()
     cur = conn.cursor()
+    # Parse exclude list
+    excluded_ids = []
+    if exclude:
+        try:
+            excluded_ids = [int(x) for x in exclude.split(",") if x.strip().isdigit()]
+        except Exception:
+            pass
+
     # Spaced repetition: weight questions by last result + recency
     # Never seen=100, wrong=80, partial=60, right>7d=40, right>3d=20, right recently=5
     topic_filter = "AND n.subcategory ILIKE %s" if topic else ""
-    params = [f"%{topic}%"] if topic else []
+    exclude_filter = f"AND n.id != ALL(%s)" if excluded_ids else ""
+    params = []
+    if topic:
+        params.append(f"%{topic}%")
+    if excluded_ids:
+        params.append(excluded_ids)
     cur.execute(f"""
         WITH last_results AS (
             SELECT DISTINCT ON (note_id) note_id, result, created_at
@@ -1542,7 +1557,7 @@ async def board_quiz_random(request: Request, topic: str = None):
                 END AS weight
             FROM notes n
             LEFT JOIN last_results lr ON lr.note_id = n.id
-            WHERE n.category = 'boards' {topic_filter}
+            WHERE n.category = 'boards' {topic_filter} {exclude_filter}
         )
         SELECT id, content, subcategory FROM scored
         ORDER BY RANDOM() * weight DESC

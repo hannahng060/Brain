@@ -2936,11 +2936,16 @@
     if (!overlay) return;
     overlay.style.display = 'flex';
     $('drill-content').innerHTML = '<div style="color:white;font-size:16px">Loading questions…</div>';
+    var seenIds = [];
     for (var i = 0; i < 5; i++) {
       try {
-        var r = await fetch('/board-quiz/random');
+        var excludeParam = seenIds.length ? '?exclude=' + seenIds.join(',') : '';
+        var r = await fetch('/board-quiz/random' + excludeParam);
         var d = await r.json();
-        if (d.found) _drillQueue.push(d);
+        if (d.found && !seenIds.includes(d.note_id)) {
+          _drillQueue.push(d);
+          seenIds.push(d.note_id);
+        }
       } catch(e) {}
     }
     if (!_drillQueue.length) {
