@@ -1273,6 +1273,7 @@
             ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:var(--muted);opacity:0.6">#${n.id}</span>
             <span class="note-date">${date}</span>
             <button class="delete-btn" onclick="deleteNote(event,${n.id})" title="Delete">🗑</button>
           </div>
@@ -1376,6 +1377,7 @@
             ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:var(--muted);opacity:0.6">#${n.id}</span>
             <span class="note-date">${date}</span>
             <button class="delete-btn" onclick="deleteNote(event,${n.id})" title="Delete">🗑</button>
           </div>
