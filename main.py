@@ -105,6 +105,13 @@ def db_save_note(raw_input: str, content: str, summary: str,
     conn.close()
     return {"status": "saved", "id": note_id, "category": category, "subcategory": subcategory, "summary": summary}
 
+def _fix_ts(row: dict) -> dict:
+    """Append Z to created_at so JavaScript treats it as UTC (not local time)."""
+    r = dict(row)
+    if r.get("created_at") and hasattr(r["created_at"], "isoformat"):
+        r["created_at"] = r["created_at"].isoformat() + "Z"
+    return r
+
 def db_search_notes(query: str, category: str = "all", limit: int = 30) -> list:
     conn = get_db()
     cur = conn.cursor()
@@ -132,7 +139,7 @@ def db_search_notes(query: str, category: str = "all", limit: int = 30) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return [_fix_ts(r) for r in rows]
 
 def db_get_person(name: str) -> list:
     conn = get_db()
@@ -146,7 +153,7 @@ def db_get_person(name: str) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return [_fix_ts(r) for r in rows]
 
 def db_get_log_by_date(date_str: str) -> list:
     """Find a Daily Log note by date. Normalizes separators so 5-1, 5/1, 5.1 all match."""
@@ -174,7 +181,7 @@ def db_get_log_by_date(date_str: str) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return [_fix_ts(r) for r in rows]
 
 def db_get_today_logs(category: str, subcategory: str) -> list:
     conn = get_db()
@@ -189,7 +196,7 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return [_fix_ts(r) for r in rows]
 
 def db_get_recent(limit: int = 30, category: str = "all") -> list:
     conn = get_db()
@@ -201,7 +208,7 @@ def db_get_recent(limit: int = 30, category: str = "all") -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return [_fix_ts(r) for r in rows]
 
 def db_update_section_by_id(note_id: int, section: str, text: str) -> dict:
     """Replace a section's content in a note by its ID (used for analysis overwrites)."""
