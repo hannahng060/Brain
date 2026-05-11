@@ -1106,7 +1106,8 @@ Tag the note with the topic name as a tag.
        2. For each person identified: call search_notes with their name and category="people" to check if they already have a note.
        3. If a note exists → MERGE the new info into the existing note content and re-save using save_note with the same summary (person's name). Never lose existing info — only add to it.
        4. If no note exists → CREATE a new note using the full template below. Fill in only what is known; leave other fields as "—" so they can be filled later.
-       5. category=people · subcategory=Family/Friends/Work/Community (infer from context; default to Friends)
+       5. ⛔ ALWAYS use category="people" — NEVER use category="resources" or subcategory="Contacts". People cards belong ONLY in the people category.
+          subcategory = Family / Friends / Work / Community (infer from context; default to Friends)
        6. Use the full template — even if only one field is known:
 
        <div style="font-size:14px;line-height:1.8">
