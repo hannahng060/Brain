@@ -2220,7 +2220,7 @@ def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
         f"Document:\n{chunk}"
     )
     response = client.messages.create(
-        model="claude-sonnet-4-5-20251001",
+        model="claude-haiku-4-5-20251001",
         max_tokens=8000,
         messages=[{"role": "user", "content": parse_prompt}]
     )
@@ -2345,7 +2345,7 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
     for idx, chunk in enumerate(chunks):
         try:
             resp = client.messages.create(
-                model="claude-sonnet-4-5-20251001",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=3000,
                 system=SYSTEM_MSG,
                 messages=[{"role": "user", "content": f"Chunk {idx+1}/{len(chunks)}:\n\n{chunk}"}],
