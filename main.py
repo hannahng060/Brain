@@ -2284,15 +2284,32 @@ def _looks_like_study_guide(text: str, user_note: str) -> bool:
     return bullet_count > 20 and choice_count < 8
 
 
+def _clean_pdf_text(text: str) -> str:
+    """Collapse excessive whitespace caused by character-spaced PDFs.
+    Converts 'W o r d  b y  w o r d' or words-on-separate-lines into readable prose."""
+    import re as _re
+    # Collapse runs of whitespace (spaces, tabs, newlines) into a single space
+    text = _re.sub(r'[ \t]+', ' ', text)          # multiple spaces/tabs → one space
+    text = _re.sub(r'\n[ \t]*\n+', '\n', text)    # multiple blank lines → one newline
+    text = _re.sub(r'(\w)\n(\w)', r'\1 \2', text) # word\nword → word word (broken lines)
+    text = _re.sub(r'\n{3,}', '\n\n', text)        # 3+ newlines → 2
+    # Remove lone page numbers (lines that are just a number)
+    text = _re.sub(r'^\s*\d{1,3}\s*$', '', text, flags=_re.MULTILINE)
+    return text.strip()
+
+
 def generate_questions_from_study_guide(extracted: str, source_name: str) -> str:
     """
     Take a clinical study guide (bullet points / prose), chunk it, generate
     ANCC-style multiple-choice questions, and save them to the board drill bank.
     """
-    CHUNK_SIZE = 5000  # chars per Claude call
+    # Clean up whitespace-heavy PDF extraction first
+    extracted = _clean_pdf_text(extracted)
+
+    CHUNK_SIZE = 6000  # chars per Claude call (larger since text is now denser)
     SYSTEM_MSG = (
         "You are an expert ANCC PMHNP-BC board exam question writer. "
-        "Given clinical study guide content (bullet points, notes, pearls), "
+        "Given clinical study guide content (bullet points, notes, clinical pearls), "
         "generate high-quality ANCC-style multiple-choice questions that test clinical reasoning.\n\n"
         "Rules:\n"
         "- Each question must have exactly 4 choices (A, B, C, D)\n"
@@ -2301,9 +2318,10 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
         "- Assign each question to ONE of these 6 ANCC categories: "
         "Assessment & Diagnosis | Psychopharmacology | Psychotherapy | "
         "Medical Management | Special Populations | Professional & Ethics\n"
-        "- Skip content that is purely test-taking strategy, formatting, or page numbers\n"
-        "- Generate 3-5 questions per chunk depending on clinical content density\n"
-        "- If there is no testable clinical content, return an empty array []\n\n"
+        "- Skip pure test-taking strategy tips (e.g. 'read the question carefully') but DO generate questions from any clinical facts, medications, diagnoses, or treatments\n"
+        "- Generate as many questions as the content supports (aim for 3-6 per chunk)\n"
+        "- If a chunk has ZERO clinical facts at all, return []\n"
+        "- The text may have imperfect formatting from PDF extraction — do your best to interpret it\n\n"
         "Return ONLY valid JSON — an array of objects:\n"
         '[{"topic":"Psychopharmacology","question":"A 34-year-old...","choices":{"A":"...","B":"...","C":"...","D":"..."},'
         '"correct_letter":"B","correct_text":"Lithium","rationale":"Lithium is first-line..."}]'
@@ -2313,7 +2331,7 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
     chunks = []
     for i in range(0, len(extracted), CHUNK_SIZE):
         chunk = extracted[i:i + CHUNK_SIZE].strip()
-        if len(chunk) > 200:  # skip tiny fragments
+        if len(chunk) > 150:  # skip tiny fragments
             chunks.append(chunk)
 
     if not chunks:
