@@ -77,6 +77,32 @@ def init_db():
     cur.execute("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS note_id INTEGER")
     # Migrate old category names to new ones
     cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
+    # Remap quiz_results topics to official 6 ANCC board categories
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Assessment & Diagnosis'
+        WHERE topic IN ('DSM-5','Assessments','Assessment','Diagnosis','Mental Status','Neuroscience','Neuro')
+    """)
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Psychopharmacology'
+        WHERE topic IN ('Medications','Pharmacology','Medication','Lab Values','Neuroscience','Biochemistry','Side Effects')
+    """)
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Psychotherapy'
+        WHERE topic IN ('CBT','DBT','ACT','Psychodynamic','Motivational Interviewing','Trauma-Focused',
+                        'Family & Couples','Group Therapy','Theory & Foundations','Therapy','Therapies')
+    """)
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Medical Management'
+        WHERE topic IN ('Medical','Lab','Labs','Procedures','Protocols','ICU','Cardiac','Respiratory','Renal')
+    """)
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Special Populations'
+        WHERE topic IN ('Child','Geriatric','Pediatric','Pregnancy','Forensic','Older Adults','Adolescent')
+    """)
+    cur.execute("""
+        UPDATE quiz_results SET topic = 'Professional & Ethics'
+        WHERE topic IN ('Ethics','Law','Legal','Licensing','Professional','Credentialing')
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -686,7 +712,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "topic":    {"type": "string", "description": "The subcategory/topic of the question e.g. 'Medications', 'DSM-5', 'CBT', 'Trauma-Focused', 'Neuroscience'"},
+                "topic":    {"type": "string", "enum": ["Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"], "description": "MUST be one of the 6 official ANCC board categories. Map the question's subject: DSM-5/assessments/diagnosis → 'Assessment & Diagnosis'; medications/pharmacology/neuroscience/lab values → 'Psychopharmacology'; CBT/DBT/ACT/psychodynamic/any therapy modality → 'Psychotherapy'; medical conditions/procedures/ICU → 'Medical Management'; child/geriatric/pregnancy/forensic → 'Special Populations'; ethics/law/licensing/professional → 'Professional & Ethics'"},
                 "question": {"type": "string", "description": "First 150 characters of the question asked"},
                 "result":   {"type": "string", "enum": ["right","partial","wrong"],
                              "description": "right=fully correct and complete, partial=correct concept but missing key details, wrong=incorrect or didn't know"},
