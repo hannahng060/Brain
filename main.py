@@ -2339,6 +2339,8 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
 
     total_saved = 0
     topic_tally: dict = {}
+    first_error: str = ""
+    api_errors = 0
 
     for idx, chunk in enumerate(chunks):
         try:
@@ -2353,8 +2355,12 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
             raw = re.sub(r'^```json\s*', '', raw)
             raw = re.sub(r'```\s*$', '', raw).strip()
             questions = json.loads(raw)
-        except Exception:
-            continue  # skip bad chunks silently
+        except Exception as e:
+            api_errors += 1
+            if not first_error:
+                first_error = f"{type(e).__name__}: {str(e)[:200]}"
+            print(f"[study-guide] chunk {idx+1} error: {type(e).__name__}: {e}")
+            continue  # skip bad chunks
 
         for q in questions:
             try:
@@ -2383,7 +2389,9 @@ def generate_questions_from_study_guide(extracted: str, source_name: str) -> str
                 continue
 
     if total_saved == 0:
-        return "⚠️ Processed the study guide but couldn't generate questions. The content may be too introductory or strategy-focused."
+        if api_errors > 0:
+            return f"⚠️ Study guide processed ({len(chunks)} chunks) but all API calls failed. First error: {first_error}"
+        return f"⚠️ Processed the study guide ({len(chunks)} chunks, {len(extracted)} chars after cleanup) but Claude returned no questions. The content may be too introductory or strategy-focused."
 
     breakdown = " | ".join(f"{t}: {n}" for t, n in sorted(topic_tally.items(), key=lambda x: -x[1]))
     return (
