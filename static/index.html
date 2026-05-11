@@ -3031,18 +3031,26 @@
     return out.innerHTML;
   }
 
+  function _linkifyUrls(html) {
+    // Convert bare URLs to clickable links, but skip URLs already inside href= or src= attributes
+    return html.replace(/(?<!['"=])(https?:\/\/[^\s<>"')\]]+)/g, function(url) {
+      return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;word-break:break-all">' + url + '</a>';
+    });
+  }
+
   function renderContent(s) {
     if(!s) return '';
-    // If already HTML (from rich text editor), return as-is
-    if(/<[a-z][\s\S]*>/i.test(s)) return s;
-    // Otherwise convert markdown to HTML
-    return s
+    // If already HTML (from rich text editor), linkify bare URLs then return
+    if(/<[a-z][\s\S]*>/i.test(s)) return _linkifyUrls(s);
+    // Otherwise convert markdown to HTML then linkify
+    var html = s
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
       .replace(/\*(.+?)\*/g,'<em>$1</em>')
       .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
       .replace(/^[-•]\s+(.+)$/gm,'&bull; $1')
       .replace(/\n/g,'<br>');
+    return _linkifyUrls(html);
   }
 </script>
 <div id="toast"></div>
