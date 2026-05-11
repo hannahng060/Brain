@@ -1914,6 +1914,17 @@ async def get_weak_areas(request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_weak_areas(limit=6)
 
+@app.patch("/note/{note_id}")
+async def patch_note(note_id: int, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    fields = {k: v for k, v in body.items() if k in ("content", "summary", "category", "subcategory")}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    result = db_update_note(note_id, fields)
+    return result
+
 @app.delete("/notes/{note_id}")
 async def delete_note(note_id: int, request: Request):
     if not is_authenticated(request):

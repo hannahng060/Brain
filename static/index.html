@@ -667,6 +667,7 @@
       <button class="sidebar-btn save" id="sidebar-save" onclick="saveEdit()" style="display:none">💾<br>Save</button>
       <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
       <button class="sidebar-btn" id="sidebar-analyze" onclick="analyzeLog()" style="display:none;background:linear-gradient(135deg,var(--primary),#7c4dff);color:white;border-color:var(--primary)">✨<br>Analyze</button>
+      <button class="sidebar-btn" id="sidebar-remove-img" onclick="removeNoteImage()" style="display:none;color:#e53935;border-color:#e53935">🖼️<br>Remove<br>Image</button>
       <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
     </div>
   </div>
@@ -1282,12 +1283,36 @@
     // Show analyze button only for Daily Log notes
     const isDailyLog = n.subcategory && n.subcategory.toLowerCase().includes('daily log');
     $('sidebar-analyze').style.display = isDailyLog ? 'block' : 'none';
+    // Show remove image button only if note has an embedded image
+    const hasImage = n.content && n.content.includes('<img ');
+    $('sidebar-remove-img').style.display = hasImage ? 'block' : 'none';
     $('sidebar-analyze').disabled = false;
     $('sidebar-analyze').innerHTML = '✨<br>Analyze';
     $('note-modal').classList.add('open');
   }
   function openNote(i)         { _setupModal(window._filteredNotes[i]); }
   function openNoteDirectly(n) { _setupModal(n); }
+
+  async function removeNoteImage() {
+    const note = window._openNote;
+    if (!note) return;
+    if (!confirm('Remove the image from this note? The text will stay.')) return;
+    // Strip all <img ...> tags from content
+    const newContent = note.content.replace(/<img[^>]*>/gi, '').trim();
+    try {
+      const res = await fetch('/note/' + note.id, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({content: newContent})
+      });
+      if (res.ok) {
+        note.content = newContent;
+        $('modal-body').innerHTML = renderContent(newContent);
+        $('sidebar-remove-img').style.display = 'none';
+        showToast('Image removed');
+      } else { showToast('Could not remove image'); }
+    } catch(e) { showToast('Error removing image'); }
+  }
 
   async function analyzeLog() {
     const note = window._openNote;
