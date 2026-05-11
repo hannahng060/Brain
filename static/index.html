@@ -748,6 +748,14 @@
     } catch(e) {}
   }
 
+  // Clear briefing flag on hard refresh so Brain greets again
+  if (performance.navigation && performance.navigation.type === 1) {
+    localStorage.removeItem('brain_last_briefing');
+  } else if (performance.getEntriesByType) {
+    var navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload') localStorage.removeItem('brain_last_briefing');
+  }
+
   function checkDailyBriefing() {
     var today = _localDateStr();
     if (localStorage.getItem('brain_last_briefing') === today) return;
