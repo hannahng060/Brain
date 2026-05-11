@@ -1784,7 +1784,33 @@
         sending = false; input.focus(); return;
       }
       data = await res.json();
-      appendMessage('brain', data.reply);
+      // Silent auto-retry: if morning briefing came back without HTML cards, reformat
+      var reply = data.reply || '';
+      var isMorningMsg = text && (
+        text.toLowerCase().includes('good morning') ||
+        text.toLowerCase().includes('what does today look like')
+      );
+      if (isMorningMsg && reply.length > 0 && !/<div\s+style=/i.test(reply)) {
+        try {
+          showTyping();
+          var retryRes = await fetch('/chat', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              message: '[REFORMAT ONLY — do not call any tools, do not save anything] Your previous morning briefing response was plain text. Reformat it now using the exact HTML colored card format from Rule 24 — blue Today card, purple Board focus card, and any other relevant cards. Use the same content, just wrap it in the proper HTML divs.',
+              local_date: new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}),
+              local_time: _localTimeStr()
+            })
+          });
+          removeTyping();
+          if (retryRes.ok) {
+            var retryData = await retryRes.json();
+            if (retryData.reply && /<div\s+style=/i.test(retryData.reply)) {
+              reply = retryData.reply; // use the reformatted version
+            }
+          }
+        } catch(e) { removeTyping(); }
+      }
+      appendMessage('brain', reply);
       loadWeakAreas();
       loadDailyFocus();
       if(data.saves && data.saves.length > 0) {
