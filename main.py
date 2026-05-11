@@ -1984,11 +1984,61 @@ def extract_image_text(data: bytes, media_type: str) -> str:
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
-                {"type": "text", "text": "Extract all text and key information from this image. Format it clearly with structure. Include everything visible."}
+                {"type": "text", "text": "Describe this image clearly and extract any visible text. Be specific and thorough — include what it shows, any text, names, dates, or key details visible."}
             ]
         }]
     )
     return response.content[0].text if response.content else ""
+
+def save_image_note(data: bytes, media_type: str, filename: str, description: str, user_note: str) -> str:
+    """Save image as a note with the actual photo embedded + Brain's description."""
+    b64 = base64.standard_b64encode(data).decode("utf-8")
+    img_tag = f'<img src="data:{media_type};base64,{b64}" style="max-width:100%;border-radius:10px;margin-bottom:12px">'
+
+    # Build note content: image on top, description below
+    content = (
+        f'<div style="font-size:14px;line-height:1.7">'
+        f'{img_tag}'
+        f'<div style="margin-top:10px">{description}</div>'
+        + (f'<div style="margin-top:10px;font-style:italic;color:#888">{user_note}</div>' if user_note else '')
+        + '</div>'
+    )
+
+    # Get metadata from description
+    meta_prompt = (
+        f"An image was saved with this description: {description[:500]}\n"
+        + (f"User note: {user_note}\n" if user_note else "")
+        + "Return ONLY a JSON object: "
+        '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden|boards", '
+        '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
+        "Return ONLY the JSON."
+    )
+    meta_response = client.messages.create(
+        model="claude-haiku-4-5-20251001", max_tokens=256,
+        messages=[{"role": "user", "content": meta_prompt}]
+    )
+    meta_text = meta_response.content[0].text.strip() if meta_response.content else ""
+    try:
+        if meta_text.startswith("```"):
+            meta_text = meta_text.split("```")[1]
+            if meta_text.startswith("json"): meta_text = meta_text[4:]
+        meta = json.loads(meta_text)
+        summary     = meta.get("summary", filename or "Image")
+        category    = meta.get("category", "personal")
+        subcategory = meta.get("subcategory")
+        tags        = meta.get("tags", [])
+    except Exception:
+        summary, category, subcategory, tags = filename or "Image", "personal", None, []
+
+    db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
+    reply = (
+        f"📸 Saved! Photo stored in **{category}**"
+        + (f" → {subcategory}" if subcategory else "")
+        + f".\n\n**{summary}**\n\n{description[:300]}"
+        + ("..." if len(description) > 300 else "")
+    )
+    db_add_message("assistant", reply)
+    return reply
 
 @app.post("/upload")
 async def upload_file(request: Request, file: UploadFile = File(...), note: str = Form(default="")):
@@ -2015,10 +2065,17 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
             extracted = extract_csv_text(data)
             file_label = f"CSV: {filename}"
         elif content_type.startswith("image/"):
-            extracted = extract_image_text(data, content_type)
-            file_label = f"Image: {filename or 'screenshot'}"
+            # Images: store the actual photo + Brain's description
+            # Size check — reject files over 8MB
+            if len(data) > 8 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail="Image too large. Please use screenshots or photos under 8MB.")
+            description = extract_image_text(data, content_type)
+            if not description.strip():
+                raise HTTPException(status_code=400, detail="Could not read this image.")
+            reply = save_image_note(data, content_type, filename or "screenshot", description, note.strip())
+            return {"reply": reply}
         else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF, Word, PowerPoint, Excel, CSV, or image file.")
+            raise HTTPException(status_code=400, detail="Unsupported file type. Supported: images (screenshots/photos), PDF, Word, Excel, CSV.")
 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
@@ -2027,7 +2084,6 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         file_reply = run_upload_agent(file_label, extracted, "")
 
         # If user also typed a message, process it separately through the full agent
-        # so Brain can split it into multiple notes (journal, diet, etc.)
         if note.strip():
             text_reply = run_agent(note.strip())
             reply = text_reply + f"\n\n📎 *Also saved {file_label}.*"
