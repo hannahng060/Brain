@@ -1031,17 +1031,7 @@
 
       // Log nudge
       if(!todayLog) {
-        chips.push({ text:"📅 No daily log yet today — start one!", color:'var(--lifestyle)', fn:"showTab('chat');$('input').value='Log: ';$('input').dispatchEvent(new Event('input'));$('input').focus()" });
-      }
-
-      // Quiz nudge
-      if(hasClinical) {
-        chips.push({ text: quizLines[Math.floor(Math.random()*quizLines.length)], color:'var(--psychiatry)', fn:"showTab('chat');startQuiz('all_clinical')" });
-      }
-
-      // Notes nudge
-      if(totalNotes > 0) {
-        chips.push({ text:`📖 ${totalNotes} notes saved — review them to make it stick!`, color:'var(--primary)', fn:"showTab('notes')" });
+        chips.push({ text:"📅 No daily log yet — start one!", color:'var(--lifestyle)', fn:"showTab('chat');$('input').value='Log: ';$('input').dispatchEvent(new Event('input'));$('input').focus()" });
       }
 
       // Garden nudges
@@ -1052,7 +1042,6 @@
       const checkCats = [
         { cat: 'business', label: '💼 Clinic', msg: "No clinic notes in a while — anything to capture?", fn: "jumpToCategory('business')" },
         { cat: 'people',   label: '👥 People', msg: "Haven't updated your People CRM in a while.", fn: "jumpToCategory('people')" },
-        { cat: 'boards',   label: '📚 Boards', msg: "No board prep notes recently — keep that momentum!", fn: "jumpToCategory('boards')" }
       ];
       checkCats.forEach(function(c) {
         const recent = notes.filter(n => n.category === c.cat);
@@ -1065,6 +1054,35 @@
       });
 
       $('dash-greeting').textContent = `${greeting}, Hannah 👋`;
+
+      // Async: smart board focus chip — fetch weak areas, show specific topic
+      (async function() {
+        try {
+          const wr = await fetch('/quiz/weak-areas');
+          if (!wr.ok) return;
+          const weak = await wr.json();
+          const boardNotes = notes.filter(n => n.category === 'boards');
+          if (!boardNotes.length) return;
+          if (weak.length) {
+            // Show weakest topic with score
+            const w = weak[0];
+            const pct = parseInt(w.score_pct) || 0;
+            const bar = pct < 50 ? '🔴' : pct < 70 ? '🟡' : '🟢';
+            const btn = document.createElement('button');
+            btn.style = 'background:none;border:1.5px solid var(--psychiatry);color:var(--psychiatry);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
+            btn.textContent = `${bar} Focus: ${w.topic} (${pct}%) — drill it!`;
+            btn.onclick = function() { startDrill(); };
+            $('dash-nudges').appendChild(btn);
+          } else {
+            // Has board notes but no quiz history yet
+            const btn = document.createElement('button');
+            btn.style = 'background:none;border:1.5px solid var(--psychiatry);color:var(--psychiatry);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
+            btn.textContent = '📚 Start your board prep — take the drill!';
+            btn.onclick = function() { startDrill(); };
+            $('dash-nudges').appendChild(btn);
+          }
+        } catch(e) {}
+      })();
       $('dash-nudges').innerHTML = chips.map(c =>
         `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
       ).join('');

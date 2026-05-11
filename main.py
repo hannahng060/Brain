@@ -740,6 +740,15 @@ TOOLS = [
             "properties": {},
             "required": []
         }
+    },
+    {
+        "name": "get_weak_areas",
+        "description": "Returns Hannah's board exam weak areas sorted by lowest score. Use this during morning briefings to personalize the board study card with her actual weakest topic.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
     }
 ]
 
@@ -977,7 +986,8 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 
     a. If sleep data is included (Oura check-in) → FIRST save it to OURA RING METRICS as usual (Rule 4).
     b. ALWAYS call search_notes with category="people" and query="birthday important date surgery event" to scan People notes for anything time-sensitive today or in the next 7 days.
-    c. THEN give a morning brief using this HTML format — NO markdown:
+    c. ALWAYS call get_weak_areas to find her weakest board topic to highlight in the study card.
+    d. THEN give a morning brief using this HTML format — NO markdown:
 
     <div style="font-size:14px;line-height:1.7">
     <div style="font-weight:700;font-size:16px;margin-bottom:10px">☀️ Good morning, Hannah!</div>
@@ -995,6 +1005,11 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
     [If daily focus is set for today:]
     <div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
       🎯 <strong>Today's focus:</strong> [Brain / Home / World items if set]
+    </div>
+
+    [Always include if board notes exist — use get_weak_areas result:]
+    <div style="background:#f3e5f5;border-left:4px solid #9c27b0;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
+      📚 <strong>Board focus today:</strong> [Weakest topic] ([score]%) — [one honest, specific study tip for this topic, not generic]
     </div>
 
     [If any People notes have birthdays TODAY or within 7 days, OR upcoming events (surgery, travel, big life event) within 7 days — add this card:]
@@ -1193,6 +1208,8 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_get_recent(args.get("limit", 30), args.get("category", "all"))
     elif name == "no_save":
         return {"status": "ok"}
+    elif name == "get_weak_areas":
+        return db_get_weak_areas(limit=6)
     elif name == "get_today_logs":
         return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
     elif name == "get_log_by_date":
