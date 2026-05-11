@@ -1025,7 +1025,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
     e. Do NOT save to daily log.
 
 24. MORNING BRIEFING:
-    Triggers: message starts with "Morning check-in (Oura):" OR first message of the day is a greeting (hi, hello, good morning, hey, morning).
+    Triggers: message starts with "Morning check-in (Oura):" OR first message of the day is a greeting (hi, hello, good morning, good afternoon, good evening, hey, morning).
 
     a. If sleep data is included (Oura check-in) → FIRST save it to OURA RING METRICS as usual (Rule 4).
     b. ALWAYS call search_notes with category="people" and query="birthday important date surgery event" to scan People notes for anything time-sensitive today or in the next 7 days.
@@ -1033,7 +1033,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
     d. ⛔ ALWAYS respond using the EXACT HTML card format below — NEVER plain text, NEVER markdown, NEVER skip the colored cards. Every section must be a colored div card exactly as shown:
 
     <div style="font-size:14px;line-height:1.7">
-    <div style="font-weight:700;font-size:16px;margin-bottom:10px">☀️ Good morning, Hannah!</div>
+    <div style="font-weight:700;font-size:16px;margin-bottom:10px">[use the correct greeting based on local_time provided: before 12pm → ☀️ Good morning; 12–5pm → 🌤 Good afternoon; after 5pm → 🌙 Good evening], Hannah!</div>
 
     <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
       📅 <strong>Today — [full day, date]</strong><br>
