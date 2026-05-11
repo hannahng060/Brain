@@ -1984,7 +1984,7 @@ def extract_image_text(data: bytes, media_type: str) -> str:
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
-                {"type": "text", "text": "Describe this image clearly and extract any visible text. Be specific and thorough — include what it shows, any text, names, dates, or key details visible."}
+                {"type": "text", "text": "Describe this image clearly and extract all visible text and information. Be specific and thorough. IMPORTANT: if you see any URLs or web links, always write them in full format starting with https:// (e.g. https://www.example.com). Format your response as clean HTML using <strong>, <br>, <ul>, <li> tags — no markdown asterisks or pound signs."}
             ]
         }]
     )

@@ -3032,9 +3032,11 @@
   }
 
   function _linkifyUrls(html) {
-    // Convert bare URLs to clickable links, but skip URLs already inside href= or src= attributes
+    // Convert URLs to clickable links — skip URLs already inside href= or src= attributes
     return html.replace(/(?<!['"=])(https?:\/\/[^\s<>"')\]]+)/g, function(url) {
       return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;word-break:break-all">' + url + '</a>';
+    }).replace(/(?<!['"=/])\b((?:www\.)[^\s<>"')\]]+)/g, function(url) {
+      return '<a href="https://' + url + '" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;word-break:break-all">' + url + '</a>';
     });
   }
 
