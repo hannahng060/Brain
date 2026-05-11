@@ -3007,7 +3007,7 @@
 
     if (correct) {
       // Got it right → auto-advance after 2s (keep the momentum)
-      setTimeout(function() { _drillIndex++; _showDrillQuestion(); }, 2000);
+      setTimeout(function() { _drillIndex++; _showDrillQuestion(); }, 5000);
     } else {
       // Got it wrong → stay until they click "Got it" (force them to read why)
       var gotItBtn = document.createElement('button');
