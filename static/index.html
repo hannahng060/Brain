@@ -3005,17 +3005,16 @@
       dc.appendChild(rat);
     }
 
-    if (correct) {
-      // Got it right → auto-advance after 2s (keep the momentum)
-      setTimeout(function() { _drillIndex++; _showDrillQuestion(); }, 5000);
-    } else {
-      // Got it wrong → stay until they click "Got it" (force them to read why)
-      var gotItBtn = document.createElement('button');
-      gotItBtn.textContent = '📖 Got it — Next Question';
-      gotItBtn.style.cssText = 'margin-top:14px;width:100%;padding:14px;background:#b71c1c;color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer';
-      gotItBtn.onclick = function() { _drillIndex++; _showDrillQuestion(); };
-      dc.appendChild(gotItBtn);
-    }
+    // Always require manual advance so Hannah can read the rationale at her own pace
+    var isLast = _drillIndex + 1 >= _drillQueue.length;
+    var nextBtn = document.createElement('button');
+    nextBtn.textContent = correct
+      ? (isLast ? '✅ See My Score →' : '✅ Next Question →')
+      : (isLast ? '📖 Got it — See My Score' : '📖 Got it — Next Question');
+    nextBtn.style.cssText = 'margin-top:14px;width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;color:white;background:'
+      + (correct ? '#2e7d32' : '#b71c1c');
+    nextBtn.onclick = function() { _drillIndex++; _showDrillQuestion(); };
+    dc.appendChild(nextBtn);
   }
 
   function _showDrillScore() {
