@@ -1993,7 +1993,7 @@ def extract_image_text(data: bytes, media_type: str) -> str:
 def save_image_note(data: bytes, media_type: str, filename: str, description: str, user_note: str) -> str:
     """Save image as a note with the actual photo embedded + Brain's description."""
     b64 = base64.standard_b64encode(data).decode("utf-8")
-    img_tag = f'<img src="data:{media_type};base64,{b64}" style="max-width:100%;border-radius:10px;margin-bottom:12px">'
+    img_tag = f'<img src="data:{media_type};base64,{b64}" style="max-width:40%;border-radius:10px;margin-bottom:12px;display:block">'
 
     # Build note content: image on top, description below
     content = (
