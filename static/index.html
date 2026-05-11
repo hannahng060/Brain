@@ -2996,20 +2996,26 @@
       else if (l === chosen && !correct) btn.style.cssText += ';background:#b71c1c;border-color:#f44336;color:white';
     });
 
-    // Show rationale + Next button (stays until user clicks)
+    // Show rationale
     var dc = $('drill-content');
     if (q.rationale) {
       var rat = document.createElement('div');
       rat.style.cssText = 'background:#1a237e;border-left:3px solid #5c6bc0;padding:12px 14px;border-radius:8px;color:#e8eaf6;font-size:14px;margin-top:10px;line-height:1.6';
-      rat.innerHTML = '<strong>' + (correct ? '✅ Correct! ' : '❌ Incorrect. ') + '</strong>' + esc(q.rationale);
+      rat.innerHTML = '<strong>' + (correct ? '✅ Correct! ' : '❌ Incorrect — ') + '</strong>' + esc(q.rationale);
       dc.appendChild(rat);
     }
 
-    var nextBtn = document.createElement('button');
-    nextBtn.textContent = _drillIndex + 1 >= _drillQueue.length ? 'See My Score →' : 'Next Question →';
-    nextBtn.style.cssText = 'margin-top:14px;width:100%;padding:14px;background:#5b5bd6;color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer';
-    nextBtn.onclick = function() { _drillIndex++; _showDrillQuestion(); };
-    dc.appendChild(nextBtn);
+    if (correct) {
+      // Got it right → auto-advance after 2s (keep the momentum)
+      setTimeout(function() { _drillIndex++; _showDrillQuestion(); }, 2000);
+    } else {
+      // Got it wrong → stay until they click "Got it" (force them to read why)
+      var gotItBtn = document.createElement('button');
+      gotItBtn.textContent = '📖 Got it — Next Question';
+      gotItBtn.style.cssText = 'margin-top:14px;width:100%;padding:14px;background:#b71c1c;color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer';
+      gotItBtn.onclick = function() { _drillIndex++; _showDrillQuestion(); };
+      dc.appendChild(gotItBtn);
+    }
   }
 
   function _showDrillScore() {
