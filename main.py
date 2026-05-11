@@ -2106,6 +2106,115 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
     db_add_message("assistant", reply)
     return reply
 
+_BOARD_TOPIC_MAP = {
+    "assessment": "Assessment & Diagnosis",
+    "diagnosis": "Assessment & Diagnosis",
+    "psychopharmacology": "Psychopharmacology",
+    "pharmacology": "Psychopharmacology",
+    "medication": "Psychopharmacology",
+    "psychotherapy": "Psychotherapy",
+    "therapy": "Psychotherapy",
+    "cbt": "Psychotherapy",
+    "dbt": "Psychotherapy",
+    "medical": "Medical Management",
+    "special population": "Special Populations",
+    "child": "Special Populations",
+    "geriatric": "Special Populations",
+    "ethics": "Professional & Ethics",
+    "legal": "Professional & Ethics",
+    "professional": "Professional & Ethics",
+}
+
+def _looks_like_board_questions(text: str, user_note: str) -> bool:
+    """Detect if content is a practice question PDF."""
+    note_lower = (user_note or "").lower()
+    if any(kw in note_lower for kw in ["board", "question", "quiz", "practice", "georgette", "blueprint", "ancc", "pmhnp"]):
+        return True
+    # Count A) B) C) D) patterns — 8+ suggests at least 2 questions
+    return len(re.findall(r'\b[A-D]\)', text)) >= 8
+
+def _normalize_topic(raw: str) -> str:
+    """Map a raw topic string to a canonical board subcategory."""
+    low = raw.lower()
+    for key, val in _BOARD_TOPIC_MAP.items():
+        if key in low:
+            return val
+    return raw.strip() or "Assessment & Diagnosis"
+
+def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
+    """Parse a practice question document and save each Q as a board note."""
+    # Truncate to avoid token limits but keep as much as possible
+    chunk = extracted[:12000]
+    parse_prompt = (
+        "You are parsing a psychiatric board exam practice question document.\n"
+        "Extract EVERY question you can find. Return a JSON array where each item has:\n"
+        '{"topic": "one of: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics", '
+        '"question": "full question text", '
+        '"choices": {"A": "...", "B": "...", "C": "...", "D": "..."}, '
+        '"correct_letter": "A|B|C|D", '
+        '"correct_text": "text of correct choice", '
+        '"rationale": "explanation if present, else empty string"}\n'
+        "Rules:\n"
+        "- Include ALL questions found, even if rationale is missing\n"
+        "- correct_letter must be a single capital letter A-D\n"
+        "- If you cannot determine the correct answer, skip that question\n"
+        "- Return ONLY the JSON array, no other text\n\n"
+        f"Document:\n{chunk}"
+    )
+    response = client.messages.create(
+        model="claude-sonnet-4-5-20251001",
+        max_tokens=8000,
+        messages=[{"role": "user", "content": parse_prompt}]
+    )
+    raw = response.content[0].text.strip() if response.content else "[]"
+    # Strip code fences
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"): raw = raw[4:]
+    try:
+        questions = json.loads(raw)
+    except Exception:
+        return "⚠️ Could not parse questions from this PDF. Try pasting the text directly or using the Board Q button to add questions manually."
+
+    if not questions:
+        return "⚠️ No questions found in this PDF. Make sure it contains A/B/C/D multiple choice questions."
+
+    saved = 0
+    for q in questions:
+        try:
+            topic = _normalize_topic(q.get("topic", ""))
+            question_text = q.get("question", "").strip()
+            choices = q.get("choices", {})
+            correct_letter = q.get("correct_letter", "").strip().upper()
+            correct_text = q.get("correct_text", choices.get(correct_letter, "")).strip()
+            rationale = q.get("rationale", "").strip()
+            if not question_text or not correct_letter or not choices:
+                continue
+            # Format matching the regex in /board-quiz/random
+            choice_lines = "\n".join(f"{l}) {choices[l]}" for l in ["A","B","C","D"] if choices.get(l))
+            content = (
+                f"**Q:** {question_text}\n"
+                f"{choice_lines}\n"
+                f"✅ **Correct: {correct_letter}) {correct_text}**\n"
+                + (f"**Rationale:** {rationale}\n" if rationale else "")
+                + f"*Source: {source_name}*"
+            )
+            summary = question_text[:60] + ("…" if len(question_text) > 60 else "")
+            db_save_note(f"[Board Q: {topic}]", content, summary, "boards", topic,
+                         ["board exam", "PMHNP", topic.lower()], [])
+            saved += 1
+        except Exception:
+            continue
+
+    if saved == 0:
+        return "⚠️ Found questions but couldn't save them — the format may be unusual. Try the Board Q button to add manually."
+
+    return (
+        f"✅ <strong>Saved {saved} board question{'s' if saved != 1 else ''}</strong> from {source_name}!<br><br>"
+        f"They're now in your drill pool with spaced repetition active. "
+        f"Head to <strong>⚡ Drill</strong> or <strong>🎯 Quick Win</strong> to start practicing. 📚"
+    )
+
 @app.post("/upload")
 async def upload_file(request: Request, file: UploadFile = File(...), note: str = Form(default="")):
     if not is_authenticated(request):
@@ -2157,6 +2266,12 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
+
+        # Board question PDFs → parse and save each question individually
+        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_board_questions(extracted, note):
+            reply = parse_and_save_board_questions(extracted, filename or "Practice PDF")
+            db_add_message("assistant", reply)
+            return {"reply": reply}
 
         # Save the file content as its own note
         file_reply = run_upload_agent(file_label, extracted, "")
