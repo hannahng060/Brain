@@ -546,7 +546,7 @@ TOOLS = [
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "boards"],
-                                "description": "personal=inner world/feelings/journal/relationships (subcategories: Reflections, Goals, Mental Health, Gratitude, Relationships), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam prep — practice questions organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                                "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam prep — practice questions organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["DSM-5","Medications","Assessments","Treatments","Lab Values","Neuroscience","Ethics & Law","Board Prep",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
@@ -554,7 +554,7 @@ TOOLS = [
                                          "Bootcamp","Case Consults","Weekly Calls","Practice Building","Community Notes","Clinical Pearls",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Social Media","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
-                                         "Reflections","Goals","Mental Health","Gratitude","Journal","Relationships",
+                                         "Reflections","Goals","Mental Health","Gratitude","Journal",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening",
                                          "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"],
                                 "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude/Journal/Relationships. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics"},
@@ -648,7 +648,7 @@ TOOLS = [
                                          "Neuro","Respiratory","Cardiac","GI","Renal","Hematology","Pharmacology","Procedures","Protocols & Guidelines",
                                          "Licensing","Credentialing","Billing & Insurance","Marketing","Platforms","Legal",
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
-                                         "Reflections","Goals","Mental Health","Gratitude","Relationships",
+                                         "Reflections","Goals","Mental Health","Gratitude",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening",
                                          "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "boards"]},
@@ -740,6 +740,9 @@ CATEGORIES:
 
 QUICK CAPTURE RULE:
 If the message starts with [QUICK CAPTURE — MUST SAVE], the user captured a quick thought on the go. You MUST save or update immediately — never call no_save. Strip the [QUICK CAPTURE] prefix from the content before saving. Apply all routing rules (personal/today/I/me → correct Daily Log section per Rule 4; clinical knowledge → new note; etc).
+
+⛔ PEOPLE CRM OVERRIDE — CHECK THIS BEFORE ANY ROUTING DECISION:
+If the message mentions a specific named person (other than Hannah herself) with ANY facts about them — their health, family, job, events, what they said, what they're going through — ALWAYS save to category="people". NEVER route to personal→Relationships, resources→Contacts, or lifestyle. The people category is the ONLY home for information about other people. This takes priority over all other routing rules.
 
 CRITICAL RULE — READ THIS FIRST:
 You MUST call a tool on EVERY single message. No exceptions. Choose exactly one:
@@ -1305,7 +1308,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
         "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
-        "personal: Reflections/Goals/Mental Health/Gratitude/Relationships. "
+        "personal: Reflections/Goals/Mental Health/Gratitude. "
         "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
         "Return ONLY the JSON, no other text."
     )
