@@ -74,6 +74,7 @@ def init_db():
             created_at  TIMESTAMP DEFAULT NOW()
         )
     """)
+    cur.execute("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS note_id INTEGER")
     # Migrate old category names to new ones
     cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
     conn.commit()
@@ -481,12 +482,12 @@ def build_profile_context() -> str:
 
     return "\n".join(lines)
 
-def db_save_quiz_result(topic: str, question: str, result: str) -> dict:
+def db_save_quiz_result(topic: str, question: str, result: str, note_id: int = None) -> dict:
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO quiz_results (topic, question, result) VALUES (%s, %s, %s) RETURNING id",
-        (topic, question[:200], result)
+        "INSERT INTO quiz_results (topic, question, result, note_id) VALUES (%s, %s, %s, %s) RETURNING id",
+        (topic, question[:200], result, note_id)
     )
     row = cur.fetchone()
     conn.commit(); cur.close(); conn.close()
@@ -688,7 +689,8 @@ TOOLS = [
                 "topic":    {"type": "string", "description": "The subcategory/topic of the question e.g. 'Medications', 'DSM-5', 'CBT', 'Trauma-Focused', 'Neuroscience'"},
                 "question": {"type": "string", "description": "First 150 characters of the question asked"},
                 "result":   {"type": "string", "enum": ["right","partial","wrong"],
-                             "description": "right=fully correct and complete, partial=correct concept but missing key details, wrong=incorrect or didn't know"}
+                             "description": "right=fully correct and complete, partial=correct concept but missing key details, wrong=incorrect or didn't know"},
+                "note_id":  {"type": "integer", "description": "The note ID of the board question that was answered (from NOTE_ID in the quiz message)"}
             },
             "required": ["topic", "question", "result"]
         }
@@ -1215,7 +1217,8 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_save_quiz_result(
             args.get("topic", "General"),
             args.get("question", ""),
-            args.get("result", "wrong")
+            args.get("result", "wrong"),
+            note_id=args.get("note_id")
         )
     elif name == "save_daily_focus":
         return db_save_daily_focus(
