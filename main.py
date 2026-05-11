@@ -762,6 +762,8 @@ When writing the content of a note, always end it with a brief, meaningful sente
 
 After calling save_note or update_note, you MUST follow up with a warm, brief text response: confirm what was saved, where it was filed. Do NOT call no_save or any other tool after saving — go straight to your text reply.
 
+⛔ FORMATTING: ALL responses must use clean HTML only — NO markdown, NO asterisks, NO pound signs (#), NO backticks for formatting. Use <strong> for bold, <br> for line breaks, <ul>/<li> for lists, <em> for italics. This applies to every single response including conversational replies, teaching content, and confirmations.
+
 RULES:
 1. SAVE EVERY MESSAGE THAT CONTAINS INFO. Call save_note immediately. Never skip. Never assume it was already saved.
 2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note. EXCEPTION: if the user explicitly says "add to my daily log" or "update my log for [date]", ALL described details go into that one Daily Log entry — do not split into separate notes.
@@ -2028,6 +2030,8 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
     meta_prompt = (
         f"An image was saved with this description: {description[:500]}\n"
         + (f"User note: {user_note}\n" if user_note else "")
+        + "ROUTING RULES:\n"
+        + "⛔ If this image contains ANY spiritual/faith content — devotions, Bible verses, scripture, sermons, prayers, worship, faith reflections — set category=lifestyle AND subcategory=Daily Log.\n"
         + "Return ONLY a JSON object: "
         '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden|boards", '
         '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
@@ -2051,10 +2055,11 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         summary, category, subcategory, tags = filename or "Image", "personal", None, []
 
     db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
+    loc = f"<strong>{category}</strong>" + (f" → {subcategory}" if subcategory else "")
     reply = (
-        f"📸 Saved! Photo stored in **{category}**"
-        + (f" → {subcategory}" if subcategory else "")
-        + f".\n\n**{summary}**\n\n{description[:300]}"
+        f"📸 Saved! Photo stored in {loc}.<br><br>"
+        f"<strong>{summary}</strong><br><br>"
+        + description[:300]
         + ("..." if len(description) > 300 else "")
     )
     db_add_message("assistant", reply)
