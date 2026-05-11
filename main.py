@@ -760,6 +760,7 @@ RULES:
 2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note. EXCEPTION: if the user explicitly says "add to my daily log" or "update my log for [date]", ALL described details go into that one Daily Log entry — do not split into separate notes.
 3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
 4. Personal messages about the day → ALWAYS update today's Daily Log using update_daily_log. NEVER create a separate Personal note. NEVER use update_note or get_today_logs for this — just call update_daily_log directly with date_ref, section, and text. It handles finding the note automatically. Route to the correct section:
+   - SPIRITUAL: devotions, scripture, prayer, faith reflections, Bible passages, anything from a devotional image/screenshot. ⛔ When an image is attached and it contains a devotion, Bible verse, or spiritual passage → ALWAYS log to SPIRITUAL in today's daily log, NEVER create a new note. Then engage in discussion about the passage.
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
    - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
@@ -1298,19 +1299,20 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         f"A file was uploaded: {file_label}\n"
         + (f"User note: {user_note}\n" if user_note else "")
         + f"\nContent:\n{truncated}\n\n"
+        "IMPORTANT: If this content is a devotion, Bible passage, scripture, or spiritual reading → set category=lifestyle, subcategory=Daily Log, and summary should be the passage title or first line.\n"
         "Return ONLY a JSON object with these fields:\n"
-        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle", '
+        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle|people|mom|garden|boards", '
         '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
         "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness, "
         "psychiatry=psychiatric conditions/meds/assessments/board prep, psychotherapy=therapy modalities, "
-        "icu=ICU nursing/medical, business=clinic building, resources=contacts/URLs/tools/future ideas.\n"
-        "Subcategories — psychiatry: Conditions/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. "
+        "icu=ICU nursing/medical, business=clinic building, resources=URLs/tools/future ideas, people=people CRM cards.\n"
+        "Subcategories — lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening. "
+        "personal: Reflections/Goals/Mental Health/Gratitude. "
+        "psychiatry: Conditions/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. "
         "psychotherapy: CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. "
         "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
-        "resources: Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. "
-        "personal: Reflections/Goals/Mental Health/Gratitude. "
-        "lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening.\n"
+        "resources: URLs & Links/Books/Courses/Tools/Future Ideas.\n"
         "Return ONLY the JSON, no other text."
     )
 
