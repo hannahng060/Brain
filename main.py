@@ -112,6 +112,20 @@ def _fix_ts(row: dict) -> dict:
         r["created_at"] = r["created_at"].isoformat() + "Z"
     return r
 
+_SPIRITUAL_KEYWORDS = {
+    "devotion", "devotional", "scripture", "psalm", "proverbs", "gospel",
+    "bible", "verse", "prayer", "sermon", "worship", "faith", "god", "jesus",
+    "christ", "holy spirit", "lord", "blessed", "salvation", "grace", "amen",
+    "matthew", "john", "luke", "mark", "romans", "corinthians", "ephesians",
+    "philippians", "genesis", "exodus", "isaiah", "jeremiah", "hebrews",
+    "revelation", "church", "ministry", "spiritual", "hymn", "righteousness"
+}
+
+def _is_spiritual(text: str) -> bool:
+    """Return True if the text looks like spiritual/faith content."""
+    lower = text.lower()
+    return sum(1 for kw in _SPIRITUAL_KEYWORDS if kw in lower) >= 2
+
 def db_search_notes(query: str, category: str = "all", limit: int = 30) -> list:
     conn = get_db()
     cur = conn.cursor()
@@ -769,7 +783,10 @@ RULES:
 2. When a message contains MULTIPLE types of content (e.g. journal story + food log, or event + people + meal) → call save_note MULTIPLE TIMES, once per content type. Never combine different life areas into one note. EXCEPTION: if the user explicitly says "add to my daily log" or "update my log for [date]", ALL described details go into that one Daily Log entry — do not split into separate notes.
 3. For diet/food logs → ALWAYS call search_notes first to check if a recipe or meal already exists. If found, use its saved nutrition data. Always include estimated calories, protein, carbs, fat in diet notes.
 4. Personal messages about the day → ALWAYS update today's Daily Log using update_daily_log. NEVER create a separate Personal note. NEVER use update_note or get_today_logs for this — just call update_daily_log directly with date_ref, section, and text. It handles finding the note automatically. Route to the correct section:
-   - SPIRITUAL: ANY faith-related content — devotions, scripture, Bible verses, sermons, spiritual thoughts, prayers, faith reflections, church notes, anything God/faith/worship related — whether typed, spoken, or from an attached image. ⛔ ALWAYS log to SPIRITUAL in today's daily log. NEVER create a separate note for spiritual content. Then engage warmly in discussion if appropriate.
+   - SPIRITUAL: ANY faith-related content — devotions, scripture, Bible verses, sermons, spiritual thoughts, prayers, faith reflections, church notes, anything God/faith/worship related — whether typed, spoken, or from an attached image. ⛔ ALWAYS log to SPIRITUAL in today's daily log. NEVER create a separate note for spiritual content.
+     → For devotion images: save ONLY the scripture reference + one key insight/takeaway to SPIRITUAL. Do NOT transcribe the full devotion text. Then engage warmly — teach, explain, and discuss the passage with the user.
+     → For quick spiritual thoughts typed by the user (e.g. "God is good", "I prayed today"): log briefly to SPIRITUAL, then respond warmly.
+     → The goal is DISCUSSION and LEARNING, not archiving. Keep the saved entry short.
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
    - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
@@ -2097,6 +2114,18 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
             description = extract_image_text(data, content_type)
             if not description.strip():
                 raise HTTPException(status_code=400, detail="Could not read this image.")
+            # Spiritual content → skip auto-save, route through chat for discussion
+            if _is_spiritual(description):
+                user_msg = (
+                    f"[DEVOTION IMAGE — do NOT save the full text, do NOT save the image. "
+                    f"Read this devotion and teach me about it. Have a warm discussion with me. "
+                    f"Save only the key scripture reference and one-line insight to today's daily log SPIRITUAL section.]\n\n"
+                    f"{description}"
+                    + (f"\n\nMy note: {note.strip()}" if note.strip() else "")
+                )
+                db_add_message("user", f"[Attached devotion image: {filename}]")
+                result = run_agent(user_msg)
+                return {"reply": result["reply"]}
             reply = save_image_note(data, content_type, filename or "screenshot", description, note.strip())
             return {"reply": reply}
         else:
