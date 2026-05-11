@@ -29,7 +29,7 @@
       --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
       --mom:           #c0770a; --mom-bg:           #fff8e1;
       --garden: #2e7d32; --garden-bg: #e8f5e9;
-      --boards: #1a237e; --boards-bg: #e8eaf6;
+      --boards: #2e5d56; --boards-bg: #e4edeb;
       --people: #d45d00; --people-bg: #fff3e0;
     }
     html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
@@ -423,7 +423,7 @@
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">📅 It's Sunday — weekly review time</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="startWeeklyReview()" style="padding:9px 16px;background:#667eea;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📊 Review Last Week</button>
-            <button onclick="toggleWeeklyPlan()" style="padding:9px 16px;background:none;border:1.5px solid #667eea;color:#667eea;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📆 Plan Next Week</button>
+            <button onclick="toggleWeeklyPlan()" style="padding:9px 16px;background:none;border:1.5px solid var(--primary);color:var(--primary);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📆 Plan Next Week</button>
           </div>
           <div id="weekly-plan-input" style="display:none;margin-top:12px">
             <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tell Brain your schedule — work days, days off, appointments, anything coming up</div>
@@ -3005,7 +3005,7 @@
     var dc = $('drill-content');
     if (q.rationale) {
       var rat = document.createElement('div');
-      rat.style.cssText = 'background:#1a237e;border-left:3px solid #5c6bc0;padding:12px 14px;border-radius:8px;color:#e8eaf6;font-size:14px;margin-top:10px;line-height:1.6';
+      rat.style.cssText = 'background:#2e5d56;border-left:3px solid #4a8c7f;padding:12px 14px;border-radius:8px;color:#e4edeb;font-size:14px;margin-top:10px;line-height:1.6';
       rat.innerHTML = '<strong>' + (correct ? '✅ Correct! ' : '❌ Incorrect — ') + '</strong>' + esc(q.rationale);
       dc.appendChild(rat);
     }
