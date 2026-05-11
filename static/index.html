@@ -1663,10 +1663,14 @@
     msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
   }
 
-  function showTyping(){
+  function showTyping(msg){
     const msgs=$('messages'),div=document.createElement('div');
     div.className='msg brain typing'; div.id='typing-indicator';
-    div.innerHTML='<div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+    if(msg) {
+      div.innerHTML=`<div class="bubble" style="font-size:13px;color:#666;gap:8px;display:flex;align-items:center;"><span>${msg}</span></div>`;
+    } else {
+      div.innerHTML='<div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+    }
     msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
   }
   function removeTyping(){ const t=$('typing-indicator'); if(t)t.remove(); }
@@ -1770,6 +1774,14 @@
         const form = new FormData();
         form.append('file', _attachedFile);
         form.append('note', text);
+        // Study guides take time — show a more specific loading message
+        const isPDF = _attachedFile.name.toLowerCase().endsWith('.pdf');
+        const noteLC = text.toLowerCase();
+        const isStudyGuide = isPDF && (noteLC.includes('study guide') || noteLC.includes('generate question') || noteLC.includes('sarah') || _attachedFile.size > 500000);
+        if (isStudyGuide) {
+          removeTyping();
+          showTyping('🧠 Generating ANCC board questions from your study guide… this takes about 60–90 seconds for a large PDF. Hang tight!');
+        }
         res = await fetch('/upload', {method:'POST', body: form});
         clearFile();
       } else {

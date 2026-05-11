@@ -2258,6 +2258,109 @@ def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
         f"Head to <strong>⚡ Drill</strong> or <strong>🎯 Quick Win</strong> to start practicing. 📚"
     )
 
+def _looks_like_study_guide(text: str, user_note: str) -> bool:
+    """Detect if content is a study guide / clinical notes (not pre-made Q&A)."""
+    note_lower = (user_note or "").lower()
+    if any(kw in note_lower for kw in ["study guide", "studyguide", "generate question", "make question", "create question", "clinical notes", "sarah"]):
+        return True
+    # Study guides have lots of bullets and few A) B) C) D) choices
+    bullet_count = len(re.findall(r'^\s*[•\-\*]', text, re.MULTILINE))
+    choice_count = len(re.findall(r'\b[A-D]\)', text))
+    return bullet_count > 20 and choice_count < 8
+
+
+def generate_questions_from_study_guide(extracted: str, source_name: str) -> str:
+    """
+    Take a clinical study guide (bullet points / prose), chunk it, generate
+    ANCC-style multiple-choice questions, and save them to the board drill bank.
+    """
+    CHUNK_SIZE = 5000  # chars per Claude call
+    SYSTEM_MSG = (
+        "You are an expert ANCC PMHNP-BC board exam question writer. "
+        "Given clinical study guide content (bullet points, notes, pearls), "
+        "generate high-quality ANCC-style multiple-choice questions that test clinical reasoning.\n\n"
+        "Rules:\n"
+        "- Each question must have exactly 4 choices (A, B, C, D)\n"
+        "- One clearly correct answer, distractors should be plausible\n"
+        "- Include a 2-3 sentence rationale explaining the correct answer\n"
+        "- Assign each question to ONE of these 6 ANCC categories: "
+        "Assessment & Diagnosis | Psychopharmacology | Psychotherapy | "
+        "Medical Management | Special Populations | Professional & Ethics\n"
+        "- Skip content that is purely test-taking strategy, formatting, or page numbers\n"
+        "- Generate 3-5 questions per chunk depending on clinical content density\n"
+        "- If there is no testable clinical content, return an empty array []\n\n"
+        "Return ONLY valid JSON — an array of objects:\n"
+        '[{"topic":"Psychopharmacology","question":"A 34-year-old...","choices":{"A":"...","B":"...","C":"...","D":"..."},'
+        '"correct_letter":"B","correct_text":"Lithium","rationale":"Lithium is first-line..."}]'
+    )
+
+    # Split into chunks
+    chunks = []
+    for i in range(0, len(extracted), CHUNK_SIZE):
+        chunk = extracted[i:i + CHUNK_SIZE].strip()
+        if len(chunk) > 200:  # skip tiny fragments
+            chunks.append(chunk)
+
+    if not chunks:
+        return "⚠️ Could not extract enough content from this study guide."
+
+    total_saved = 0
+    topic_tally: dict = {}
+
+    for idx, chunk in enumerate(chunks):
+        try:
+            resp = client.messages.create(
+                model="claude-sonnet-4-5-20251001",
+                max_tokens=3000,
+                system=SYSTEM_MSG,
+                messages=[{"role": "user", "content": f"Chunk {idx+1}/{len(chunks)}:\n\n{chunk}"}],
+            )
+            raw = resp.content[0].text.strip() if resp.content else "[]"
+            # Strip code fences
+            raw = re.sub(r'^```json\s*', '', raw)
+            raw = re.sub(r'```\s*$', '', raw).strip()
+            questions = json.loads(raw)
+        except Exception:
+            continue  # skip bad chunks silently
+
+        for q in questions:
+            try:
+                topic = _normalize_topic(q.get("topic", ""))
+                question_text = q.get("question", "").strip()
+                choices = q.get("choices", {})
+                correct_letter = q.get("correct_letter", "").strip().upper()
+                correct_text = q.get("correct_text", choices.get(correct_letter, "")).strip()
+                rationale = q.get("rationale", "").strip()
+                if not question_text or not correct_letter or not choices:
+                    continue
+                choice_lines = "\n".join(f"{l}) {choices[l]}" for l in ["A","B","C","D"] if choices.get(l))
+                content = (
+                    f"**Q:** {question_text}\n"
+                    f"{choice_lines}\n"
+                    f"✅ **Correct: {correct_letter}) {correct_text}**\n"
+                    + (f"**Rationale:** {rationale}\n" if rationale else "")
+                    + f"*Source: {source_name}*"
+                )
+                summary = question_text[:60] + ("…" if len(question_text) > 60 else "")
+                db_save_note(f"[Study Guide Q: {topic}]", content, summary, "boards", topic,
+                             ["board exam", "PMHNP", "study-guide", topic.lower().replace(" & ","-").replace(" ","-")], [])
+                total_saved += 1
+                topic_tally[topic] = topic_tally.get(topic, 0) + 1
+            except Exception:
+                continue
+
+    if total_saved == 0:
+        return "⚠️ Processed the study guide but couldn't generate questions. The content may be too introductory or strategy-focused."
+
+    breakdown = " | ".join(f"{t}: {n}" for t, n in sorted(topic_tally.items(), key=lambda x: -x[1]))
+    return (
+        f"✅ <strong>Generated {total_saved} board questions</strong> from <em>{source_name}</em>!<br><br>"
+        f"<strong>By category:</strong> {breakdown}<br><br>"
+        f"Spaced repetition is active — your weakest topics will appear most often. "
+        f"Head to <strong>⚡ Drill</strong> to start practicing. 🎯"
+    )
+
+
 @app.get("/people/upcoming")
 async def people_upcoming(request: Request):
     """Find people notes with birthdays or events in the next 7 days."""
@@ -2399,6 +2502,12 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         # Board question PDFs → parse and save each question individually
         if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_board_questions(extracted, note):
             reply = parse_and_save_board_questions(extracted, filename or "Practice PDF")
+            db_add_message("assistant", reply)
+            return {"reply": reply}
+
+        # Study guide PDFs → generate ANCC questions from clinical content
+        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_study_guide(extracted, note):
+            reply = generate_questions_from_study_guide(extracted, filename or "Study Guide")
             db_add_message("assistant", reply)
             return {"reply": reply}
 
