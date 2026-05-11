@@ -1111,7 +1111,8 @@ Tag the note with the topic name as a tag.
        4. If no note exists → CREATE a new note using the full template below. Fill in only what is known; leave other fields as "—" so they can be filled later.
        5. ⛔ ALWAYS use category="people" — NEVER use category="resources" or subcategory="Contacts". People cards belong ONLY in the people category.
           subcategory = Family / Friends / Work / Community (infer from context; default to Friends)
-       6. Use the full template — even if only one field is known:
+       6. ⛔ The note summary (title) MUST be the person's name — first name only if that's all that's known, or full name. NEVER use any other text as the summary. Not a description, not a topic, not a sentence — just the name.
+       7. Use the full template — even if only one field is known:
 
        <div style="font-size:14px;line-height:1.8">
        <div style="font-weight:700;font-size:17px;margin-bottom:2px">[Full Name]</div>
