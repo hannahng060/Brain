@@ -487,6 +487,11 @@
       <span id="tag-filter-label"></span>
       <button id="tag-filter-clear" onclick="clearTagFilter()" title="Clear tag filter">✕</button>
     </div>
+    <div style="padding:0 16px 10px;position:sticky;top:0;background:var(--bg);z-index:2">
+      <input id="notes-search" type="text" placeholder="🔍 Search notes..."
+        oninput="filterNotesBySearch(this.value)"
+        style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;box-sizing:border-box">
+    </div>
     <div id="notes-list"></div>
   </div>
 
@@ -1041,10 +1046,64 @@
 
       // Garden nudges
       gardenNudge().forEach(n => chips.push(n));
+
+      // Category balance nudge — remind if key categories haven't had a note in 7+ days
+      const _now = new Date();
+      const checkCats = [
+        { cat: 'business', label: '💼 Clinic', msg: "No clinic notes in a while — anything to capture?", fn: "jumpToCategory('business')" },
+        { cat: 'people',   label: '👥 People', msg: "Haven't updated your People CRM in a while.", fn: "jumpToCategory('people')" },
+        { cat: 'boards',   label: '📚 Boards', msg: "No board prep notes recently — keep that momentum!", fn: "jumpToCategory('boards')" }
+      ];
+      checkCats.forEach(function(c) {
+        const recent = notes.filter(n => n.category === c.cat);
+        if (!recent.length) return;
+        const latest = new Date(recent[0].created_at);
+        const daysSince = (_now - latest) / (1000 * 60 * 60 * 24);
+        if (daysSince >= 7) {
+          chips.push({ text: c.label + ' — ' + c.msg, color: '#795548', fn: c.fn });
+        }
+      });
+
       $('dash-greeting').textContent = `${greeting}, Hannah 👋`;
       $('dash-nudges').innerHTML = chips.map(c =>
         `<button onclick="${c.fn}" style="background:none;border:1.5px solid ${c.color};color:${c.color};border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">${c.text}</button>`
       ).join('');
+
+      // Async: birthday/event reminders
+      (async function() {
+        try {
+          const upcomingRes = await fetch('/people/upcoming');
+          if (upcomingRes.ok) {
+            const upcoming = await upcomingRes.json();
+            upcoming.forEach(function(p) {
+              const when = p.days_until === 0 ? 'TODAY' : p.days_until === 1 ? 'tomorrow' : `in ${p.days_until} days`;
+              const btn = document.createElement('button');
+              btn.onclick = function() { jumpToCategory('people'); };
+              btn.style = 'background:none;border:1.5px solid #e91e63;color:#e91e63;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
+              btn.textContent = `💛 ${p.name} — ${p.event} ${when} (${p.date})`;
+              $('dash-nudges').appendChild(btn);
+            });
+          }
+        } catch(e) {}
+      })();
+
+      // Async: CRM follow-up reminders
+      (async function() {
+        try {
+          const followupRes = await fetch('/people/followup');
+          if (followupRes.ok) {
+            const stale = await followupRes.json();
+            if (stale.length) {
+              const names = stale.slice(0,3).map(p => p.name).join(', ');
+              const btn = document.createElement('button');
+              btn.onclick = function() { jumpToCategory('people'); };
+              btn.style = 'background:none;border:1.5px solid #7b1fa2;color:#7b1fa2;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
+              btn.textContent = `👥 Check in with: ${names}`;
+              $('dash-nudges').appendChild(btn);
+            }
+          }
+        } catch(e) {}
+      })();
 
       const personalNotes = notes.filter(n => n.category === 'personal');
       const clinicalNotes = notes.filter(n => ['psychiatry','psychotherapy','icu'].includes(n.category));
@@ -1163,9 +1222,47 @@
     }
   }
 
+  function filterNotesBySearch(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) { renderNotes(allNotes); return; }
+    const filtered = allNotes.filter(n =>
+      (n.content && n.content.toLowerCase().includes(q)) ||
+      (n.summary && n.summary.toLowerCase().includes(q)) ||
+      (n.subcategory && n.subcategory.toLowerCase().includes(q))
+    );
+    // Temporarily override the notes-list with search results
+    const el = $('notes-count');
+    if (el) el.textContent = `${filtered.length} result${filtered.length!==1?'s':''}`;
+    if (!filtered.length) {
+      $('notes-list').innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>No notes match "${esc(query)}".</p></div>`;
+      return;
+    }
+    $('notes-list').innerHTML = filtered.map((n,i) => {
+      const tags = tryParse(n.tags);
+      const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="note-card ${n.category||''}" onclick="openNoteDirectly(${JSON.stringify(n).replace(/"/g,'&quot;')})">
+        <div class="note-card-header">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="badge ${n.category}">${n.category}</span>
+            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="note-date">${date}</span>
+            <button class="delete-btn" onclick="deleteNote(event,${n.id})" title="Delete">🗑</button>
+          </div>
+        </div>
+        <div class="note-summary">${esc(n.summary||'')}</div>
+        ${tags.length?`<div class="note-tags">${tags.map(t=>`<span class="tag" onclick="filterByTag('${esc(t)}',event)">${esc(t)}</span>`).join('')}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+
   function filterNotes(cat) {
     currentCat = cat;
     currentSubcat = 'all';
+    // Clear search input when category changes
+    const searchEl = $('notes-search');
+    if (searchEl) searchEl.value = '';
     document.querySelectorAll('.cat-pill').forEach(p=>{
       p.classList.toggle('active', p.dataset.cat===cat);
     });

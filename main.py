@@ -2215,6 +2215,92 @@ def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
         f"Head to <strong>⚡ Drill</strong> or <strong>🎯 Quick Win</strong> to start practicing. 📚"
     )
 
+@app.get("/people/upcoming")
+async def people_upcoming(request: Request):
+    """Find people notes with birthdays or events in the next 7 days."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, summary, content, created_at
+        FROM notes
+        WHERE category = 'people'
+        ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+
+    from datetime import timedelta
+    today = datetime.now()
+    upcoming = []
+
+    for row in rows:
+        content = row['content'] or ''
+        date_patterns = re.findall(
+            r'(Birthday|Anniversary|Surgery|Event|Appointment|Follow.?up)[:\s]+([A-Za-z]+ \d{1,2}(?:,? \d{4})?)',
+            content, re.IGNORECASE
+        )
+        for event_type, date_str in date_patterns:
+            try:
+                for year in [today.year, today.year + 1]:
+                    try:
+                        clean = re.sub(r',?\s*\d{4}', '', date_str).strip()
+                        dt = datetime.strptime(f"{clean} {year}", "%B %d %Y")
+                        days_until = (dt.date() - today.date()).days
+                        if 0 <= days_until <= 7:
+                            upcoming.append({
+                                'name': row['summary'],
+                                'event': event_type,
+                                'date': date_str,
+                                'days_until': days_until,
+                                'note_id': row['id']
+                            })
+                            break
+                    except ValueError:
+                        continue
+            except Exception:
+                continue
+
+    return sorted(upcoming, key=lambda x: x['days_until'])
+
+
+@app.get("/people/followup")
+async def people_followup(request: Request):
+    """People notes not updated in 14+ days."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT summary, created_at
+        FROM notes
+        WHERE category = 'people'
+        ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+
+    today = datetime.now()
+    seen = {}
+    for row in [_fix_ts(r) for r in rows]:
+        name = row['summary']
+        if name not in seen:
+            seen[name] = row['created_at']
+
+    stale = []
+    for name, last_updated in seen.items():
+        try:
+            dt = datetime.fromisoformat(last_updated.replace('Z', ''))
+            days = (today - dt).days
+            if days >= 14:
+                stale.append({'name': name, 'days_since': days})
+        except Exception:
+            continue
+
+    return sorted(stale, key=lambda x: -x['days_since'])[:5]
+
+
 @app.post("/upload")
 async def upload_file(request: Request, file: UploadFile = File(...), note: str = Form(default="")):
     if not is_authenticated(request):
