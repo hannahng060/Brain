@@ -553,6 +553,7 @@
       <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Ready to practice?</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="startBoardQuiz()" style="flex:1;padding:12px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">🎯 Quiz me on Board Questions</button>
+        <button onclick="startDrill()" style="padding:12px 16px;background:#1a1a2e;color:#bb86fc;border:1.5px solid #bb86fc;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" title="5 quick questions, no chat">⚡ 5-min Drill</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;" id="boardq-topic-quiz-row">
         <button class="mood-btn" onclick="startBoardQuizByTopic('Assessment &amp; Diagnosis')">🧠 Assessment</button>
@@ -2745,9 +2746,11 @@
         return;
       }
       // Build locked-answer message
+      window._boardNoteId = data.note_id || null;
       var choiceLines = ['A','B','C','D'].filter(function(l){ return data.choices[l]; })
         .map(function(l){ return l + ') ' + data.choices[l]; }).join('\n');
       var msg = '[BOARD QUIZ - SAVED QUESTION]\n'
+        + 'NOTE_ID: ' + data.note_id + '\n'
         + 'Topic: ' + data.topic + '\n'
         + 'Question: ' + data.question + '\n'
         + choiceLines + '\n'
@@ -2762,6 +2765,116 @@
 
   function startBoardQuiz() { _fetchAndStartQuiz(null); }
   function startBoardQuizByTopic(topic) { _fetchAndStartQuiz(topic); }
+
+  // ── 5-Minute Drill ──────────────────────────────────────────────────────
+  var _drillQueue = [], _drillIndex = 0, _drillResults = [];
+
+  async function startDrill() {
+    _drillQueue = []; _drillResults = []; _drillIndex = 0;
+    var overlay = $('drill-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    $('drill-content').innerHTML = '<div style="color:white;font-size:16px">Loading questions…</div>';
+    for (var i = 0; i < 5; i++) {
+      try {
+        var r = await fetch('/board-quiz/random');
+        var d = await r.json();
+        if (d.found) _drillQueue.push(d);
+      } catch(e) {}
+    }
+    if (!_drillQueue.length) {
+      overlay.style.display = 'none';
+      showToast('No saved questions yet — add some board questions first!');
+      return;
+    }
+    _showDrillQuestion();
+  }
+
+  function _showDrillQuestion() {
+    if (_drillIndex >= _drillQueue.length) { _showDrillScore(); return; }
+    var q = _drillQueue[_drillIndex];
+    var letters = ['A','B','C','D','E'].filter(function(l){ return q.choices[l]; });
+    var btns = letters.map(function(l) {
+      return '<button id="drill-btn-' + l + '" onclick="_drillAnswer(\'' + l + '\')" style="'
+        + 'width:100%;text-align:left;padding:12px 16px;margin:4px 0;background:#2a2a2a;border:1.5px solid #444;'
+        + 'border-radius:10px;color:white;font-size:14px;cursor:pointer;font-family:inherit;transition:background 0.15s">'
+        + '<strong>' + l + ')</strong> ' + q.choices[l] + '</button>';
+    }).join('');
+    $('drill-content').innerHTML =
+      '<div style="color:#aaa;font-size:12px;margin-bottom:8px">Question ' + (_drillIndex+1) + ' of ' + _drillQueue.length
+        + (q.topic ? ' · <span style="color:#bb86fc">' + q.topic + '</span>' : '') + '</div>'
+      + '<div style="background:#1e1e1e;border-radius:12px;padding:16px;margin-bottom:12px">'
+      + '<div style="color:white;font-size:15px;font-weight:600;line-height:1.5">' + esc(q.question) + '</div></div>'
+      + btns;
+  }
+
+  async function _drillAnswer(chosen) {
+    var q = _drillQueue[_drillIndex];
+    var correct = chosen === q.correct_letter;
+    _drillResults.push({ topic: q.topic || 'General', correct: correct });
+
+    // Save result
+    try {
+      await fetch('/quiz/save-result', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ topic: q.topic || '', question: q.question || '', result: correct ? 'right' : 'wrong', note_id: q.note_id })
+      });
+    } catch(e) {}
+
+    // Show feedback on buttons
+    ['A','B','C','D','E'].forEach(function(l) {
+      var btn = $('drill-btn-' + l);
+      if (!btn) return;
+      btn.disabled = true;
+      if (l === q.correct_letter) btn.style.cssText += ';background:#1b5e20;border-color:#4caf50;color:white';
+      else if (l === chosen && !correct) btn.style.cssText += ';background:#b71c1c;border-color:#f44336;color:white';
+    });
+
+    // Show rationale briefly then advance
+    if (q.rationale) {
+      var rat = document.createElement('div');
+      rat.style.cssText = 'background:#1a237e;border-left:3px solid #5c6bc0;padding:10px 12px;border-radius:8px;color:#e8eaf6;font-size:13px;margin-top:8px;line-height:1.5';
+      rat.innerHTML = (correct ? '✅ ' : '❌ ') + esc(q.rationale);
+      $('drill-content').appendChild(rat);
+    }
+
+    setTimeout(function() {
+      _drillIndex++;
+      _showDrillQuestion();
+    }, correct ? 1200 : 2200);
+  }
+
+  function _showDrillScore() {
+    var total = _drillResults.length;
+    var rights = _drillResults.filter(function(r){ return r.correct; }).length;
+    var pct = Math.round(rights / total * 100);
+    var emoji = pct >= 80 ? '🎉' : pct >= 60 ? '💪' : '📚';
+    var msg = pct >= 80 ? 'Great work!' : pct >= 60 ? 'Keep going!' : 'Keep studying!';
+
+    // Topic breakdown
+    var byTopic = {};
+    _drillResults.forEach(function(r) {
+      if (!byTopic[r.topic]) byTopic[r.topic] = {right:0, total:0};
+      byTopic[r.topic].total++;
+      if (r.correct) byTopic[r.topic].right++;
+    });
+    var topicRows = Object.keys(byTopic).map(function(t) {
+      var d = byTopic[t]; var tp = Math.round(d.right/d.total*100);
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #333;font-size:13px">'
+        + '<span style="color:#ccc">' + esc(t) + '</span>'
+        + '<span style="color:' + (tp>=80?'#4caf50':tp>=50?'#ff9800':'#f44336') + '">' + d.right + '/' + d.total + '</span></div>';
+    }).join('');
+
+    $('drill-content').innerHTML =
+      '<div style="text-align:center;padding:16px 0">'
+      + '<div style="font-size:48px">' + emoji + '</div>'
+      + '<div style="font-size:28px;font-weight:700;color:white;margin:8px 0">' + rights + '/' + total + '</div>'
+      + '<div style="font-size:15px;color:#aaa">' + msg + ' (' + pct + '%)</div>'
+      + '</div>'
+      + (topicRows ? '<div style="background:#1e1e1e;border-radius:10px;padding:8px 12px;margin:12px 0">' + topicRows + '</div>' : '')
+      + '<button onclick="$$(\'drill-overlay\').style.display=\'none\'" style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px">Done</button>'
+      + '<button onclick="startDrill()" style="width:100%;padding:12px;background:#2a2a2a;color:#ccc;border:1.5px solid #444;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px">⚡ Drill Again</button>';
+  }
 
   // ── Finance Panel ─────────────────────────────────────────────────────
   var _finChecked = new Set();
@@ -3398,6 +3511,15 @@
       </div>
     </div>
     <div id="fp-list"></div>
+  </div>
+</div>
+
+<!-- ── 5-Minute Drill Overlay ─────────────────────────────────────────── -->
+<div id="drill-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+  <div style="background:#121212;border-radius:20px;width:100%;max-width:480px;padding:24px;position:relative;max-height:90vh;overflow-y:auto;">
+    <button onclick="$('drill-overlay').style.display='none'" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1">×</button>
+    <div style="font-size:13px;font-weight:700;color:#bb86fc;letter-spacing:1px;margin-bottom:16px">⚡ 5-MIN DRILL</div>
+    <div id="drill-content"></div>
   </div>
 </div>
 

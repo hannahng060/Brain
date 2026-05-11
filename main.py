@@ -1477,21 +1477,40 @@ async def last_error():
 
 @app.get("/board-quiz/random")
 async def board_quiz_random(request: Request, topic: str = None):
-    """Return a random saved board question with locked correct answer."""
+    """Return a spaced-repetition-weighted board question."""
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     conn = get_db()
     cur = conn.cursor()
-    if topic:
-        cur.execute(
-            """SELECT id, content, subcategory FROM notes
-               WHERE category='boards' AND subcategory ILIKE %s
-               ORDER BY RANDOM() LIMIT 1""", (f"%{topic}%",))
-    else:
-        cur.execute(
-            """SELECT id, content, subcategory FROM notes
-               WHERE category='boards'
-               ORDER BY RANDOM() LIMIT 1""")
+    # Spaced repetition: weight questions by last result + recency
+    # Never seen=100, wrong=80, partial=60, right>7d=40, right>3d=20, right recently=5
+    topic_filter = "AND n.subcategory ILIKE %s" if topic else ""
+    params = [f"%{topic}%"] if topic else []
+    cur.execute(f"""
+        WITH last_results AS (
+            SELECT DISTINCT ON (note_id) note_id, result, created_at
+            FROM quiz_results
+            WHERE note_id IS NOT NULL
+            ORDER BY note_id, created_at DESC
+        ),
+        scored AS (
+            SELECT n.id, n.content, n.subcategory,
+                CASE
+                    WHEN lr.note_id IS NULL THEN 100
+                    WHEN lr.result = 'wrong'   THEN 80
+                    WHEN lr.result = 'partial' THEN 60
+                    WHEN lr.result = 'right' AND lr.created_at < NOW() - INTERVAL '7 days' THEN 40
+                    WHEN lr.result = 'right' AND lr.created_at < NOW() - INTERVAL '3 days' THEN 20
+                    ELSE 5
+                END AS weight
+            FROM notes n
+            LEFT JOIN last_results lr ON lr.note_id = n.id
+            WHERE n.category = 'boards' {topic_filter}
+        )
+        SELECT id, content, subcategory FROM scored
+        ORDER BY RANDOM() * weight DESC
+        LIMIT 1
+    """, params)
     row = cur.fetchone()
     cur.close(); conn.close()
     if not row:
@@ -1535,6 +1554,20 @@ async def board_quiz_random(request: Request, topic: str = None):
         "rationale": rationale,
         "source": source
     }
+
+@app.post("/quiz/save-result")
+async def save_quiz_result_direct(request: Request):
+    """Direct result save for drill mode — bypasses Brain AI."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    result = db_save_quiz_result(
+        body.get("topic", ""),
+        body.get("question", ""),
+        body.get("result", "wrong"),
+        body.get("note_id")
+    )
+    return result
 
 @app.get("/weekly-plan")
 async def get_weekly_plan(request: Request):
