@@ -20,10 +20,10 @@
       --border: #cfd8cd;
       --radius: 14px;
       --psychiatry:    #1565c0; --psychiatry-bg:    #e3f2fd;
-      --psychotherapy: #4527a0; --psychotherapy-bg: #ede7f6;
+      --psychotherapy: #4a7c74; --psychotherapy-bg: #e4edeb;
       --icu:           #b71c1c; --icu-bg:           #ffebee;
       --business:      #2e7d32; --business-bg:      #e8f5e9;
-      --resources:     #6a1b9a; --resources-bg:     #f3e5f5;
+      --resources:     #5a7a72; --resources-bg:     #e8eeec;
       --personal:      #880e4f; --personal-bg:      #fce4ec;
       --lifestyle:     #00796b; --lifestyle-bg:     #e0f2f1;
       --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
@@ -279,7 +279,7 @@
     .note-subcat { font-size:11px; color:var(--muted); margin-top:2px; }
     .tag { cursor:pointer; transition:background .15s; }
     .tag:hover { background:var(--primary-light); color:var(--primary); }
-    #tag-filter-bar { display:none; align-items:center; gap:8px; padding:10px 16px; background:#ebebff; border-bottom:1px solid var(--border); flex-shrink:0; }
+    #tag-filter-bar { display:none; align-items:center; gap:8px; padding:10px 16px; background:var(--primary-light); border-bottom:1px solid var(--border); flex-shrink:0; }
     #tag-filter-bar.visible { display:flex; }
     #tag-filter-label { font-size:13px; font-weight:600; color:var(--primary); flex:1; }
     #tag-filter-clear { background:none; border:none; cursor:pointer; font-size:18px; color:var(--primary); padding:0; }
@@ -1126,7 +1126,7 @@
               const names = stale.slice(0,3).map(p => p.name).join(', ');
               const btn = document.createElement('button');
               btn.onclick = function() { jumpToCategory('people'); };
-              btn.style = 'background:none;border:1.5px solid #7b1fa2;color:#7b1fa2;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
+              btn.style = 'background:none;border:1.5px solid var(--primary);color:var(--primary);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left';
               btn.textContent = `👥 Check in with: ${names}`;
               $('dash-nudges').appendChild(btn);
             }
