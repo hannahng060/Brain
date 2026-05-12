@@ -2266,15 +2266,6 @@
     if (badge) { badge.textContent = unchecked || ''; badge.style.display = unchecked ? 'flex' : 'none'; }
   }
 
-  // Which section each checklist item logs to (omitted = DAILY ROUTINE)
-  var _CL_ITEM_SECTIONS = {
-    '🥤 Smoothie':         'MEALS',
-    '🥬 Green juice':      'MEALS',
-    '💊 Vitamin':          'MEDICATIONS',
-    '🏃 Exercise':         'ACTIVITIES',
-    '🪴 Water the plants': 'ACTIVITIES',
-  };
-
   function clToggle(item) {
     const done = _clGetDone();
     const wasChecked = done.has(item);
@@ -2282,16 +2273,6 @@
     _clSetDone(done);
     _clRender();
     _clUpdateNudges();
-    if (!wasChecked) {
-      const section = _CL_ITEM_SECTIONS[item];
-      if (section === 'MEALS')       { _clLogMeal(item); }
-      else if (section === 'MEDICATIONS') { _clLogMedication(item); }
-      else if (section === 'ACTIVITIES')  { _clLogActivity(item); }
-      else {
-        // Custom added items → ACTIVITIES
-        _clLogActivity(item);
-      }
-    }
   }
   function clToggleEdit() {
     const panel = $('cl-panel');
@@ -2334,40 +2315,6 @@
     const overlay = $('cl-overlay');
     if (panel) panel.classList.remove('open');
     if (overlay) overlay.style.display = 'none';
-  }
-
-  async function _clLogMeal(item) {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Meal log: ' + item + ' at ' + timeStr, local_date: _localLongDate()})
-      });
-    } catch(e) { /* silent */ }
-  }
-
-  async function _clLogMedication(item) {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Supplement log: Took ' + item + ' at ' + timeStr, local_date: _localLongDate()})
-      });
-    } catch(e) { /* silent */ }
-  }
-
-  async function _clLogActivity(item) {
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: 'Activity completed: ' + item, local_date: _localLongDate()})
-      });
-    } catch(e) { /* silent */ }
   }
 
   // Refresh checklist every 5 min (time-based nudges change)
