@@ -611,8 +611,8 @@ TOOLS = [
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
-                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"],
-                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics"},
+                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Exam Structure"],
+                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law/Board Prep. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Exam Structure (exam breakdown, ANCC question counts, test structure, time limits, passing scores, test-taking strategy)"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -705,7 +705,7 @@ TOOLS = [
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
-                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"]},
+                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Exam Structure"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "boards"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
@@ -801,10 +801,31 @@ CATEGORIES:
 - icu           → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
 - business      → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
 - resources     → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
-- boards        → ANCC PMHNP-BC board exam prep — practice questions organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics)
+- boards        → ANCC PMHNP-BC board exam prep — practice questions organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Exam Structure)
 
 QUICK CAPTURE RULE:
 If the message starts with [QUICK CAPTURE — MUST SAVE], the user captured a quick thought on the go. You MUST save or update immediately — never call no_save. Strip the [QUICK CAPTURE] prefix from the content before saving. Apply all routing rules (personal/today/I/me → correct Daily Log section per Rule 4; clinical knowledge → new note; etc).
+
+LECTURE DUMP RULE — READ THIS BEFORE SAVING ANY CLINICAL NOTE:
+When Hannah is in a class, review session, or rapid study session, she pastes content in bursts. Before creating a NEW psychiatry/psychotherapy/boards note, ALWAYS call search_notes first with the topic keywords to check if a note on the same subject was saved in the last 2 hours. If a match is found:
+- UPDATE the existing note by appending the new content — do NOT create a duplicate
+- Signal: "Added to your existing [topic] note."
+If no match is found, create a new note as usual.
+This applies especially to: prevention levels, neurotransmitter pathways, DSM criteria, medication classes, screening tools, or any topic that clearly continues a previous paste.
+Exception: if the new content is a completely different subtopic (e.g. previous note was about dopamine, new content is about eating disorders), create a new note.
+
+CLINICAL TABLE & IMAGE ROUTING — apply when content contains a table, chart, or structured reference data:
+- Lab values, reference ranges, metabolic panels → psychiatry → Lab Values
+- BMI tables, weight/height charts, dosing tables, treatment algorithms → psychiatry → Treatments
+- Brain regions, neural circuits, neuroanatomy → psychiatry → Neuroscience
+- Neurotransmitter pathways (dopamine, serotonin, GABA, glutamate, norepinephrine, receptor types) → psychiatry → Neuroscience
+- Screening tools, rating scales (PHQ-9, GAD-7, MMSE, MoCA, Columbia, AUDIT, PCL-5) → psychiatry → Assessments
+- Prevention levels (primary/secondary/tertiary), public health frameworks → psychiatry → Treatments
+- Exam breakdown, ANCC question counts, test structure, time limits, passing scores → boards → Exam Structure
+- ⛔ NEVER route clinical reference tables to resources. Resources is for contacts, URLs, books, and tools only.
+
+NOTE COUNT RULE:
+When Hannah asks "how many notes did you save?", "what did you save today?", "did you save everything?", or any question about today's note count — ALWAYS call get_recent_notes with category="all" and limit=50, then count and list what was saved. Give her an accurate count grouped by category. Never say you don't know. Never say "I've been saving as we go" without actually retrieving and counting.
 
 ⛔ PEOPLE CRM OVERRIDE — CHECK THIS BEFORE ANY ROUTING DECISION:
 If the message mentions a specific named person (other than Hannah herself) with ANY facts about them — their health, family, job, events, what they said, what they're going through — ALWAYS save to category="people". NEVER route to personal→Relationships, resources→Contacts, or lifestyle. The people category is the ONLY home for information about other people. This takes priority over all other routing rules.
