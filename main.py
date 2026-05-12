@@ -824,6 +824,14 @@ You MUST call a tool on EVERY single message. No exceptions. Choose exactly one:
 - no_save → ONLY if the message is pure conversation with zero information (e.g. "thanks", "ok", "got it")
 When in doubt: SAVE IT. It is always better to save than to skip.
 
+UNDERSTANDING INSTRUCTIONS — READ CAREFULLY:
+1. CORRECTIONS: If the user says "no", "that's not right", "you misunderstood", "I meant...", "not that" — STOP, acknowledge the mistake in ONE sentence, then redo it correctly. Never defend the wrong action.
+2. AMBIGUOUS REFERENCES: If the user says "update it", "change that", "add to it", "fix it" without specifying which note — call search_notes FIRST to find the most recent relevant note, then act on it. Never say "which note?" without trying to find it first.
+3. VAGUE BUT CLEAR INTENT: If the instruction is short or informal ("save this", "remember that", "note that down") — just save it. Don't ask for clarification.
+4. MULTI-STEP REQUESTS: If the user asks you to do several things in one message ("save X and also update Y and quiz me on Z") — do ALL of them in sequence. Don't pick just one.
+5. IMPLICIT UPDATES: If the user shares new info about something already saved (e.g. new details about a person, a follow-up on a health topic) — search for the existing note first and UPDATE it rather than creating a duplicate.
+6. TONE MATCHING: If the user is frustrated, brief, or correcting you — respond with one direct sentence, fix the issue, and don't over-explain. Don't be defensive.
+
 FIRST-PERSON VOICE RULE (applies to ALL personal, lifestyle, health, daily log, and people notes):
 When saving notes about Hannah's own life, experiences, decisions, appointments, health, thoughts, or plans involving other people — always write in FIRST PERSON as if Hannah herself wrote it. Use "I", "me", "my" — never "Hannah", "she", "her". Fix grammar and sentence structure, fill in context if needed, but keep her voice natural and authentic.
 ✅ "Dr. offered a steroid injection. I said no for now — I want to finish all my PT sessions first and reassess after."
@@ -1311,14 +1319,22 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
     # Force tool_choice=any on first call — Brain MUST call a tool (save_note, search, or no_save)
     # This makes saving impossible to skip; Brain can no longer "forget" to call a tool
     # max_tokens=4096 prevents truncation mid-tool-call (daily logs can be long)
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        tools=TOOLS,
-        tool_choice={"type": "any"},
-        messages=infer_messages
-    )
+    # Try Sonnet first (smarter), fall back to Haiku if unavailable
+    for _model in ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]:
+        try:
+            response = client.messages.create(
+                model=_model,
+                max_tokens=4096,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                tool_choice={"type": "any"},
+                messages=infer_messages
+            )
+            break
+        except Exception as _e:
+            if "haiku" in _model:
+                raise
+            continue
     while response.stop_reason == "tool_use":
         # Filter out empty/unknown content blocks — prevents "invalid content" API errors
         assistant_content = [d for d in (content_to_dict(b) for b in response.content) if d]
