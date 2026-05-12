@@ -767,7 +767,9 @@
     setTimeout(function() {
       var inp = document.getElementById('input');
       if (inp) {
-        inp.value = 'Good morning — what does today look like?';
+        var _h = new Date().getHours();
+        var _greet = _h < 12 ? 'Good morning' : _h < 17 ? 'Good afternoon' : 'Good evening';
+        inp.value = _greet + ' — what does today look like?';
         inp.dispatchEvent(new Event('input'));
         if (typeof sendMessage === 'function') sendMessage();
       }
