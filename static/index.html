@@ -1412,8 +1412,6 @@
     // Show remove image button only if note has an embedded image
     const hasImage = n.content && n.content.includes('<img ');
     $('sidebar-remove-img').style.display = hasImage ? 'block' : 'none';
-    $('sidebar-analyze').disabled = false;
-    $('sidebar-analyze').innerHTML = '✨<br>Analyze';
     $('note-modal').classList.add('open');
   }
   function openNote(i)         { _setupModal(window._filteredNotes[i]); }
