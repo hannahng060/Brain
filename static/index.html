@@ -2031,7 +2031,6 @@
     _focus3Expanding = null;
     _focus3Done.add(slot);
     _focus3SaveDone();
-    _focus3Log(slot, note);
     renderFocus(false);
     _updateFocusBadge();
   }
@@ -2042,23 +2041,8 @@
     _focus3Expanding = null;
     _focus3Done.add(slot);
     _focus3SaveDone();
-    _focus3Log(slot, '');
     renderFocus(false);
     _updateFocusBadge();
-  }
-
-  async function _focus3Log(slot, note) {
-    const text = _focus3[slot];
-    if (!text) return;
-    const prefix  = (slot === 'brain') ? 'Learning log: ' : 'Activity completed: ';
-    const detail  = note ? text + ' — ' + note : text;
-    try {
-      await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message: prefix + detail, local_date: _localLongDate() })
-      });
-    } catch(e) { /* silent */ }
   }
 
   // ── Quick Win ─────────────────────────────────────────────────────────
