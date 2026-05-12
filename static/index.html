@@ -352,9 +352,6 @@
     #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:160px; outline:none; margin-top:8px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; color:var(--text); }
     #edit-content:focus { border-color:var(--primary); }
 
-    /* ── Daily Log Analyze ── */
-    #sidebar-analyze:disabled { opacity:.6; cursor:default; }
-
     /* ── Finance tabs ── */
     .fin-tab { flex:1; padding:8px 4px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted); transition:all .15s; font-family:inherit; }
     .fin-tab.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 4px rgba(0,0,0,.12); }
@@ -675,7 +672,6 @@
       <button class="sidebar-btn primary" id="sidebar-edit" onclick="startEdit()">✏️<br>Edit</button>
       <button class="sidebar-btn save" id="sidebar-save" onclick="saveEdit()" style="display:none">💾<br>Save</button>
       <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
-      <button class="sidebar-btn" id="sidebar-analyze" onclick="analyzeLog()" style="display:none;background:linear-gradient(135deg,var(--primary),#7c4dff);color:white;border-color:var(--primary)">✨<br>Analyze</button>
       <button class="sidebar-btn" id="sidebar-remove-img" onclick="removeNoteImage()" style="display:none;color:#e53935;border-color:#e53935">🖼️<br>Remove<br>Image</button>
       <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
     </div>
@@ -1413,9 +1409,6 @@
     $('modal-view').style.display = 'block';
     $('modal-edit').style.display = 'none';
     setSidebarMode('view');
-    // Show analyze button only for Daily Log notes
-    const isDailyLog = n.subcategory && n.subcategory.toLowerCase().includes('daily log');
-    $('sidebar-analyze').style.display = isDailyLog ? 'block' : 'none';
     // Show remove image button only if note has an embedded image
     const hasImage = n.content && n.content.includes('<img ');
     $('sidebar-remove-img').style.display = hasImage ? 'block' : 'none';
@@ -1445,48 +1438,6 @@
         showToast('Image removed');
       } else { showToast('Could not remove image'); }
     } catch(e) { showToast('Error removing image'); }
-  }
-
-  async function analyzeLog() {
-    const note = window._openNote;
-    if(!note) return;
-    $('sidebar-analyze').disabled = true;
-    $('sidebar-analyze').innerHTML = '⏳<br>…';
-    try {
-      const res = await fetch('/log-analyze', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          note_id: note.id,
-          local_time: new Date().toLocaleString('en-US', {month:'numeric', day:'numeric', year:'2-digit', hour:'numeric', minute:'2-digit', hour12:true})
-        })
-      });
-      if(!res.ok) throw new Error('Server error');
-      const data = await res.json();
-      $('sidebar-analyze').innerHTML = '↻<br>Re-analyze';
-      $('sidebar-analyze').disabled = false;
-      // Reload notes quietly and update the open modal — don't touch the notes list filter
-      fetch('/notes?limit=500').then(r=>r.json()).then(notes => {
-        allNotes = notes;
-        const updated = notes.find(n => n.id === note.id);
-        if(updated) {
-          window._openNote = updated;
-          $('modal-body').innerHTML = renderContent(updated.content);
-          // Scroll to ANALYSIS section
-          const headers = $('modal-body').querySelectorAll('u');
-          for(const el of headers) {
-            if(el.textContent.toUpperCase().includes('ANALYSIS')) {
-              el.scrollIntoView({behavior:'smooth', block:'start'});
-              break;
-            }
-          }
-        }
-      });
-    } catch(e) {
-      $('sidebar-analyze').innerHTML = '✨<br>Analyze';
-      $('sidebar-analyze').disabled = false;
-      showToast('Could not analyze — try again');
-    }
   }
 
   async function closeModal() {
