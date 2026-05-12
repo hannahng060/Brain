@@ -2297,6 +2297,16 @@ def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
         f"Head to <strong>⚡ Drill</strong> or <strong>🎯 Quick Win</strong> to start practicing. 📚"
     )
 
+def _looks_like_study_plan(text: str, user_note: str) -> bool:
+    """Detect if content is a study schedule/plan (not clinical content to quiz on)."""
+    note_lower = (user_note or "").lower()
+    if any(kw in note_lower for kw in ["study plan", "schedule", "georgette", "week 1", "week by week"]):
+        return True
+    text_lower = text.lower()
+    week_count = len(re.findall(r'week\s+\d', text_lower))
+    return week_count >= 3
+
+
 def _looks_like_study_guide(text: str, user_note: str) -> bool:
     """Detect if content is a study guide / clinical notes (not pre-made Q&A)."""
     note_lower = (user_note or "").lower()
@@ -2567,6 +2577,21 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
         # Board question PDFs → parse and save each question individually
         if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_board_questions(extracted, note):
             reply = parse_and_save_board_questions(extracted, filename or "Practice PDF")
+            db_add_message("assistant", reply)
+            return {"reply": reply}
+
+        # Study plan PDFs → save as a boards planning note
+        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_study_plan(extracted, note):
+            note_id = db_save_note(
+                raw_input=f"[Uploaded: {filename}]",
+                content=_clean_pdf_text(extracted),
+                summary=f"📅 Study Plan: {filename.replace('.pdf','').replace('_',' ')}",
+                category="boards",
+                subcategory="Study Plan",
+                tags=json.dumps(["study-plan", "boards", "georgette"]),
+                entities=json.dumps([])
+            )
+            reply = f"📅 **Study plan saved!** I've added *{filename}* to your Boards notes as a study plan.\n\nI can now help you:\n- Build a personalized week-by-week schedule based on your exam date\n- Map Georgette's plan to your Brain focus areas\n- Set daily study goals\n\nJust tell me your target exam date and I'll help you plan it out! 🎓"
             db_add_message("assistant", reply)
             return {"reply": reply}
 
