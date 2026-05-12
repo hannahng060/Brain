@@ -75,6 +75,13 @@ def init_db():
         )
     """)
     cur.execute("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS note_id INTEGER")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_settings (
+            key        TEXT PRIMARY KEY,
+            value      TEXT,
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
     # Migrate old category names to new ones
     cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
     # Remap quiz_results topics to official 6 ANCC board categories
@@ -2586,3 +2593,39 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
     except Exception as e:
         print(f"Upload error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── User settings (cross-device sync) ─────────────────────────────────────────
+
+@app.get("/api/settings")
+async def get_settings(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT key, value FROM user_settings")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return {r["key"]: r["value"] for r in rows}
+
+@app.post("/api/settings")
+async def save_setting(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401)
+    body = await request.json()
+    key   = body.get("key", "").strip()
+    value = body.get("value", "")
+    if not key:
+        raise HTTPException(status_code=400, detail="key required")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user_settings (key, value, updated_at)
+        VALUES (%s, %s, NOW())
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+    """, (key, value))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"ok": True}

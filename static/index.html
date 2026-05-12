@@ -899,12 +899,14 @@
   function _appReady() {
     $('login-screen').style.display='none'; $('app').style.display='flex';
     _touchActive();
-    loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan();
-    loadStreak(); loadWeakAreas(); loadDailyFocus();
-    setTimeout(checkDailyBriefing, 2000);
-    setTimeout(finNudge, 3000);
-    setTimeout(_updateFocusBadge, 1500);
-    setTimeout(sundayReviewCheck, 500);
+    _kvInit().then(() => {
+      loadNotes(); loadProfile(); loadDashboard(); loadWeeklyPlan();
+      loadStreak(); loadWeakAreas(); loadDailyFocus();
+      setTimeout(checkDailyBriefing, 2000);
+      setTimeout(finNudge, 3000);
+      setTimeout(_updateFocusBadge, 1500);
+      setTimeout(sundayReviewCheck, 500);
+    });
   }
 
   $('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -1926,19 +1928,19 @@
   function _focus3Load() {
     const today = _localDateStr();
     try {
-      const d = JSON.parse(localStorage.getItem('brain_focus3_' + today) || 'null');
+      const d = JSON.parse(_kvGet('brain_focus3_' + today) || 'null');
       _focus3 = d || { brain:'', home:'', world:'', date: today };
     } catch(e) { _focus3 = { brain:'', home:'', world:'', date: today }; }
     try {
-      _focus3Done = new Set(JSON.parse(localStorage.getItem('brain_focus3_done_' + today) || '[]'));
+      _focus3Done = new Set(JSON.parse(_kvGet('brain_focus3_done_' + today) || '[]'));
     } catch(e) { _focus3Done = new Set(); }
   }
   function _focus3Save() {
     _focus3.date = _localDateStr();
-    localStorage.setItem('brain_focus3_' + _localDateStr(), JSON.stringify(_focus3));
+    _kvSet('brain_focus3_' + _localDateStr(), JSON.stringify(_focus3));
   }
   function _focus3SaveDone() {
-    localStorage.setItem('brain_focus3_done_' + _localDateStr(), JSON.stringify([..._focus3Done]));
+    _kvSet('brain_focus3_done_' + _localDateStr(), JSON.stringify([..._focus3Done]));
   }
 
   async function loadDailyFocus() {
@@ -2187,10 +2189,31 @@
     _clUpdateNudges();
   }
 
-  function _clGetItems() {
-    try { return JSON.parse(localStorage.getItem('brain_checklist') || 'null'); } catch(e) { return null; }
+  // ── Cross-device KV sync ────────────────────────────────────────────────────
+  // Reads from in-memory cache (pre-loaded from server). Writes go to both
+  // localStorage (instant) and the server (background sync).
+  var _kvCache = {};
+  async function _kvInit() {
+    try {
+      const r = await fetch('/api/settings');
+      if (r.ok) { const d = await r.json(); Object.assign(_kvCache, d); }
+    } catch(e) {}
   }
-  function _clSaveItems(items) { localStorage.setItem('brain_checklist', JSON.stringify(items)); }
+  function _kvGet(key, def) {
+    if (_kvCache[key] !== undefined) return _kvCache[key];
+    return localStorage.getItem(key) || def || null;
+  }
+  function _kvSet(key, value) {
+    _kvCache[key] = value;
+    localStorage.setItem(key, value);
+    fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key, value}) }).catch(()=>{});
+  }
+
+  function _clGetItems() {
+    try { return JSON.parse(_kvGet('brain_checklist') || 'null'); } catch(e) { return null; }
+  }
+  function _clSaveItems(items) { _kvSet('brain_checklist', JSON.stringify(items)); }
   function _clDefaultItems() {
     return {
       always:  ['🔴 Red Light', '🧘 Stretch', '🏃 Exercise', '🥤 Smoothie', '🥬 Green juice', '🎓 Skool', '💊 Vitamin', '🥑 Healthy snack', '🗓️ Planning', '🧘 Mindfulness', '💧 Water 64oz', '🙏 Devotion'],
@@ -2200,11 +2223,11 @@
 
   function _clGetDone() {
     const key = 'brain_done_' + _localDateStr();
-    try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch(e) { return new Set(); }
+    try { return new Set(JSON.parse(_kvGet(key) || '[]')); } catch(e) { return new Set(); }
   }
   function _clSetDone(doneSet) {
     const key = 'brain_done_' + _localDateStr();
-    localStorage.setItem(key, JSON.stringify([...doneSet]));
+    _kvSet(key, JSON.stringify([...doneSet]));
   }
 
   function _clDayName(offset = 0) {
@@ -2411,10 +2434,10 @@
   ];
 
   function _clDismissedKey() { return 'brain_dismissed_' + _localDateStr(); }
-  function _clGetDismissed() { try { return new Set(JSON.parse(localStorage.getItem(_clDismissedKey()) || '[]')); } catch(e) { return new Set(); } }
+  function _clGetDismissed() { try { return new Set(JSON.parse(_kvGet(_clDismissedKey()) || '[]')); } catch(e) { return new Set(); } }
   function _clDismiss(item) {
     const d = _clGetDismissed(); d.add(item);
-    localStorage.setItem(_clDismissedKey(), JSON.stringify([...d]));
+    _kvSet(_clDismissedKey(), JSON.stringify([...d]));
     _clUpdateNudges();
   }
 
