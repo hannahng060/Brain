@@ -272,13 +272,14 @@ def db_get_today_logs(category: str, subcategory: str) -> list:
     conn.close()
     return [_fix_ts(r) for r in rows]
 
-def db_get_recent(limit: int = 30, category: str = "all") -> list:
+def db_get_recent(limit: int = 500, category: str = "all", metadata_only: bool = False) -> list:
     conn = get_db()
     cur = conn.cursor()
+    fields = "id, summary, category, subcategory, tags, created_at" if metadata_only else "id, content, summary, category, subcategory, tags, created_at"
     if category == "all":
-        cur.execute("SELECT id, content, summary, category, subcategory, tags, created_at FROM notes ORDER BY created_at DESC LIMIT %s", (limit,))
+        cur.execute(f"SELECT {fields} FROM notes ORDER BY created_at DESC LIMIT %s", (limit,))
     else:
-        cur.execute("SELECT id, content, summary, category, subcategory, tags, created_at FROM notes WHERE category=%s ORDER BY created_at DESC LIMIT %s", (category, limit))
+        cur.execute(f"SELECT {fields} FROM notes WHERE category=%s ORDER BY created_at DESC LIMIT %s", (category, limit))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -1792,7 +1793,20 @@ async def update_profile(body: ProfileUpdate, request: Request):
 async def list_notes(request: Request, category: str = "all", limit: int = 500):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return db_get_recent(limit, category)
+    return db_get_recent(limit, category, metadata_only=True)
+
+@app.get("/notes/{note_id}")
+async def get_note(note_id: int, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id, content, summary, category, subcategory, tags, created_at FROM notes WHERE id = %s", (note_id,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return _fix_ts(row)
 
 class NoteUpdate(BaseModel):
     summary: Optional[str] = None

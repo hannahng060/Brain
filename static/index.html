@@ -1267,6 +1267,7 @@
       (n.subcategory && n.subcategory.toLowerCase().includes(q))
     );
     // Temporarily override the notes-list with search results
+    window._filteredNotes = filtered;
     const el = $('notes-count');
     if (el) el.textContent = `${filtered.length} result${filtered.length!==1?'s':''}`;
     if (!filtered.length) {
@@ -1276,7 +1277,7 @@
     $('notes-list').innerHTML = filtered.map((n,i) => {
       const tags = tryParse(n.tags);
       const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      return `<div class="note-card ${n.category||''}" onclick="openNoteDirectly(${JSON.stringify(n).replace(/"/g,'&quot;')})">
+      return `<div class="note-card ${n.category||''}" onclick="openNote(${i})">
         <div class="note-card-header">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge ${n.category}">${n.category}</span>
@@ -1371,6 +1372,7 @@
       filtered = filtered.filter(n=> tryParse(n.tags).map(t=>t.toLowerCase()).includes(currentTag.toLowerCase()));
     }
     $('notes-count').textContent = `${filtered.length} note${filtered.length!==1?'s':''}`;
+    window._filteredNotes = filtered;
 
     if(!filtered.length) {
       $('notes-list').innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No ${currentCat==='all'?'':currentCat+' '}notes yet.<br>Tell Brain something to save it here.</p></div>`;
@@ -1421,8 +1423,42 @@
     $('sidebar-remove-img').style.display = hasImage ? 'block' : 'none';
     $('note-modal').classList.add('open');
   }
-  function openNote(i)         { _setupModal(window._filteredNotes[i]); }
+  async function openNote(i) {
+    const meta = window._filteredNotes[i];
+    // If content already loaded (cached), open immediately
+    if (meta.content !== undefined) { _setupModal(meta); return; }
+    // Otherwise fetch full content from server
+    _setupModalLoading(meta);
+    try {
+      const res = await fetch('/notes/' + meta.id);
+      const full = await res.json();
+      // Cache content back into allNotes so re-opens are instant
+      const idx = allNotes.findIndex(n => n.id === meta.id);
+      if (idx !== -1) allNotes[idx].content = full.content;
+      meta.content = full.content;
+      _setupModal(meta);
+    } catch(e) {
+      $('modal-body').innerHTML = '<p style="color:#c00">Could not load note content.</p>';
+    }
+  }
   function openNoteDirectly(n) { _setupModal(n); }
+
+  function _setupModalLoading(n) {
+    window._openNote = n;
+    const tags = tryParse(n.tags);
+    const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+    $('modal-badge').className = `badge ${n.category}`;
+    $('modal-badge').textContent = n.category;
+    $('modal-date').textContent = date;
+    $('modal-title').textContent = n.summary || 'Note';
+    $('modal-body').innerHTML = '<div style="padding:20px;color:#999;text-align:center">Loading...</div>';
+    $('modal-tags').innerHTML = tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    $('modal-view').style.display = 'block';
+    $('modal-edit').style.display = 'none';
+    setSidebarMode('view');
+    $('sidebar-remove-img').style.display = 'none';
+    $('note-modal').classList.add('open');
+  }
 
   async function removeNoteImage() {
     const note = window._openNote;
