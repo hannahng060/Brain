@@ -465,7 +465,6 @@
     <div class="category-scroll">
       <div class="cat-pill active" data-cat="all" onclick="filterNotes('all')">🗂️ All</div>
       <div class="cat-pill psychiatry"    data-cat="psychiatry"    onclick="filterNotes('psychiatry')">🧠 Psychiatry</div>
-      <div class="cat-pill psychotherapy" data-cat="psychotherapy" onclick="filterNotes('psychotherapy')">💬 Psychotherapy</div>
       <div class="cat-pill icu"           data-cat="icu"           onclick="filterNotes('icu')">🏥 ICU</div>
       <div class="cat-pill np_fellowship" data-cat="np_fellowship" onclick="filterNotes('np_fellowship')">🎓 NP Fellowship</div>
       <div class="cat-pill business"      data-cat="business"      onclick="filterNotes('business')">💼 Business</div>
@@ -479,7 +478,6 @@
     </div>
     <div id="quiz-row">
       <button class="quiz-pill psychiatry"    onclick="showTab('chat');startQuiz('psychiatry')">🧠 Quiz Psychiatry</button>
-      <button class="quiz-pill psychotherapy" onclick="showTab('chat');startQuiz('psychotherapy')">💬 Quiz Psychotherapy</button>
       <button class="quiz-pill icu"           onclick="showTab('chat');startQuiz('icu')">🏥 Quiz ICU</button>
     </div>
     <div id="subcat-row"></div>
@@ -703,7 +701,7 @@
   let currentTag = null;
 
   const SUBCATS = {
-    psychiatry:    ['Assessment & Diagnosis','Psychopharmacology','Treatments','Lab Values','Neuroscience','Professional & Ethics'],
+    psychiatry:    ['Assessment & Diagnosis','Psychopharmacology','Psychotherapy','Lab Values','Neuroscience','Professional & Ethics'],
     psychotherapy: ['CBT','DBT','ACT','Psychodynamic','Motivational Interviewing','Trauma-Focused','Family & Couples','Group Therapy','Theory & Foundations'],
     icu:           ['Neuro','Respiratory','Cardiac','GI','Renal','Hematology','Pharmacology','Procedures','Protocols & Guidelines'],
     np_fellowship: ['Bootcamp','Case Consults','Weekly Calls','Practice Building','Community Notes','Clinical Pearls'],
