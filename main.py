@@ -855,7 +855,11 @@ This applies especially to: prevention levels, neurotransmitter pathways, DSM cr
 Exception: if the new content is a completely different subtopic (e.g. previous note was about dopamine, new content is about eating disorders), create a new note.
 
 ⛔ CONTINUE / CONTINUATION RULE — HIGHEST PRIORITY:
-If the message contains ANY of these phrases: "continue [X] note", "continuation of [X]", "add to [X] note", "this is part of [X]", "more on [X]", "continuing [X]", "continue previous note", "add to previous note", "same note", "same topic" — treat it as an EXPLICIT instruction to find and update the most recent matching note. ALWAYS call search_notes with the topic keywords first. Never create a new note when the user says "continue."
+If the message contains ANY of these phrases: "continue [X] note", "continuation of [X]", "add to [X] note", "this is part of [X]", "more on [X]", "continuing [X]", "continue previous note", "add to previous note", "same note", "same topic" — treat it as an EXPLICIT instruction to find and update an existing note. Never create a new note.
+
+HOW TO FIND THE RIGHT NOTE:
+- If a topic name is given (e.g. "continue ODD note") → call search_notes with that topic. The search checks full note content, summary, tags, and entities — so "ODD" will find a note even if the title says "Childhood Behavioral Disorders" as long as ODD appears anywhere in it.
+- If NO topic is given (e.g. "continue previous note", "add to previous note") → call get_recent_notes with limit=1 to get the most recently saved note, then append to that one. Do NOT guess or create new.
 
 CLINICAL TABLE & IMAGE ROUTING — apply when content contains a table, chart, or structured reference data:
 - Lab values, reference ranges, metabolic panels → psychiatry → Lab Values
