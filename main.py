@@ -2732,8 +2732,38 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 reply = parse_and_save_board_questions(description, filename or "Image")
                 db_add_message("assistant", reply)
                 return {"reply": reply}
-            # Check if user explicitly wants text-only (no embedded image)
+            # Check if user wants to continue/append to a previous note
             note_lower = note.strip().lower()
+            is_continuation = any(kw in note_lower for kw in [
+                "continue previous note", "add to previous note", "continue previous",
+                "same note", "append to previous", "add to last note",
+            ])
+            # Topic-based continuation: "continue ODD note", "continue depression note"
+            topic_continue = re.match(r"continue (.+?) note", note_lower)
+            if is_continuation or topic_continue:
+                # Find the note to append to
+                if topic_continue:
+                    topic_kw = topic_continue.group(1).strip()
+                    matches = db_search_notes(topic_kw, limit=5)
+                    target = matches[0] if matches else None
+                else:
+                    # No topic — use most recently saved note
+                    recent = db_get_recent(limit=1)
+                    target = recent[0] if recent else None
+
+                if target:
+                    # Append extracted text to existing note content
+                    existing = target.get("content", "")
+                    appended = existing + f'<hr style="margin:16px 0"><div style="font-size:14px;line-height:1.7">{description}</div>'
+                    conn2 = get_db(); cur2 = conn2.cursor()
+                    cur2.execute("UPDATE notes SET content = %s WHERE id = %s", (appended, target["id"]))
+                    conn2.commit(); cur2.close(); conn2.close()
+                    reply = f"📎 Added to existing note: <strong>{target.get('summary','')}</strong>"
+                    db_add_message("assistant", reply)
+                    return {"reply": reply}
+                # Fall through to save as new note if nothing found
+
+            # Check if user explicitly wants text-only (no embedded image)
             text_only = any(kw in note_lower for kw in [
                 "text only", "text-only", "save text", "no image", "don't save image",
                 "dont save image", "just the text", "only text", "save the text",
