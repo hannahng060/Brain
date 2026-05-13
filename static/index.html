@@ -571,6 +571,13 @@
     </div>
 
     <button onclick="saveBoardQuestion()" style="margin-top:8px;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;">Save Question</button>
+
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">📖 Reference</div>
+      <button onclick="openSarahGuide()" style="width:100%;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);text-align:left">
+        📘 Sarah's Study Guide <span style="font-size:12px;color:var(--muted);font-weight:400">— 87 pages · ANCC PMHNP-BC</span>
+      </button>
+    </div>
   </div>
 
   <!-- Tab Bar -->
@@ -3708,6 +3715,26 @@
     </div>
   </div>
 </div>
+
+<!-- Sarah's Study Guide PDF Viewer -->
+<div id="sarah-guide-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#1a1a2e;border-bottom:1px solid #333;flex-shrink:0">
+    <div style="color:white;font-size:15px;font-weight:700">📘 Sarah's Study Guide — ANCC PMHNP-BC</div>
+    <button onclick="$('sarah-guide-overlay').style.display='none'" style="background:none;border:none;color:#aaa;font-size:22px;cursor:pointer;line-height:1">×</button>
+  </div>
+  <iframe id="sarah-guide-frame" src="" style="flex:1;width:100%;border:none;background:white"></iframe>
+</div>
+
+<script>
+  function openSarahGuide() {
+    var overlay = $('sarah-guide-overlay');
+    var frame = $('sarah-guide-frame');
+    overlay.style.display = 'flex';
+    if (!frame.src || frame.src === window.location.href) {
+      frame.src = '/sarah-guide/pdf';
+    }
+  }
+</script>
 
 </body>
 </html>

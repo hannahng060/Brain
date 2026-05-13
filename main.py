@@ -10,7 +10,7 @@ import anthropic
 import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -124,6 +124,16 @@ async def startup():
         init_db()
     except Exception as e:
         print(f"DB init error: {e}")
+
+SARAH_GUIDE_PATH = "/Users/hannahnguyen/Documents/01_NP-School/Clinical-References/Board-Exam-Prep/2026 Sarah StudyGuide.pdf"
+
+@app.get("/sarah-guide/pdf")
+def serve_sarah_guide():
+    """Serve Sarah's study guide PDF for the in-app viewer."""
+    if not os.path.exists(SARAH_GUIDE_PATH):
+        raise HTTPException(status_code=404, detail="Study guide PDF not found.")
+    return FileResponse(SARAH_GUIDE_PATH, media_type="application/pdf",
+                        headers={"Content-Disposition": "inline; filename=sarah-study-guide.pdf"})
 
 @app.get("/api/admin/fix-board-prep")
 def fix_board_prep():
