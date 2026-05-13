@@ -2275,8 +2275,9 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         + (f"User note: {user_note}\n" if user_note else "")
         + "ROUTING RULES:\n"
         + "⛔ If this image contains ANY spiritual/faith content — devotions, Bible verses, scripture, sermons, prayers, worship, faith reflections — set category=lifestyle AND subcategory=Daily Log.\n"
-        + "✅ If this image contains board exam study content — pharmacology, psychopharmacology, stimulants, medications, drug names, ANCC topics, PMHNP board prep, DSM criteria, clinical assessment, psychotherapy models, special populations, ethics, professional standards, neuroscience — set category=boards and subcategory to the best ANCC match: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics | Board Prep.\n"
-        + "✅ If this image is a lecture slide, class notes, or study guide — route to the most relevant clinical category (boards, psychiatry, psychotherapy, etc.).\n"
+        + "✅ category=boards ONLY if the image is explicitly a board exam practice question (has A/B/C/D answer choices) or is labeled as ANCC/board prep material. Subcategory: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics | Board Prep.\n"
+        + "✅ Lecture slides, class notes, pharmacology slides, DSM content, clinical assessments, medication info, neuroscience → category=psychiatry. Pick the best subcategory: DSM-5 | Medications | Assessments | Treatments | Lab Values | Neuroscience | Ethics & Law.\n"
+        + "✅ Psychotherapy models, therapy techniques → category=psychotherapy.\n"
         + "Return ONLY a JSON object: "
         '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden|boards", '
         '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
@@ -2698,7 +2699,7 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 db_add_message("user", f"[Attached devotion image: {filename}]")
                 result = run_agent(user_msg)
                 return {"reply": result["reply"]}
-            # Board question image → parse and save as drill question(s), not a photo note
+            # Board question image → drill bank only (no photo needed)
             if _looks_like_board_questions(description, note.strip()):
                 reply = parse_and_save_board_questions(description, filename or "Image")
                 db_add_message("assistant", reply)
