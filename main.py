@@ -123,6 +123,18 @@ async def startup():
     except Exception as e:
         print(f"DB init error: {e}")
 
+@app.get("/api/admin/fix-board-prep")
+def fix_board_prep():
+    """One-time migration: move Board Prep notes from psychiatry to boards."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE notes SET category='boards', subcategory='Board Prep' WHERE category='psychiatry' AND subcategory='Board Prep'")
+    moved = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"moved": moved, "status": "done"}
+
 # ── Tool helpers ──────────────────────────────────────────────────────────────
 def db_save_note(raw_input: str, content: str, summary: str,
                  category: str, subcategory: Optional[str],
