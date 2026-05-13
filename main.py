@@ -700,7 +700,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEDICATIONS & SUPPLEMENTS, MOOD, SPIRITUAL, OURA RING METRICS, ANALYSIS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEDICATIONS & SUPPLEMENTS, MOOD, SPIRITUAL, OURA RING METRICS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -957,13 +957,11 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 <strong><u>SPIRITUAL:</u></strong>
 [faith, prayer, scripture, gratitude to God, faith moments — preserve prayer: and my words: verbatim; summarize quoted text from others]
 
-⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS. Never write to them, never include them as placeholders with —, never create them. They do not exist.
+⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS, ANALYSIS. Never write to them, never include them as placeholders with —, never create them. They do not exist.
 
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
 
-<strong><u>ANALYSIS:</u></strong>
-[brief summary connecting the day's data]
 
     e. If Hannah mentions food, give honest anti-inflammatory feedback but do NOT log it to the daily log.
     f. Personal thoughts, feelings, reflections, gratitude, or anything about how the day feels → always go in the REFLECTIONS section of the Daily Log. NEVER create a separate Personal note for these. If no Daily Log exists yet for today, create one first, then add the reflection.
