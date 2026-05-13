@@ -2243,19 +2243,27 @@ def extract_image_text(data: bytes, media_type: str) -> str:
     )
     return response.content[0].text if response.content else ""
 
-def save_image_note(data: bytes, media_type: str, filename: str, description: str, user_note: str) -> str:
-    """Save image as a note with the actual photo embedded + Brain's description."""
-    b64 = base64.standard_b64encode(data).decode("utf-8")
-    img_tag = f'<img src="data:{media_type};base64,{b64}" style="max-width:40%;border-radius:10px;margin-bottom:12px;display:block">'
-
-    # Build note content: image on top, description below
-    content = (
-        f'<div style="font-size:14px;line-height:1.7">'
-        f'{img_tag}'
-        f'<div style="margin-top:10px">{description}</div>'
-        + (f'<div style="margin-top:10px;font-style:italic;color:#888">{user_note}</div>' if user_note else '')
-        + '</div>'
-    )
+def save_image_note(data: bytes, media_type: str, filename: str, description: str, user_note: str, text_only: bool = False) -> str:
+    """Save image as a note. If text_only=True, saves extracted text only (no embedded image)."""
+    if text_only:
+        # Text-only: skip embedding the image, just save the extracted description
+        content = (
+            f'<div style="font-size:14px;line-height:1.7">'
+            f'<div>{description}</div>'
+            + (f'<div style="margin-top:10px;font-style:italic;color:#888">{user_note}</div>' if user_note else '')
+            + '</div>'
+        )
+    else:
+        b64 = base64.standard_b64encode(data).decode("utf-8")
+        img_tag = f'<img src="data:{media_type};base64,{b64}" style="max-width:40%;border-radius:10px;margin-bottom:12px;display:block">'
+        # Build note content: image on top, description below
+        content = (
+            f'<div style="font-size:14px;line-height:1.7">'
+            f'{img_tag}'
+            f'<div style="margin-top:10px">{description}</div>'
+            + (f'<div style="margin-top:10px;font-style:italic;color:#888">{user_note}</div>' if user_note else '')
+            + '</div>'
+        )
 
     # Get metadata from description
     meta_prompt = (
@@ -2287,12 +2295,20 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
 
     db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
     loc = f"<strong>{category}</strong>" + (f" → {subcategory}" if subcategory else "")
-    reply = (
-        f"📸 Saved! Photo stored in {loc}.<br><br>"
-        f"<strong>{summary}</strong><br><br>"
-        + description[:300]
-        + ("..." if len(description) > 300 else "")
-    )
+    if text_only:
+        reply = (
+            f"📝 Text saved (no image) in {loc}.<br><br>"
+            f"<strong>{summary}</strong><br><br>"
+            + description[:300]
+            + ("..." if len(description) > 300 else "")
+        )
+    else:
+        reply = (
+            f"📸 Saved! Photo stored in {loc}.<br><br>"
+            f"<strong>{summary}</strong><br><br>"
+            + description[:300]
+            + ("..." if len(description) > 300 else "")
+        )
     db_add_message("assistant", reply)
     return reply
 
@@ -2674,7 +2690,14 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 db_add_message("user", f"[Attached devotion image: {filename}]")
                 result = run_agent(user_msg)
                 return {"reply": result["reply"]}
-            reply = save_image_note(data, content_type, filename or "screenshot", description, note.strip())
+            # Check if user explicitly wants text-only (no embedded image)
+            note_lower = note.strip().lower()
+            text_only = any(kw in note_lower for kw in [
+                "text only", "text-only", "save text", "no image", "don't save image",
+                "dont save image", "just the text", "only text", "save the text",
+                "notes only", "note only",
+            ])
+            reply = save_image_note(data, content_type, filename or "screenshot", description, note.strip(), text_only=text_only)
             return {"reply": reply}
         else:
             raise HTTPException(status_code=400, detail="Unsupported file type. Supported: images (screenshots/photos), PDF, Word, Excel, CSV.")
