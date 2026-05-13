@@ -2835,10 +2835,37 @@
   function startBoardQuizByTopic(topic) { _fetchAndStartQuiz(topic); }
 
   // ── 5-Minute Drill ──────────────────────────────────────────────────────
-  var _drillQueue = [], _drillIndex = 0, _drillResults = [];
+  var _drillQueue = [], _drillIndex = 0, _drillResults = [], _drillPaused = false;
+
+  function _showResumeBanner() {
+    var existing = document.getElementById('drill-resume-banner');
+    if (existing) return;
+    var q = _drillQueue[_drillIndex];
+    if (!q) return;
+    var banner = document.createElement('div');
+    banner.id = 'drill-resume-banner';
+    banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);'
+      + 'background:#1a1a2e;border:1.5px solid #bb86fc;border-radius:12px;padding:10px 18px;'
+      + 'display:flex;align-items:center;gap:12px;z-index:9998;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+    banner.innerHTML = '<span style="color:#aaa;font-size:13px">⏸ Drill paused — Q' + (_drillIndex+1) + ' of ' + _drillQueue.length + '</span>'
+      + '<button onclick="_resumeDrill()" style="background:#bb86fc;color:#1a1a2e;border:none;border-radius:8px;'
+      + 'padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">▶ Resume</button>';
+    document.body.appendChild(banner);
+  }
+
+  function _resumeDrill() {
+    var banner = document.getElementById('drill-resume-banner');
+    if (banner) banner.remove();
+    _drillPaused = false;
+    var overlay = $('drill-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    _showDrillQuestion();
+  }
 
   async function startDrill() {
-    _drillQueue = []; _drillResults = []; _drillIndex = 0;
+    _drillQueue = []; _drillResults = []; _drillIndex = 0; _drillPaused = false;
+    var banner = document.getElementById('drill-resume-banner');
+    if (banner) banner.remove();
     var overlay = $('drill-overlay');
     if (!overlay) return;
     overlay.style.display = 'flex';
@@ -2890,13 +2917,14 @@
   function _drillAskBrain() {
     var q = _drillQueue[_drillIndex];
     if (!q) return;
-    // Build a context message so Brain knows exactly what question we're discussing
     var choices = ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
       .map(function(l){ return l + ') ' + q.choices[l]; }).join('\n');
     var msg = 'About this board question:\n\n' + q.question + '\n\n' + choices + '\n\n';
-    // Close drill, open chat, pre-fill input
+    // Pause drill — hide overlay, show resume banner, don't reset
+    _drillPaused = true;
     $('drill-overlay').style.display = 'none';
     showTab('chat');
+    _showResumeBanner();
     var inp = $('input');
     if (inp) { inp.value = msg; inp.dispatchEvent(new Event('input')); inp.focus(); }
   }
