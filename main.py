@@ -456,16 +456,15 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 def db_get_history(limit: int = 20) -> list:
     conn = get_db()
     cur = conn.cursor()
-    # Only load messages from the last 16 hours — yesterday's lecture dumps
-    # can be enormous and blow the token limit on a fresh session
+    # Only load messages from the last 8 hours — big class days can blow token limits
     cur.execute("""SELECT role, content FROM messages
-                   WHERE content != '' AND created_at >= NOW() - INTERVAL '16 hours'
+                   WHERE content != '' AND created_at >= NOW() - INTERVAL '8 hours'
                    ORDER BY created_at DESC LIMIT %s""", (limit,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # Cap each message at 3000 chars — lecture dumps can be massive and blow token limits
-    MAX_MSG = 3000
+    # Cap each message at 2000 chars — lecture dumps can be massive and blow token limits
+    MAX_MSG = 2000
     msgs = [{"role": r["role"], "content": r["content"][:MAX_MSG] + ("…" if len(r["content"]) > MAX_MSG else "")} for r in reversed(rows)]
     # Sanitize: ensure messages alternate user/assistant (no consecutive same-role)
     # Drop orphaned messages that would break the Anthropic API
@@ -1468,7 +1467,7 @@ def run_agent(user_message: str) -> dict:
 
     # Try with progressively fewer messages if we hit the token limit
     final_text, saves_made = None, []
-    for history_limit in [10, 6, 4, 2]:
+    for history_limit in [10, 6, 4, 2, 0]:
         try:
             messages = _build_messages(history_limit)
             final_text, saves_made = run_agent_loop(messages, user_message)
@@ -1476,10 +1475,10 @@ def run_agent(user_message: str) -> dict:
         except Exception as e:
             err = str(e)
             if "prompt is too long" in err or "too many tokens" in err.lower() or "invalid_request_error" in err:
-                if history_limit == 2:
-                    final_text = "I'm having trouble with a very long conversation. Please try refreshing and starting fresh!"
                 continue
             raise
+    if not final_text:
+        final_text = "I'm here but had trouble responding — please try again."
 
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
