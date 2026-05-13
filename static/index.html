@@ -2871,12 +2871,33 @@
         + 'border-radius:10px;color:white;font-size:14px;cursor:pointer;font-family:inherit;transition:background 0.15s">'
         + '<strong>' + l + ')</strong> ' + q.choices[l] + '</button>';
     }).join('');
+    var askBtn = '<button onclick="_drillAskBrain()" style="'
+      + 'float:right;background:none;border:1.5px solid #555;color:#aaa;border-radius:20px;'
+      + 'padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;margin-left:8px'
+      + '">💬 Ask Brain</button>';
     $('drill-content').innerHTML =
-      '<div style="color:#aaa;font-size:12px;margin-bottom:8px">Question ' + (_drillIndex+1) + ' of ' + _drillQueue.length
-        + (q.topic ? ' · <span style="color:#bb86fc">' + q.topic + '</span>' : '') + '</div>'
+      '<div style="color:#aaa;font-size:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">'
+        + '<span>Question ' + (_drillIndex+1) + ' of ' + _drillQueue.length
+        + (q.topic ? ' · <span style="color:#bb86fc">' + q.topic + '</span>' : '') + '</span>'
+        + askBtn + '</div>'
       + '<div style="background:#1e1e1e;border-radius:12px;padding:16px;margin-bottom:12px">'
       + '<div style="color:white;font-size:15px;font-weight:600;line-height:1.5">' + esc(q.question) + '</div></div>'
       + btns;
+  }
+
+  function _drillAskBrain() {
+    var q = _drillQueue[_drillIndex];
+    if (!q) return;
+    // Build a context message so Brain knows exactly what question we're discussing
+    var choices = ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
+      .map(function(l){ return l + ') ' + q.choices[l]; }).join('\n');
+    var msg = 'I have a question about this board question:\n\n'
+      + q.question + '\n\n' + choices + '\n\nWhat can you explain about this?';
+    // Close drill, open chat, pre-fill input
+    $('drill-overlay').style.display = 'none';
+    showTab('chat');
+    var inp = $('input');
+    if (inp) { inp.value = msg; inp.dispatchEvent(new Event('input')); inp.focus(); }
   }
 
   async function _drillAnswer(chosen) {
