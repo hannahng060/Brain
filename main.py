@@ -2721,6 +2721,24 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
             description = extract_image_text(data, content_type)
             if not description.strip():
                 raise HTTPException(status_code=400, detail="Could not read this image.")
+            # Fellowship/case consult image → route through full agent so it can
+            # find the existing note and append properly (community feedback, case consults, clinical pearls)
+            note_lower_check = note.strip().lower()
+            is_fellowship_content = any(kw in note_lower_check for kw in [
+                "case consult", "community feedback", "clinical pearl", "fellowship",
+                "feedbacks from community", "save to that same note", "add to case",
+                "same case", "feedback for the case", "feedback for case",
+            ])
+            if is_fellowship_content:
+                user_msg = (
+                    f"[FELLOWSHIP IMAGE — extracted from a screenshot. "
+                    f"This is fellowship/case consult content. Apply all NP Fellowship routing rules. "
+                    f"User instruction: {note.strip()}]\n\n"
+                    f"Extracted content:\n{description}"
+                )
+                db_add_message("user", f"[Fellowship image: {filename}]")
+                result = run_agent(user_msg)
+                return {"reply": result["reply"]}
             # Spiritual content → skip auto-save, route through chat for discussion
             if _is_spiritual(description):
                 user_msg = (
