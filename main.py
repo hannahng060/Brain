@@ -2696,6 +2696,11 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 db_add_message("user", f"[Attached devotion image: {filename}]")
                 result = run_agent(user_msg)
                 return {"reply": result["reply"]}
+            # Board question image → parse and save as drill question(s), not a photo note
+            if _looks_like_board_questions(description, note.strip()):
+                reply = parse_and_save_board_questions(description, filename or "Image")
+                db_add_message("assistant", reply)
+                return {"reply": reply}
             # Check if user explicitly wants text-only (no embedded image)
             note_lower = note.strip().lower()
             text_only = any(kw in note_lower for kw in [
