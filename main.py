@@ -1164,9 +1164,6 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
        Next step: [next step if provided]
     c. Do NOT create multiple notes. ONE note per call log message.
     d. If a phone number was used → also update mom → Quick Reference with that number if not already there.
-17. GARDEN LOG: When a message starts with "Garden log: watered":
-    a. Add to ACTIVITIES section of today's daily log: "💧 Watered [plant name]"
-    b. Keep it brief — one line per plant watered.
 18. BOARD QUESTION ENTRY: When a message starts with "Board question entry:" → parse the structured data and save ONE note under boards → [topic subcategory]. Format the note as:
 
 📋 **[TOPIC]**

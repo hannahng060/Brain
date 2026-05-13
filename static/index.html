@@ -2694,11 +2694,6 @@
     _gardenSavePlants(plants);
     _gardenRender();
     showToast('💧 ' + plant.name + ' watered!');
-    // Log to Brain
-    try {
-      await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message: 'Garden log: watered ' + plant.name + ' today.', local_date: _localLongDate()}) });
-    } catch(e) {}
   }
 
   function deletePlant(id) {
