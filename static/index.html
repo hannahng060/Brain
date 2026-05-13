@@ -2891,8 +2891,7 @@
     // Build a context message so Brain knows exactly what question we're discussing
     var choices = ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
       .map(function(l){ return l + ') ' + q.choices[l]; }).join('\n');
-    var msg = 'I have a question about this board question:\n\n'
-      + q.question + '\n\n' + choices + '\n\nWhat can you explain about this?';
+    var msg = 'About this board question:\n\n' + q.question + '\n\n' + choices + '\n\n';
     // Close drill, open chat, pre-fill input
     $('drill-overlay').style.display = 'none';
     showTab('chat');

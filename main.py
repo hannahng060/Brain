@@ -1410,14 +1410,32 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
 
 def run_agent(user_message: str) -> dict:
     db_add_message("user", user_message)
-    messages = db_get_history(10)
     profile_context = build_profile_context()
-    if profile_context:
-        messages = [
-            {"role": "user", "content": profile_context},
-            {"role": "assistant", "content": "Got it, I have your profile and will use it as context for all responses."}
-        ] + messages
-    final_text, saves_made = run_agent_loop(messages, user_message)
+
+    def _build_messages(limit: int) -> list:
+        msgs = db_get_history(limit)
+        if profile_context:
+            msgs = [
+                {"role": "user", "content": profile_context},
+                {"role": "assistant", "content": "Got it, I have your profile and will use it as context for all responses."}
+            ] + msgs
+        return msgs
+
+    # Try with progressively fewer messages if we hit the token limit
+    final_text, saves_made = None, []
+    for history_limit in [10, 6, 4, 2]:
+        try:
+            messages = _build_messages(history_limit)
+            final_text, saves_made = run_agent_loop(messages, user_message)
+            break
+        except Exception as e:
+            err = str(e)
+            if "prompt is too long" in err or "too many tokens" in err.lower() or "invalid_request_error" in err:
+                if history_limit == 2:
+                    final_text = "I'm having trouble with a very long conversation. Please try refreshing and starting fresh!"
+                continue
+            raise
+
     if not final_text:
         final_text = "I'm here but had trouble responding — please try again."
     db_add_message("assistant", final_text)
