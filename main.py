@@ -438,11 +438,17 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 def db_get_history(limit: int = 20) -> list:
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT role, content FROM messages WHERE content != '' ORDER BY created_at DESC LIMIT %s", (limit,))
+    # Only load messages from the last 16 hours — yesterday's lecture dumps
+    # can be enormous and blow the token limit on a fresh session
+    cur.execute("""SELECT role, content FROM messages
+                   WHERE content != '' AND created_at >= NOW() - INTERVAL '16 hours'
+                   ORDER BY created_at DESC LIMIT %s""", (limit,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    msgs = [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+    # Cap each message at 3000 chars — lecture dumps can be massive and blow token limits
+    MAX_MSG = 3000
+    msgs = [{"role": r["role"], "content": r["content"][:MAX_MSG] + ("…" if len(r["content"]) > MAX_MSG else "")} for r in reversed(rows)]
     # Sanitize: ensure messages alternate user/assistant (no consecutive same-role)
     # Drop orphaned messages that would break the Anthropic API
     sanitized = []
