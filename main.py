@@ -2338,12 +2338,14 @@ _BOARD_TOPIC_MAP = {
 }
 
 def _looks_like_board_questions(text: str, user_note: str) -> bool:
-    """Detect if content is a practice question PDF."""
+    """Detect if content is a practice question PDF or image."""
     note_lower = (user_note or "").lower()
     if any(kw in note_lower for kw in ["board", "question", "quiz", "practice", "georgette", "blueprint", "ancc", "pmhnp"]):
         return True
-    # Count A) B) C) D) patterns — 8+ suggests at least 2 questions
-    return len(re.findall(r'\b[A-D]\)', text)) >= 8
+    # Match both A) and A. formats (e.g. "A. ADHD" or "A) ADHD")
+    # 4+ matches = at least one full A/B/C/D question
+    matches = len(re.findall(r'\b[A-D][).]', text))
+    return matches >= 4
 
 def _normalize_topic(raw: str) -> str:
     """Map a raw topic string to a canonical board subcategory."""
