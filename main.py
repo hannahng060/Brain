@@ -2214,7 +2214,16 @@ def extract_image_text(data: bytes, media_type: str) -> str:
             "role": "user",
             "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
-                {"type": "text", "text": "Describe this image clearly and extract all visible text and information. Be specific and thorough. IMPORTANT: if you see any URLs or web links, always write them in full format starting with https:// (e.g. https://www.example.com). Format your response as clean HTML using <strong>, <br>, <ul>, <li> tags — no markdown asterisks or pound signs."}
+                {"type": "text", "text": """Extract all text and information from this image. Follow these rules carefully:
+
+1. HIGHLIGHTED or COLORED text — any text that appears highlighted (yellow, blue, etc.), bold, underlined, or in a different color than the surrounding text: wrap it in <strong> tags so it stands out in the note. These are key terms the instructor emphasized.
+2. TABLES — preserve the table structure using HTML <table> tags with borders.
+3. GRAPHS/DIAGRAMS — describe what the graph shows, label axes, note key values.
+4. BULLET POINTS/LISTS — use <ul><li> tags.
+5. HEADINGS — use <strong> tags.
+6. URLs — write in full format starting with https://.
+7. Format everything as clean HTML — no markdown asterisks or pound signs.
+8. Extract EVERYTHING visible — do not skip any text even if small or in margins."""}
             ]
         }]
     )
