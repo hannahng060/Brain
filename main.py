@@ -2241,7 +2241,11 @@ def extract_image_text(data: bytes, media_type: str) -> str:
             ]
         }]
     )
-    return response.content[0].text if response.content else ""
+    raw = response.content[0].text if response.content else ""
+    # Strip any markdown code fences the model may have wrapped the HTML in
+    raw = re.sub(r"^```[a-zA-Z]*\s*", "", raw.strip())
+    raw = re.sub(r"```\s*$", "", raw.strip())
+    return raw.strip()
 
 def save_image_note(data: bytes, media_type: str, filename: str, description: str, user_note: str, text_only: bool = False) -> str:
     """Save image as a note. If text_only=True, saves extracted text only (no embedded image)."""
@@ -2271,6 +2275,8 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         + (f"User note: {user_note}\n" if user_note else "")
         + "ROUTING RULES:\n"
         + "⛔ If this image contains ANY spiritual/faith content — devotions, Bible verses, scripture, sermons, prayers, worship, faith reflections — set category=lifestyle AND subcategory=Daily Log.\n"
+        + "✅ If this image contains board exam study content — pharmacology, psychopharmacology, stimulants, medications, drug names, ANCC topics, PMHNP board prep, DSM criteria, clinical assessment, psychotherapy models, special populations, ethics, professional standards, neuroscience — set category=boards and subcategory to the best ANCC match: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics | Board Prep.\n"
+        + "✅ If this image is a lecture slide, class notes, or study guide — route to the most relevant clinical category (boards, psychiatry, psychotherapy, etc.).\n"
         + "Return ONLY a JSON object: "
         '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden|boards", '
         '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
