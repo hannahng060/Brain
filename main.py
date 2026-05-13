@@ -86,6 +86,8 @@ def init_db():
     cur.execute("UPDATE notes SET category = 'psychiatry' WHERE category IN ('clinical', 'study')")
     # Move Board Prep notes from psychiatry to boards
     cur.execute("UPDATE notes SET category = 'boards', subcategory = 'Board Prep' WHERE category = 'psychiatry' AND subcategory = 'Board Prep'")
+    # Merge Exam Structure into Board Prep
+    cur.execute("UPDATE notes SET subcategory = 'Board Prep' WHERE category = 'boards' AND subcategory = 'Exam Structure'")
     # Remap quiz_results topics to official 6 ANCC board categories
     cur.execute("""
         UPDATE quiz_results SET topic = 'Assessment & Diagnosis'
@@ -625,8 +627,8 @@ TOOLS = [
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude","Journal",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
-                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Exam Structure","Board Prep"],
-                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Exam Structure (exam breakdown, ANCC question counts, test structure, time limits)/Board Prep (application process, eligibility docs, ATT letter, scheduling, registration, anything about the journey to take the exam — NOT practice questions)"},
+                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Board Prep"],
+                                "description": "Pick the subcategory. psychiatry→DSM-5/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law. psychotherapy→CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Board Prep (application, eligibility, ATT letter, scheduling, registration, exam breakdown, question counts, test structure, test-taking strategy — anything about the exam journey that is NOT a practice question)"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -719,7 +721,7 @@ TOOLS = [
                                          "Contacts","URLs & Links","Books","Courses","Tools","Future Ideas",
                                          "Reflections","Goals","Mental Health","Gratitude",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
-                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Exam Structure","Board Prep"]},
+                                         "Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics","Board Prep"]},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "boards"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
@@ -815,7 +817,7 @@ CATEGORIES:
 - icu           → ICU nursing knowledge: Neuro, Respiratory, Cardiac, GI, Renal, Hematology, Pharmacology, Procedures, Protocols & Guidelines
 - business      → telehealth clinic, licensing, credentialing, billing, insurance, platforms, legal, marketing
 - resources     → contacts/networking, URLs, books, courses, tools, recommendations, future ideas
-- boards        → ANCC PMHNP-BC board exam prep (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics = practice questions by ANCC topic; Exam Structure = exam breakdown/question counts/test structure; Board Prep = application process, eligibility, ATT letter, scheduling, registration, ANCC account — anything about the journey to take the exam)
+- boards        → ANCC PMHNP-BC board exam prep (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics = practice questions by ANCC topic; Board Prep = everything about the exam journey — application, eligibility, ATT letter, scheduling, registration, ANCC account, exam breakdown, question counts, test structure, test-taking strategy)
 
 QUICK CAPTURE RULE:
 If the message starts with [QUICK CAPTURE — MUST SAVE], the user captured a quick thought on the go. You MUST save or update immediately — never call no_save. Strip the [QUICK CAPTURE] prefix from the content before saving. Apply all routing rules (personal/today/I/me → correct Daily Log section per Rule 4; clinical knowledge → new note; etc).
@@ -835,7 +837,7 @@ CLINICAL TABLE & IMAGE ROUTING — apply when content contains a table, chart, o
 - Neurotransmitter pathways (dopamine, serotonin, GABA, glutamate, norepinephrine, receptor types) → psychiatry → Neuroscience
 - Screening tools, rating scales (PHQ-9, GAD-7, MMSE, MoCA, Columbia, AUDIT, PCL-5) → psychiatry → Assessments
 - Prevention levels (primary/secondary/tertiary), public health frameworks → psychiatry → Treatments
-- Exam breakdown, ANCC question counts, test structure, time limits, passing scores → boards → Exam Structure
+- Exam breakdown, ANCC question counts, test structure, time limits, passing scores → boards → Board Prep
 - ⛔ NEVER route clinical reference tables to resources. Resources is for contacts, URLs, books, and tools only.
 
 NOTE COUNT RULE:
@@ -1441,7 +1443,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         "Subcategories — lifestyle: Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening. "
         "personal: Reflections/Goals/Mental Health/Gratitude. "
         "psychiatry: Conditions/Medications/Assessments/Treatments/Lab Values/Neuroscience/Ethics & Law. "
-        "boards: Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Exam Structure/Board Prep. "
+        "boards: Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Board Prep. "
         "psychotherapy: CBT/DBT/ACT/Psychodynamic/Motivational Interviewing/Trauma-Focused/Family & Couples/Group Therapy/Theory & Foundations. "
         "icu: Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. "
         "business: Licensing/Credentialing/Billing & Insurance/Marketing/Platforms/Legal. "
