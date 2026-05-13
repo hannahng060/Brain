@@ -764,8 +764,8 @@
       var inp = document.getElementById('input');
       if (inp) {
         var _h = new Date().getHours();
-        var _greet = _h < 12 ? 'Good morning' : _h < 17 ? 'Good afternoon' : 'Good evening';
-        inp.value = _greet + ' — what does today look like?';
+        var _msg = _h < 12 ? 'Good morning — what does today look like?' : _h < 17 ? 'Good afternoon' : 'Good evening';
+        inp.value = _msg;
         inp.dispatchEvent(new Event('input'));
         if (typeof sendMessage === 'function') sendMessage();
       }
@@ -1758,6 +1758,8 @@
       var reply = data.reply || '';
       var isMorningMsg = text && (
         text.toLowerCase().includes('good morning') ||
+        text.toLowerCase().includes('good afternoon') ||
+        text.toLowerCase().includes('good evening') ||
         text.toLowerCase().includes('what does today look like')
       );
       if (isMorningMsg && reply.length > 0 && !/<div\s+style=/i.test(reply)) {
