@@ -2864,8 +2864,7 @@
 
   async function startDrill() {
     _drillQueue = []; _drillResults = []; _drillIndex = 0; _drillPaused = false;
-    var banner = document.getElementById('drill-resume-banner');
-    if (banner) banner.remove();
+    _drillMiniClose();
     var overlay = $('drill-overlay');
     if (!overlay) return;
     overlay.style.display = 'flex';
@@ -2917,16 +2916,65 @@
   function _drillAskBrain() {
     var q = _drillQueue[_drillIndex];
     if (!q) return;
-    var choices = ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
-      .map(function(l){ return l + ') ' + q.choices[l]; }).join('\n');
-    var msg = 'About this board question:\n\n' + q.question + '\n\n' + choices + '\n\n';
-    // Pause drill — hide overlay, show resume banner, don't reset
-    _drillPaused = true;
-    $('drill-overlay').style.display = 'none';
-    showTab('chat');
-    _showResumeBanner();
-    var inp = $('input');
-    if (inp) { inp.value = msg; inp.dispatchEvent(new Event('input')); inp.focus(); }
+    // Show mini chat inside the drill — no need to leave
+    var mini = $('drill-mini-chat');
+    if (mini) {
+      mini.style.display = 'block';
+      // Pre-load question context as first message
+      var msgs = $('drill-mini-messages');
+      if (msgs && !msgs.dataset.loaded) {
+        msgs.dataset.loaded = '1';
+        var choices = ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
+          .map(function(l){ return '<strong>' + l + ')</strong> ' + esc(q.choices[l]); }).join('<br>');
+        msgs.innerHTML = '<div style="background:#1e1e1e;border-radius:8px;padding:8px 10px;margin-bottom:8px;color:#aaa">'
+          + '<div style="font-size:12px;color:#666;margin-bottom:4px">Question context loaded</div>'
+          + esc(q.question) + '<br><br>' + choices + '</div>';
+      }
+      var inp = $('drill-mini-input');
+      if (inp) inp.focus();
+    }
+  }
+
+  async function _drillMiniSend() {
+    var inp = $('drill-mini-input');
+    var msgs = $('drill-mini-messages');
+    if (!inp || !msgs) return;
+    var text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+
+    // Get current question context
+    var q = _drillQueue[_drillIndex];
+    var choices = q ? ['A','B','C','D'].filter(function(l){ return q.choices[l]; })
+      .map(function(l){ return l + ') ' + q.choices[l]; }).join('\n') : '';
+    var context = q ? 'About this board question:\n' + q.question + '\n\n' + choices + '\n\n' + text : text;
+
+    // Show user message
+    msgs.innerHTML += '<div style="text-align:right;margin:6px 0"><span style="background:#333;border-radius:8px;padding:4px 10px;color:white;font-size:13px;display:inline-block">' + esc(text) + '</span></div>';
+    msgs.innerHTML += '<div id="drill-mini-thinking" style="color:#888;font-size:12px;margin:4px 0">Brain is thinking…</div>';
+    msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      var r = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ message: context, local_time: new Date().getHours() + ':00', local_date: _localLongDate() }) });
+      var d = await r.json();
+      var thinking = document.getElementById('drill-mini-thinking');
+      if (thinking) thinking.remove();
+      msgs.innerHTML += '<div style="background:#1e3a2e;border-left:3px solid #4caf50;border-radius:8px;padding:8px 10px;margin:6px 0;color:#e4edeb;font-size:13px">' + (d.reply || 'No response') + '</div>';
+      msgs.scrollTop = msgs.scrollHeight;
+    } catch(e) {
+      var thinking = document.getElementById('drill-mini-thinking');
+      if (thinking) thinking.textContent = 'Error — try again';
+    }
+  }
+
+  function _drillMiniClose() {
+    var mini = $('drill-mini-chat');
+    if (mini) {
+      mini.style.display = 'none';
+      var msgs = $('drill-mini-messages');
+      if (msgs) { msgs.innerHTML = ''; delete msgs.dataset.loaded; }
+    }
   }
 
   async function _drillAnswer(chosen) {
@@ -3648,6 +3696,16 @@
     <button onclick="$('drill-overlay').style.display='none'" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1">×</button>
     <div style="font-size:13px;font-weight:700;color:#bb86fc;letter-spacing:1px;margin-bottom:16px">⚡ 5-MIN DRILL</div>
     <div id="drill-content"></div>
+    <div id="drill-mini-chat" style="display:none;margin-top:12px;border-top:1px solid #333;padding-top:12px">
+      <div id="drill-mini-messages" style="max-height:180px;overflow-y:auto;margin-bottom:8px;font-size:13px;line-height:1.6"></div>
+      <div style="display:flex;gap:8px">
+        <input id="drill-mini-input" placeholder="Ask anything about this question…"
+          style="flex:1;background:#1e1e1e;border:1.5px solid #444;border-radius:8px;padding:8px 12px;color:white;font-size:13px;font-family:inherit;outline:none"
+          onkeydown="if(event.key==='Enter')_drillMiniSend()"/>
+        <button onclick="_drillMiniSend()" style="background:#bb86fc;color:#1a1a2e;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ask</button>
+      </div>
+      <button onclick="_drillMiniClose()" style="margin-top:8px;background:none;border:none;color:#666;font-size:12px;cursor:pointer;font-family:inherit">✕ Close chat</button>
+    </div>
   </div>
 </div>
 
