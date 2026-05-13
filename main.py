@@ -847,20 +847,23 @@ QUICK CAPTURE RULE:
 If the message starts with [QUICK CAPTURE — MUST SAVE], the user captured a quick thought on the go. You MUST save or update immediately — never call no_save. Strip the [QUICK CAPTURE] prefix from the content before saving. Apply all routing rules (personal/today/I/me → correct Daily Log section per Rule 4; clinical knowledge → new note; etc).
 
 LECTURE DUMP RULE — READ THIS BEFORE SAVING ANY CLINICAL NOTE:
-When Hannah is in a class, review session, or rapid study session, she pastes content in bursts. Before creating a NEW psychiatry/psychotherapy/boards note, ALWAYS call search_notes first with the topic keywords to check if a note on the same subject was saved in the last 2 hours. If a match is found:
+When Hannah is in a class, review session, or rapid study session, she pastes content in bursts. Before creating a NEW psychiatry/boards note, ALWAYS call search_notes first with the topic keywords to check if a note on the same subject was saved in the last 2 hours. If a match is found:
 - UPDATE the existing note by appending the new content — do NOT create a duplicate
 - Signal: "Added to your existing [topic] note."
 If no match is found, create a new note as usual.
 This applies especially to: prevention levels, neurotransmitter pathways, DSM criteria, medication classes, screening tools, or any topic that clearly continues a previous paste.
 Exception: if the new content is a completely different subtopic (e.g. previous note was about dopamine, new content is about eating disorders), create a new note.
 
+⛔ CONTINUE / CONTINUATION RULE — HIGHEST PRIORITY:
+If the message contains ANY of these phrases: "continue [X] note", "continuation of [X]", "add to [X] note", "this is part of [X]", "more on [X]", "continuing [X]" — treat it as an EXPLICIT instruction to find and update the existing note on that topic. ALWAYS call search_notes with the topic name first. Never create a new note when the user says "continue."
+
 CLINICAL TABLE & IMAGE ROUTING — apply when content contains a table, chart, or structured reference data:
 - Lab values, reference ranges, metabolic panels → psychiatry → Lab Values
-- BMI tables, weight/height charts, dosing tables, treatment algorithms → psychiatry → Treatments
+- BMI tables, weight/height charts, dosing tables, treatment algorithms → psychiatry → Psychotherapy
 - Brain regions, neural circuits, neuroanatomy → psychiatry → Neuroscience
 - Neurotransmitter pathways (dopamine, serotonin, GABA, glutamate, norepinephrine, receptor types) → psychiatry → Neuroscience
-- Screening tools, rating scales (PHQ-9, GAD-7, MMSE, MoCA, Columbia, AUDIT, PCL-5) → psychiatry → Assessments
-- Prevention levels (primary/secondary/tertiary), public health frameworks → psychiatry → Treatments
+- Screening tools, rating scales (PHQ-9, GAD-7, MMSE, MoCA, Columbia, AUDIT, PCL-5) → psychiatry → Assessment & Diagnosis
+- Prevention levels (primary/secondary/tertiary), public health frameworks → psychiatry → Assessment & Diagnosis
 - Exam breakdown, ANCC question counts, test structure, time limits, passing scores → boards → Board Prep
 - ⛔ NEVER route clinical reference tables to resources. Resources is for contacts, URLs, books, and tools only.
 
