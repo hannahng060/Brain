@@ -98,14 +98,10 @@ def init_db():
     # Tag Georgette review notes (May 12-13 2026 psychiatry/boards notes)
     cur.execute("""
         UPDATE notes
-        SET tags = (
-            CASE
-                WHEN tags::text LIKE '%georgette%' THEN tags
-                ELSE (tags::jsonb || '["georgette","board-review"]'::jsonb)::text::jsonb
-            END
-        )
+        SET tags = (COALESCE(tags,'[]')::jsonb || '["georgette","board-review"]'::jsonb)::text
         WHERE category IN ('psychiatry','boards')
           AND created_at::date BETWEEN '2026-05-12' AND '2026-05-13'
+          AND (tags IS NULL OR tags::text NOT LIKE '%georgette%')
     """)
     # Remap quiz_results topics to official 6 ANCC board categories
     cur.execute("""
