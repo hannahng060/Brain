@@ -1835,6 +1835,65 @@ async def save_quiz_result_direct(request: Request):
     )
     return result
 
+@app.post("/merge-notes")
+async def merge_notes_endpoint(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    ids = body.get("ids", [])
+    if len(ids) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 note IDs")
+
+    # Fetch full content for all notes
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id, summary, content, category, subcategory, tags FROM notes WHERE id = ANY(%s) ORDER BY created_at", (ids,))
+    notes = cur.fetchall()
+    if len(notes) < 2:
+        cur.close(); conn.close()
+        raise HTTPException(status_code=404, detail="Notes not found")
+
+    # Build prompt for Claude to merge intelligently
+    notes_text = ""
+    for n in notes:
+        import re as _re
+        raw = _re.sub(r'<[^>]+>', ' ', n['content'] or '')
+        raw = _re.sub(r'\s+', ' ', raw).strip()
+        notes_text += f"\n\n--- Note #{n['id']}: {n['summary']} ---\n{raw[:2000]}"
+
+    merge_prompt = f"""Merge these {len(notes)} notes about the same topic into one clean, comprehensive note.
+Keep all unique information. Use clear headings and bullet points. Remove duplicates.
+Write in HTML (use <h3>, <ul><li>, <p>, <strong> tags).
+Return ONLY the merged HTML content, nothing else.
+{notes_text}"""
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=3000,
+        messages=[{"role": "user", "content": merge_prompt}]
+    )
+    merged_content = response.content[0].text.strip() if response.content else ""
+
+    # Use first note's category/subcategory/tags, combine all tags
+    master = notes[0]
+    all_tags = []
+    for n in notes:
+        all_tags.extend(json.loads(n['tags'] or '[]'))
+    merged_tags = list(dict.fromkeys(all_tags))  # dedupe preserving order
+
+    merged_summary = master['summary']
+
+    # Update master note
+    cur.execute("UPDATE notes SET content=%s, tags=%s WHERE id=%s",
+                (merged_content, json.dumps(merged_tags), master['id']))
+    # Mark others as merged
+    for n in notes[1:]:
+        cur.execute("UPDATE notes SET summary=%s, content=%s WHERE id=%s",
+                    (f"[Merged into #{master['id']}]",
+                     f"<p><em>Merged into note #{master['id']} — {master['summary']}</em></p>",
+                     n['id']))
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "merged", "master_id": master['id'], "merged_count": len(notes)}
+
 @app.get("/weekly-plan")
 async def get_weekly_plan(request: Request):
     if not is_authenticated(request):
