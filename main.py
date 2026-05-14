@@ -94,7 +94,18 @@ def init_db():
     cur.execute("UPDATE notes SET subcategory = 'Professional & Ethics' WHERE category = 'psychiatry' AND subcategory = 'Ethics & Law'")
     # Rename Treatments → Psychotherapy under psychiatry; absorb psychotherapy top-level category
     cur.execute("UPDATE notes SET subcategory = 'Psychotherapy' WHERE category = 'psychiatry' AND subcategory = 'Treatments'")
-    cur.execute("UPDATE notes SET category = 'psychiatry', subcategory = 'Psychotherapy' WHERE category = 'psychotherapy'")
+    # Migrate old psychotherapy category → psychiatry > Psychotherapy, preserve old subcategory as tag
+    cur.execute("""
+        UPDATE notes
+        SET tags = CASE
+              WHEN subcategory IS NOT NULL AND tags::text NOT LIKE ('%' || lower(subcategory) || '%')
+              THEN (COALESCE(tags,'[]')::jsonb || jsonb_build_array(lower(subcategory)))::text
+              ELSE tags
+            END,
+            category = 'psychiatry',
+            subcategory = 'Psychotherapy'
+        WHERE category = 'psychotherapy'
+    """)
     # Tag Georgette review notes (May 12-14 2026 psychiatry/boards notes)
     cur.execute("""
         UPDATE notes
@@ -775,6 +786,19 @@ TOOLS = [
         }
     },
     {
+        "name": "merge_notes",
+        "description": "Merge multiple notes into one. Use when Hannah says 'merge my X notes' or 'combine my notes about X'. Finds matching notes, combines their content in order, saves to the first note, and marks the rest as merged.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "note_ids":      {"type": "array", "items": {"type": "integer"}, "description": "List of note IDs to merge, in order. First ID becomes the master note."},
+                "merged_summary":{"type": "string", "description": "New summary/title for the merged note"},
+                "merged_content":{"type": "string", "description": "Combined content for the merged note (you write this by reading all notes and combining them cleanly)"}
+            },
+            "required": ["note_ids", "merged_summary", "merged_content"]
+        }
+    },
+    {
         "name": "save_quiz_result",
         "description": "Call this immediately after evaluating the user's quiz answer — BEFORE giving feedback. Records whether she got it right, partial, or wrong so Brain can track weak areas and focus future quizzes.",
         "input_schema": {
@@ -1397,6 +1421,22 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
         return db_update_note(note_id, fields)
+    elif name == "merge_notes":
+        note_ids = args.get("note_ids", [])
+        merged_summary = args.get("merged_summary", "")
+        merged_content = args.get("merged_content", "")
+        if not note_ids or len(note_ids) < 2:
+            return {"error": "Need at least 2 note IDs to merge"}
+        conn = get_db(); cur = conn.cursor()
+        # Update master note with merged content
+        cur.execute("UPDATE notes SET summary=%s, content=%s WHERE id=%s",
+                    (merged_summary, merged_content, note_ids[0]))
+        # Mark remaining notes as merged (update summary to indicate merged)
+        for nid in note_ids[1:]:
+            cur.execute("UPDATE notes SET summary=%s, content=%s WHERE id=%s",
+                        (f"[Merged into #{note_ids[0]}]", f"<p><em>This note was merged into note #{note_ids[0]}.</em></p>", nid))
+        conn.commit(); cur.close(); conn.close()
+        return {"status": "merged", "master_id": note_ids[0], "merged_count": len(note_ids)}
     elif name == "save_quiz_result":
         return db_save_quiz_result(
             args.get("topic", "General"),
