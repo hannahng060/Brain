@@ -2297,10 +2297,15 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
         for subcat, notes in subcat_map.items():
             notes_html = ""
             for n in notes:
+                # Strip raw "ORIGINAL TEXT" section — keep only Brain's formatted summary
+                content = n['content'] or ''
+                content = re.sub(r'<[^>]*>\s*ORIGINAL TEXT[^<]*</[^>]*>.*$', '', content, flags=re.DOTALL|re.IGNORECASE)
+                content = re.sub(r'<hr[^>]*>.*$', '', content, flags=re.DOTALL|re.IGNORECASE)
+                content = re.sub(r'---.*$', '', content, flags=re.DOTALL)
                 notes_html += f"""
             <div class="note">
                 <div class="note-title">{n['summary'] or 'Note'}</div>
-                <div class="note-content">{n['content'] or ''}</div>
+                <div class="note-content">{content.strip()}</div>
             </div>"""
             subcat_sections += f"""
         <div class="section">
