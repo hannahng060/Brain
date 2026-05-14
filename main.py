@@ -2213,8 +2213,10 @@ async def delete_note(note_id: int, request: Request):
     return {"ok": True}
 
 @app.get("/export")
-async def export_notes(request: Request, from_date: str = "", to_date: str = "", cats: str = "psychiatry,boards"):
-    """Export notes as a printable HTML document grouped by subcategory."""
+async def export_notes(request: Request, from_date: str = "", to_date: str = "",
+                       cats: str = "psychiatry,boards,np_fellowship,icu",
+                       day_labels: str = ""):
+    """Export notes as a printable HTML document grouped by day then subcategory."""
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     conn = get_db()
@@ -2228,25 +2230,33 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
     if to_date:
         date_filter += " AND created_at < (%s::date + interval '1 day')"
         params.append(to_date)
-    # "all" or empty = no category filter
     if cat_list and cat_list != ["all"]:
         placeholders = ",".join(["%s"] * len(cat_list))
         cat_filter = f"WHERE category IN ({placeholders}) {date_filter}"
         params = cat_list + params
     else:
         cat_filter = f"WHERE 1=1 {date_filter}"
-    cur.execute(f"""SELECT id, summary, content, category, subcategory, created_at
+    cur.execute(f"""SELECT id, summary, content, category, subcategory,
+                           created_at::date AS day, created_at
                     FROM notes {cat_filter}
-                    ORDER BY category, subcategory, created_at""", params)
+                    ORDER BY created_at::date, subcategory, created_at""", params)
     rows = cur.fetchall()
     cur.close(); conn.close()
 
-    # Group by subcategory
-    from collections import defaultdict
-    groups = defaultdict(list)
+    # Parse optional day labels: "Scientific Foundation | Diagnosis and Treatment"
+    custom_labels = [l.strip() for l in day_labels.split("|") if l.strip()]
+
+    # Group: day_date -> subcategory -> [notes]
+    from collections import defaultdict, OrderedDict
+    day_groups = OrderedDict()  # date -> {subcat: [notes]}
     for r in rows:
-        key = f"{r['category'].title()} — {r['subcategory'] or 'General'}"
-        groups[key].append(r)
+        day = str(r["day"])
+        subcat_key = r["subcategory"] or "General"
+        if day not in day_groups:
+            day_groups[day] = OrderedDict()
+        if subcat_key not in day_groups[day]:
+            day_groups[day][subcat_key] = []
+        day_groups[day][subcat_key].append(r)
 
     date_label = ""
     if from_date and to_date:
@@ -2254,44 +2264,78 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
     elif from_date:
         date_label = f"from {from_date}"
 
+    # Friendly date formatter
+    import datetime
+    def fmt_date(d_str):
+        try:
+            d = datetime.date.fromisoformat(d_str)
+            return d.strftime("%A, %B %-d, %Y")
+        except Exception:
+            return d_str
+
     sections_html = ""
-    for group_name in sorted(groups.keys()):
-        notes = groups[group_name]
-        notes_html = ""
-        for n in notes:
-            notes_html += f"""
+    for day_idx, (day_date, subcat_map) in enumerate(day_groups.items()):
+        day_num = day_idx + 1
+        day_note_count = sum(len(v) for v in subcat_map.values())
+        # Use custom label if provided, else just Day N
+        if day_idx < len(custom_labels):
+            day_title = custom_labels[day_idx].upper()
+        else:
+            day_title = f"DAY {day_num}"
+
+        subcat_sections = ""
+        for subcat, notes in subcat_map.items():
+            notes_html = ""
+            for n in notes:
+                notes_html += f"""
             <div class="note">
                 <div class="note-title">{n['summary'] or 'Note'}</div>
                 <div class="note-content">{n['content'] or ''}</div>
             </div>"""
-        sections_html += f"""
+            subcat_sections += f"""
         <div class="section">
-            <div class="section-header">{group_name} <span class="count">({len(notes)})</span></div>
+            <div class="section-header">{subcat} <span class="count">({len(notes)})</span></div>
             {notes_html}
         </div>"""
+
+        sections_html += f"""
+    <div class="day-block">
+        <div class="day-header">
+            <span class="day-num">Day {day_num} &nbsp;·&nbsp; {fmt_date(day_date)}</span>
+            <div class="day-title">{day_title}</div>
+            <span class="day-count">{day_note_count} notes</span>
+        </div>
+        {subcat_sections}
+    </div>"""
 
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>Brain Export — {date_label}</title>
 <style>
-  body {{ font-family: Georgia, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.7; }}
-  h1 {{ font-size: 24px; border-bottom: 2px solid #2e5d56; padding-bottom: 10px; color: #2e5d56; }}
-  .meta {{ color: #888; font-size: 13px; margin-bottom: 30px; }}
-  .section {{ margin-bottom: 40px; }}
-  .section-header {{ font-size: 18px; font-weight: bold; background: #f0f4f3; padding: 8px 14px; border-left: 4px solid #2e5d56; margin-bottom: 16px; color: #2e5d56; }}
-  .count {{ font-weight: normal; font-size: 13px; color: #888; }}
+  body {{ font-family: Georgia, serif; max-width: 960px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.7; }}
+  h1 {{ font-size: 26px; border-bottom: 3px solid #2e5d56; padding-bottom: 12px; color: #2e5d56; margin-bottom: 6px; }}
+  .meta {{ color: #999; font-size: 13px; margin-bottom: 40px; }}
+  .day-block {{ margin-bottom: 56px; }}
+  .day-header {{ background: #2e5d56; color: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }}
+  .day-num {{ font-size: 13px; opacity: 0.75; letter-spacing: 0.5px; }}
+  .day-title {{ font-size: 22px; font-weight: 700; letter-spacing: 0.5px; margin: 4px 0 6px; }}
+  .day-count {{ font-size: 12px; opacity: 0.65; }}
+  .section {{ margin-bottom: 36px; }}
+  .section-header {{ font-size: 16px; font-weight: 700; background: #f0f4f3; padding: 7px 14px; border-left: 4px solid #2e5d56; margin-bottom: 16px; color: #2e5d56; border-radius: 0 6px 6px 0; }}
+  .count {{ font-weight: 400; font-size: 12px; color: #999; }}
   .note {{ margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }}
-  .note-title {{ font-weight: bold; font-size: 15px; margin-bottom: 8px; }}
+  .note-title {{ font-weight: 700; font-size: 14px; color: #444; margin-bottom: 6px; }}
   .note-content {{ font-size: 14px; }}
-  img {{ max-width: 60%; border-radius: 8px; margin: 8px 0; }}
+  img {{ max-width: 55%; border-radius: 8px; margin: 8px 0; }}
   @media print {{
-    body {{ margin: 20px; }}
+    body {{ margin: 16px; }}
+    .day-header {{ background: #2e5d56 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
     .section-header {{ background: #eee !important; -webkit-print-color-adjust: exact; }}
   }}
 </style>
 </head><body>
 <h1>📚 Brain Study Export</h1>
-<div class="meta">Categories: {cats} &nbsp;|&nbsp; {date_label} &nbsp;|&nbsp; {len(rows)} notes</div>
+<div class="meta">{date_label} &nbsp;·&nbsp; {len(rows)} notes &nbsp;·&nbsp; {len(day_groups)} day(s)</div>
 {sections_html}
 </body></html>"""
     from fastapi.responses import HTMLResponse
