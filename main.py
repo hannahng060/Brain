@@ -1835,6 +1835,23 @@ async def save_quiz_result_direct(request: Request):
     )
     return result
 
+@app.post("/new-note")
+async def create_new_note(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    title = body.get("title", "").strip()
+    content = body.get("content", "").strip()
+    category = body.get("category", "personal")
+    subcategory = body.get("subcategory") or None
+    if not content:
+        raise HTTPException(status_code=400, detail="Content required")
+    # Format content as simple HTML paragraphs
+    html_content = "".join(f"<p>{line}</p>" for line in content.splitlines() if line.strip())
+    summary = title if title else (content[:80] + ("…" if len(content) > 80 else ""))
+    result = db_save_note("[Manual note]", html_content, summary, category, subcategory, [], [])
+    return result
+
 @app.post("/merge-notes")
 async def merge_notes_endpoint(request: Request):
     if not is_authenticated(request):
