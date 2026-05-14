@@ -2220,8 +2220,7 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
     conn = get_db()
     cur = conn.cursor()
     cat_list = [c.strip() for c in cats.split(",") if c.strip()]
-    placeholders = ",".join(["%s"] * len(cat_list))
-    params = cat_list[:]
+    params = []
     date_filter = ""
     if from_date:
         date_filter += " AND created_at >= %s::date"
@@ -2229,8 +2228,15 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
     if to_date:
         date_filter += " AND created_at < (%s::date + interval '1 day')"
         params.append(to_date)
+    # "all" or empty = no category filter
+    if cat_list and cat_list != ["all"]:
+        placeholders = ",".join(["%s"] * len(cat_list))
+        cat_filter = f"WHERE category IN ({placeholders}) {date_filter}"
+        params = cat_list + params
+    else:
+        cat_filter = f"WHERE 1=1 {date_filter}"
     cur.execute(f"""SELECT id, summary, content, category, subcategory, created_at
-                    FROM notes WHERE category IN ({placeholders}) {date_filter}
+                    FROM notes {cat_filter}
                     ORDER BY category, subcategory, created_at""", params)
     rows = cur.fetchall()
     cur.close(); conn.close()
