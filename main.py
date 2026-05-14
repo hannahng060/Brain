@@ -95,7 +95,14 @@ def init_db():
     # Rename Treatments → Psychotherapy under psychiatry; absorb psychotherapy top-level category
     cur.execute("UPDATE notes SET subcategory = 'Psychotherapy' WHERE category = 'psychiatry' AND subcategory = 'Treatments'")
     cur.execute("UPDATE notes SET category = 'psychiatry', subcategory = 'Psychotherapy' WHERE category = 'psychotherapy'")
-    # Tag Georgette review notes (May 12-13 2026 psychiatry/boards notes)
+    # Tag Georgette review notes (May 12-14 2026 psychiatry/boards notes)
+    cur.execute("""
+        UPDATE notes
+        SET tags = (COALESCE(tags,'[]')::jsonb || '["georgette","georgette-5-14","board-review"]'::jsonb)::text
+        WHERE category IN ('psychiatry','boards')
+          AND created_at::date = '2026-05-14'
+          AND (tags IS NULL OR tags::text NOT LIKE '%georgette%')
+    """)
     cur.execute("""
         UPDATE notes
         SET tags = (COALESCE(tags,'[]')::jsonb || '["georgette","board-review"]'::jsonb)::text
