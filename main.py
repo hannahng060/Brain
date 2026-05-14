@@ -173,6 +173,13 @@ def fix_board_prep():
 def db_save_note(raw_input: str, content: str, summary: str,
                  category: str, subcategory: Optional[str],
                  tags: list, entities: list) -> dict:
+    # Auto-tag georgette review days
+    import datetime
+    today = datetime.date.today().isoformat()
+    georgette_days = {"2026-05-12", "2026-05-13", "2026-05-14"}
+    if today in georgette_days and category in ("psychiatry", "boards"):
+        if "georgette" not in tags:
+            tags = list(tags) + ["georgette", f"georgette-{today[5:].replace('-', '/')}", "board-review"]
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
