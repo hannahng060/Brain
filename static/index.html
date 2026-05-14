@@ -3890,7 +3890,7 @@
           <button onclick="document.getElementById('new-note-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#aaa">✕</button>
         </div>
         <input id="nn-title" type="text" placeholder="Title (optional)" style="padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;outline:none">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px;border:1.5px solid #ddd;border-radius:10px;background:#fafafa">
+        <div class="nn-toolbar" style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px;border:1.5px solid #ddd;border-radius:10px;background:#fafafa;position:relative">
           <button style="${btnStyle};font-weight:700" onclick="nnFmt('bold')" title="Bold">B</button>
           <button style="${btnStyle};font-style:italic" onclick="nnFmt('italic')" title="Italic">I</button>
           <button style="${btnStyle};text-decoration:underline" onclick="nnFmt('underline')" title="Underline">U</button>
@@ -3898,7 +3898,7 @@
           <button style="${btnStyle};background:#b9f6ca" onclick="nnHighlight('#b9f6ca')" title="Highlight green">🟢</button>
           <button style="${btnStyle}" onclick="nnFmt('insertUnorderedList')" title="Bullet list">• List</button>
           <button style="${btnStyle}" onclick="nnInsertLine()" title="Divider line">― Line</button>
-          <button style="${btnStyle}" onclick="nnInsertBox()" title="Box / callout">□ Box</button>
+          <button style="${btnStyle}" onclick="nnShowBoxPicker()" title="Box / callout">□ Box ▾</button>
           <button style="${btnStyle}" onclick="nnFmt('removeFormat')" title="Clear formatting">✕ Clear</button>
         </div>
         <div id="nn-content" contenteditable="true" placeholder="Write your note here..."
@@ -3927,10 +3927,40 @@
     document.getElementById('nn-content').focus();
     document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #ccc;margin:12px 0">');
   }
-  function nnInsertBox() {
+  function nnInsertBox(color) {
+    var colors = {
+      teal:   {bg:'#f0f7f5', border:'#2e5d56'},
+      yellow: {bg:'#fffde7', border:'#f9a825'},
+      pink:   {bg:'#fce4ec', border:'#e91e63'},
+      blue:   {bg:'#e3f2fd', border:'#1976d2'},
+      purple: {bg:'#f3e5f5', border:'#7b1fa2'},
+    };
+    var c = colors[color] || colors.teal;
     document.getElementById('nn-content').focus();
     document.execCommand('insertHTML', false,
-      '<div style="border:2px solid #2e5d56;border-radius:8px;padding:10px 14px;margin:8px 0;background:#f0f7f5"><p style="margin:0">Type inside box...</p></div><p></p>');
+      `<div style="border:2px solid ${c.border};border-radius:8px;padding:10px 14px;margin:8px 0;background:${c.bg}"><p style="margin:0">Type inside box...</p></div><p></p>`);
+  }
+
+  function nnShowBoxPicker() {
+    var existing = document.getElementById('nn-box-picker');
+    if(existing) { existing.remove(); return; }
+    var picker = document.createElement('div');
+    picker.id = 'nn-box-picker';
+    picker.style.cssText = 'position:absolute;background:white;border:1.5px solid #ddd;border-radius:10px;padding:8px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000';
+    var boxColors = [
+      {key:'teal',   bg:'#f0f7f5', border:'#2e5d56', label:'Teal'},
+      {key:'yellow', bg:'#fffde7', border:'#f9a825', label:'Yellow'},
+      {key:'pink',   bg:'#fce4ec', border:'#e91e63', label:'Pink'},
+      {key:'blue',   bg:'#e3f2fd', border:'#1976d2', label:'Blue'},
+      {key:'purple', bg:'#f3e5f5', border:'#7b1fa2', label:'Purple'},
+    ];
+    picker.innerHTML = boxColors.map(c =>
+      `<button onclick="nnInsertBox('${c.key}');document.getElementById('nn-box-picker').remove()"
+        style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer" title="${c.label}"></button>`
+    ).join('');
+    var toolbar = document.querySelector('#new-note-modal .nn-toolbar');
+    toolbar.style.position = 'relative';
+    toolbar.appendChild(picker);
   }
 
   function updateNewNoteSubcats() {
