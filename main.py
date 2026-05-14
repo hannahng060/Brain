@@ -2212,6 +2212,85 @@ async def delete_note(note_id: int, request: Request):
     conn.close()
     return {"ok": True}
 
+@app.get("/export")
+async def export_notes(request: Request, from_date: str = "", to_date: str = "", cats: str = "psychiatry,boards"):
+    """Export notes as a printable HTML document grouped by subcategory."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cat_list = [c.strip() for c in cats.split(",") if c.strip()]
+    placeholders = ",".join(["%s"] * len(cat_list))
+    params = cat_list[:]
+    date_filter = ""
+    if from_date:
+        date_filter += " AND created_at >= %s::date"
+        params.append(from_date)
+    if to_date:
+        date_filter += " AND created_at < (%s::date + interval '1 day')"
+        params.append(to_date)
+    cur.execute(f"""SELECT id, summary, content, category, subcategory, created_at
+                    FROM notes WHERE category IN ({placeholders}) {date_filter}
+                    ORDER BY category, subcategory, created_at""", params)
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+
+    # Group by subcategory
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for r in rows:
+        key = f"{r['category'].title()} — {r['subcategory'] or 'General'}"
+        groups[key].append(r)
+
+    date_label = ""
+    if from_date and to_date:
+        date_label = f"{from_date} to {to_date}"
+    elif from_date:
+        date_label = f"from {from_date}"
+
+    sections_html = ""
+    for group_name in sorted(groups.keys()):
+        notes = groups[group_name]
+        notes_html = ""
+        for n in notes:
+            notes_html += f"""
+            <div class="note">
+                <div class="note-title">{n['summary'] or 'Note'}</div>
+                <div class="note-content">{n['content'] or ''}</div>
+            </div>"""
+        sections_html += f"""
+        <div class="section">
+            <div class="section-header">{group_name} <span class="count">({len(notes)})</span></div>
+            {notes_html}
+        </div>"""
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Brain Export — {date_label}</title>
+<style>
+  body {{ font-family: Georgia, serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.7; }}
+  h1 {{ font-size: 24px; border-bottom: 2px solid #2e5d56; padding-bottom: 10px; color: #2e5d56; }}
+  .meta {{ color: #888; font-size: 13px; margin-bottom: 30px; }}
+  .section {{ margin-bottom: 40px; }}
+  .section-header {{ font-size: 18px; font-weight: bold; background: #f0f4f3; padding: 8px 14px; border-left: 4px solid #2e5d56; margin-bottom: 16px; color: #2e5d56; }}
+  .count {{ font-weight: normal; font-size: 13px; color: #888; }}
+  .note {{ margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }}
+  .note-title {{ font-weight: bold; font-size: 15px; margin-bottom: 8px; }}
+  .note-content {{ font-size: 14px; }}
+  img {{ max-width: 60%; border-radius: 8px; margin: 8px 0; }}
+  @media print {{
+    body {{ margin: 20px; }}
+    .section-header {{ background: #eee !important; -webkit-print-color-adjust: exact; }}
+  }}
+</style>
+</head><body>
+<h1>📚 Brain Study Export</h1>
+<div class="meta">Categories: {cats} &nbsp;|&nbsp; {date_label} &nbsp;|&nbsp; {len(rows)} notes</div>
+{sections_html}
+</body></html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
 def extract_pdf_text(data: bytes) -> str:
     import pdfplumber, io
     text_parts = []
