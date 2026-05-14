@@ -3779,22 +3779,27 @@
     modal.id = 'export-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
     modal.innerHTML = `
-      <div style="background:white;border-radius:16px;padding:28px;width:400px;font-family:inherit">
-        <div style="font-size:18px;font-weight:700;margin-bottom:20px">📤 Export Notes</div>
-        <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="background:white;border-radius:16px;padding:28px;width:420px;font-family:inherit">
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px">📤 Export Notes</div>
+        <div style="font-size:13px;color:#999;margin-bottom:20px">Filter by tag to export a specific review or course</div>
+
+        <label style="font-size:13px;font-weight:600;color:#666">Tag filter <span style="font-weight:400;color:#aaa">(e.g. georgette, sarah-guide)</span></label>
+        <input id="exp-tag" type="text" value="georgette" style="width:100%;padding:8px;border:1.5px solid #2e5d56;border-radius:8px;font-size:14px;margin:4px 0 16px;box-sizing:border-box">
+
+        <div style="display:flex;gap:10px;margin-bottom:16px">
           <div style="flex:1">
-            <label style="font-size:13px;font-weight:600;color:#666">From date</label>
-            <input id="exp-from" type="date" value="${yesterday}" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 0;box-sizing:border-box">
+            <label style="font-size:13px;font-weight:600;color:#666">From date <span style="font-weight:400;color:#aaa">(optional)</span></label>
+            <input id="exp-from" type="date" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 0;box-sizing:border-box">
           </div>
           <div style="flex:1">
-            <label style="font-size:13px;font-weight:600;color:#666">To date</label>
-            <input id="exp-to" type="date" value="${today}" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 0;box-sizing:border-box">
+            <label style="font-size:13px;font-weight:600;color:#666">To date <span style="font-weight:400;color:#aaa">(optional)</span></label>
+            <input id="exp-to" type="date" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 0;box-sizing:border-box">
           </div>
         </div>
-        <label style="font-size:13px;font-weight:600;color:#666">Categories <span style="font-weight:400;color:#aaa">(no personal/lifestyle)</span></label>
-        <input id="exp-cats" type="text" placeholder="psychiatry,boards or all" value="psychiatry,boards" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 12px;box-sizing:border-box">
-        <label style="font-size:13px;font-weight:600;color:#666">Day titles <span style="font-weight:400;color:#aaa">(separate with |)</span></label>
-        <input id="exp-labels" type="text" placeholder="e.g. Scientific Foundation | Diagnosis and Treatment" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 20px;box-sizing:border-box">
+
+        <label style="font-size:13px;font-weight:600;color:#666">Day titles <span style="font-weight:400;color:#aaa">(pipe-separated, optional)</span></label>
+        <input id="exp-labels" type="text" placeholder="Scientific Foundation | Diagnosis and Treatment" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 20px;box-sizing:border-box">
+
         <div style="display:flex;gap:10px">
           <button onclick="document.getElementById('export-modal').remove()" style="flex:1;padding:10px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px">Cancel</button>
           <button onclick="runExport()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#2e5d56;color:white;cursor:pointer;font-size:14px;font-weight:600">Export</button>
@@ -3804,12 +3809,15 @@
   }
 
   function runExport() {
+    var tag = document.getElementById('exp-tag').value.trim();
     var from = document.getElementById('exp-from').value;
     var to = document.getElementById('exp-to').value;
-    var cats = document.getElementById('exp-cats').value;
     var labels = document.getElementById('exp-labels').value;
     document.getElementById('export-modal').remove();
-    var url = '/export?from_date='+from+'&to_date='+to+'&cats='+encodeURIComponent(cats);
+    var url = '/export?cats=all';
+    if (tag) url += '&tag=' + encodeURIComponent(tag);
+    if (from) url += '&from_date=' + from;
+    if (to) url += '&to_date=' + to;
     if (labels) url += '&day_labels=' + encodeURIComponent(labels);
     window.open(url, '_blank');
   }

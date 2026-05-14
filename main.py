@@ -95,6 +95,18 @@ def init_db():
     # Rename Treatments → Psychotherapy under psychiatry; absorb psychotherapy top-level category
     cur.execute("UPDATE notes SET subcategory = 'Psychotherapy' WHERE category = 'psychiatry' AND subcategory = 'Treatments'")
     cur.execute("UPDATE notes SET category = 'psychiatry', subcategory = 'Psychotherapy' WHERE category = 'psychotherapy'")
+    # Tag Georgette review notes (May 12-13 2026 psychiatry/boards notes)
+    cur.execute("""
+        UPDATE notes
+        SET tags = (
+            CASE
+                WHEN tags::text LIKE '%georgette%' THEN tags
+                ELSE (tags::jsonb || '["georgette","board-review"]'::jsonb)::text::jsonb
+            END
+        )
+        WHERE category IN ('psychiatry','boards')
+          AND created_at::date BETWEEN '2026-05-12' AND '2026-05-13'
+    """)
     # Remap quiz_results topics to official 6 ANCC board categories
     cur.execute("""
         UPDATE quiz_results SET topic = 'Assessment & Diagnosis'
@@ -652,7 +664,7 @@ TOOLS = [
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
                                          "Psychotherapy","Medical Management","Special Populations","Board Prep"],
                                 "description": "Pick the subcategory. psychiatry→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Lab Values/Neuroscience/Professional & Ethics (NOTE: therapy modality notes like CBT/DBT also go here as psychiatry>Psychotherapy). psychotherapy category no longer used — route all therapy content to psychiatry>Psychotherapy instead. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Board Prep (application, eligibility, ATT letter, scheduling, registration, exam breakdown, question counts, test structure, test-taking strategy — anything about the exam journey that is NOT a practice question)"},
-                "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval"},
+                "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval. IMPORTANT: if Hannah mentions a specific review course or instructor (e.g. 'Georgette', 'Sarah', 'blueprint'), always include that name as a tag (lowercase) plus 'board-review'. Example: ['georgette', 'board-review', 'psychopharmacology']"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
             "required": ["content", "summary", "category", "subcategory", "tags", "entities"]
@@ -2215,7 +2227,7 @@ async def delete_note(note_id: int, request: Request):
 @app.get("/export")
 async def export_notes(request: Request, from_date: str = "", to_date: str = "",
                        cats: str = "psychiatry,boards",
-                       day_labels: str = ""):
+                       day_labels: str = "", tag: str = ""):
     """Export notes as a printable HTML document grouped by day then subcategory."""
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -2223,22 +2235,24 @@ async def export_notes(request: Request, from_date: str = "", to_date: str = "",
     cur = conn.cursor()
     cat_list = [c.strip() for c in cats.split(",") if c.strip()]
     params = []
-    date_filter = ""
+    filters = []
     if from_date:
-        date_filter += " AND created_at >= %s::date"
+        filters.append("created_at >= %s::date")
         params.append(from_date)
     if to_date:
-        date_filter += " AND created_at < (%s::date + interval '1 day')"
+        filters.append("created_at < (%s::date + interval '1 day')")
         params.append(to_date)
     if cat_list and cat_list != ["all"]:
         placeholders = ",".join(["%s"] * len(cat_list))
-        cat_filter = f"WHERE category IN ({placeholders}) {date_filter}"
+        filters.append(f"category IN ({placeholders})")
         params = cat_list + params
-    else:
-        cat_filter = f"WHERE 1=1 {date_filter}"
+    if tag.strip():
+        filters.append("tags::text ILIKE %s")
+        params.append(f"%{tag.strip()}%")
+    where_clause = ("WHERE " + " AND ".join(filters)) if filters else ""
     cur.execute(f"""SELECT id, summary, content, category, subcategory,
                            created_at::date AS day, created_at
-                    FROM notes {cat_filter}
+                    FROM notes {where_clause}
                     ORDER BY created_at::date, subcategory, created_at""", params)
     rows = cur.fetchall()
     cur.close(); conn.close()
