@@ -952,6 +952,20 @@
       if(!r2.ok) return;
       const notes = await r2.json();
 
+      // Fetch full content for banner notes (personal + clinical only, keep it small)
+      const [rPersonal, rClinical] = await Promise.all([
+        fetch('/notes?category=personal&limit=100&full=1'),
+        fetch('/notes?category=psychiatry&limit=100&full=1')
+      ]);
+      const bannerNotes = [
+        ...(rPersonal.ok ? await rPersonal.json() : []),
+        ...(rClinical.ok ? await rClinical.json() : [])
+      ];
+      // Merge content back into notes array for banner use
+      const contentMap = {};
+      bannerNotes.forEach(n => { contentMap[n.id] = n.content; });
+      notes.forEach(n => { if(contentMap[n.id]) n.content = contentMap[n.id]; });
+
       function isYellow(s) {
         return s.includes('fff176')||s.includes('ffff00')||s.includes('ffeb3b')||
                s.includes('255, 241, 118')||s.includes('255, 255, 0')||s.includes('255, 235, 59');
