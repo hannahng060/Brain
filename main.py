@@ -1846,8 +1846,8 @@ async def create_new_note(request: Request):
     subcategory = body.get("subcategory") or None
     if not content:
         raise HTTPException(status_code=400, detail="Content required")
-    # Format content as simple HTML paragraphs
-    html_content = "".join(f"<p>{line}</p>" for line in content.splitlines() if line.strip())
+    # Content is already HTML from the rich text editor
+    html_content = content
     summary = title if title else (content[:80] + ("…" if len(content) > 80 else ""))
     result = db_save_note("[Manual note]", html_content, summary, category, subcategory, [], [])
     return result

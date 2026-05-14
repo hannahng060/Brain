@@ -3882,14 +3882,27 @@
     modal.id = 'new-note-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
     var catOptions = Object.keys(CAT_LABELS).filter(c=>c!=='all').map(c=>`<option value="${c}">${CAT_LABELS[c]||c}</option>`).join('');
+    var btnStyle = 'padding:5px 10px;border:1.5px solid #ddd;border-radius:7px;background:white;cursor:pointer;font-size:13px;font-family:inherit;color:#333';
     modal.innerHTML = `
-      <div style="background:white;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:700px;max-height:90vh;display:flex;flex-direction:column;gap:12px;font-family:inherit">
+      <div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;gap:10px;font-family:inherit">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:17px;font-weight:700">✏️ New Note</div>
           <button onclick="document.getElementById('new-note-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#aaa">✕</button>
         </div>
         <input id="nn-title" type="text" placeholder="Title (optional)" style="padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;outline:none">
-        <textarea id="nn-content" placeholder="Write your note here..." rows="10" style="padding:12px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;line-height:1.6"></textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px;border:1.5px solid #ddd;border-radius:10px;background:#fafafa">
+          <button style="${btnStyle};font-weight:700" onclick="nnFmt('bold')" title="Bold">B</button>
+          <button style="${btnStyle};font-style:italic" onclick="nnFmt('italic')" title="Italic">I</button>
+          <button style="${btnStyle};text-decoration:underline" onclick="nnFmt('underline')" title="Underline">U</button>
+          <button style="${btnStyle};background:#fff176" onclick="nnHighlight('#fff176')" title="Highlight yellow">🟡</button>
+          <button style="${btnStyle};background:#b9f6ca" onclick="nnHighlight('#b9f6ca')" title="Highlight green">🟢</button>
+          <button style="${btnStyle}" onclick="nnFmt('insertUnorderedList')" title="Bullet list">• List</button>
+          <button style="${btnStyle}" onclick="nnInsertLine()" title="Divider line">― Line</button>
+          <button style="${btnStyle}" onclick="nnInsertBox()" title="Box / callout">□ Box</button>
+          <button style="${btnStyle}" onclick="nnFmt('removeFormat')" title="Clear formatting">✕ Clear</button>
+        </div>
+        <div id="nn-content" contenteditable="true" placeholder="Write your note here..."
+          style="flex:1;min-height:200px;max-height:40vh;overflow-y:auto;padding:12px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit;outline:none;line-height:1.6"></div>
         <div style="display:flex;gap:8px">
           <select id="nn-cat" onchange="updateNewNoteSubcats()" style="flex:1;padding:9px 10px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit;outline:none">
             <option value="">Category...</option>
@@ -3905,6 +3918,21 @@
     document.getElementById('nn-content').focus();
   }
 
+  function nnFmt(cmd) { document.getElementById('nn-content').focus(); document.execCommand(cmd); }
+  function nnHighlight(color) {
+    document.getElementById('nn-content').focus();
+    document.execCommand('hiliteColor', false, color);
+  }
+  function nnInsertLine() {
+    document.getElementById('nn-content').focus();
+    document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #ccc;margin:12px 0">');
+  }
+  function nnInsertBox() {
+    document.getElementById('nn-content').focus();
+    document.execCommand('insertHTML', false,
+      '<div style="border:2px solid #2e5d56;border-radius:8px;padding:10px 14px;margin:8px 0;background:#f0f7f5"><p style="margin:0">Type inside box...</p></div><p></p>');
+  }
+
   function updateNewNoteSubcats() {
     var cat = document.getElementById('nn-cat').value;
     var subs = SUBCATS[cat] || [];
@@ -3914,10 +3942,10 @@
 
   async function saveNewNote() {
     var title = document.getElementById('nn-title').value.trim();
-    var content = document.getElementById('nn-content').value.trim();
+    var content = document.getElementById('nn-content').innerHTML.trim();
     var cat = document.getElementById('nn-cat').value;
     var subcat = document.getElementById('nn-subcat').value;
-    if(!content) { alert('Please write something first.'); return; }
+    if(!content || content === '<br>') { alert('Please write something first.'); return; }
     if(!cat) { alert('Please pick a category.'); return; }
     var btn = document.querySelector('#new-note-modal button:last-child');
     btn.textContent = 'Saving…'; btn.disabled = true;
