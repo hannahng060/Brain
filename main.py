@@ -2214,7 +2214,7 @@ async def delete_note(note_id: int, request: Request):
 
 @app.get("/export")
 async def export_notes(request: Request, from_date: str = "", to_date: str = "",
-                       cats: str = "psychiatry,boards,np_fellowship,icu",
+                       cats: str = "psychiatry,boards",
                        day_labels: str = ""):
     """Export notes as a printable HTML document grouped by day then subcategory."""
     if not is_authenticated(request):
