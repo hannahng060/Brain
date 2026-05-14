@@ -3785,8 +3785,8 @@
         <input id="exp-from" type="date" value="${weekAgo}" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 12px;box-sizing:border-box">
         <label style="font-size:13px;font-weight:600;color:#666">To date</label>
         <input id="exp-to" type="date" value="${today}" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 12px;box-sizing:border-box">
-        <label style="font-size:13px;font-weight:600;color:#666">Categories</label>
-        <input id="exp-cats" type="text" placeholder="all (or: psychiatry,boards)" value="all" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 20px;box-sizing:border-box">
+        <label style="font-size:13px;font-weight:600;color:#666">Categories <span style="font-weight:400;color:#aaa">(personal &amp; lifestyle excluded by default)</span></label>
+        <input id="exp-cats" type="text" placeholder="e.g. psychiatry,boards or 'all'" value="psychiatry,boards,np_fellowship,icu" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin:4px 0 20px;box-sizing:border-box">
         <div style="display:flex;gap:10px">
           <button onclick="document.getElementById('export-modal').remove()" style="flex:1;padding:10px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px">Cancel</button>
           <button onclick="runExport()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#2e5d56;color:white;cursor:pointer;font-size:14px;font-weight:600">Export</button>
