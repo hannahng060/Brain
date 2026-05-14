@@ -1853,6 +1853,11 @@ async def merge_notes_endpoint(request: Request):
         raise HTTPException(status_code=404, detail="Notes not found")
 
     # Build prompt for Claude to merge intelligently
+    # Save original content in raw_input as backup before overwriting
+    for n in notes:
+        cur.execute("UPDATE notes SET raw_input = %s WHERE id = %s AND raw_input NOT LIKE '[MERGE BACKUP%%'",
+                    (f"[MERGE BACKUP] {n['content'] or ''}", n['id']))
+
     notes_text = ""
     for n in notes:
         import re as _re
