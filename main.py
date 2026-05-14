@@ -1868,7 +1868,7 @@ async def merge_notes_endpoint(request: Request):
     merge_prompt = f"""Merge these {len(notes)} notes about the same topic into one clean, comprehensive note.
 Keep all unique information. Use clear headings and bullet points. Remove duplicates.
 Write in HTML (use <h3>, <ul><li>, <p>, <strong> tags).
-Return ONLY the merged HTML content, nothing else.
+Do NOT wrap in ```html``` fences. Return ONLY the raw HTML content, nothing else.
 {notes_text}"""
 
     response = client.messages.create(
@@ -1876,7 +1876,19 @@ Return ONLY the merged HTML content, nothing else.
         max_tokens=3000,
         messages=[{"role": "user", "content": merge_prompt}]
     )
-    merged_content = response.content[0].text.strip() if response.content else ""
+    merged_text = response.content[0].text.strip() if response.content else ""
+    # Strip any markdown code fences
+    merged_text = re.sub(r'^```[a-zA-Z]*\s*', '', merged_text)
+    merged_text = re.sub(r'```\s*$', '', merged_text).strip()
+
+    # Preserve images from all notes — extract <img> tags and prepend them
+    import re as _re
+    all_imgs = []
+    for n in notes:
+        imgs = _re.findall(r'<img[^>]+>', n['content'] or '', flags=_re.IGNORECASE)
+        all_imgs.extend(imgs)
+    img_block = ''.join(f'<div style="margin:8px 0">{img}</div>' for img in all_imgs) if all_imgs else ''
+    merged_content = img_block + merged_text
 
     # Use first note's category/subcategory/tags, combine all tags
     master = notes[0]
