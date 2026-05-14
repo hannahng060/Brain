@@ -3929,13 +3929,14 @@
   }
   function nnInsertBox(color) {
     var colors = {
-      teal:   {bg:'#f0f7f5', border:'#2e5d56'},
-      yellow: {bg:'#fffde7', border:'#f9a825'},
-      pink:   {bg:'#fce4ec', border:'#e91e63'},
-      blue:   {bg:'#e3f2fd', border:'#1976d2'},
-      purple: {bg:'#f3e5f5', border:'#7b1fa2'},
+      sage:     {bg:'#f4f8f4', border:'#7aab7a'},
+      blush:    {bg:'#fdf4f4', border:'#e8a0a0'},
+      sky:      {bg:'#f3f8fd', border:'#85b8e0'},
+      butter:   {bg:'#fdfaf0', border:'#d4b96a'},
+      lavender: {bg:'#f7f4fc', border:'#b09fd4'},
+      peach:    {bg:'#fdf6f0', border:'#e0a87a'},
     };
-    var c = colors[color] || colors.teal;
+    var c = colors[color] || colors.sage;
     document.getElementById('nn-content').focus();
     document.execCommand('insertHTML', false,
       `<div style="border:2px solid ${c.border};border-radius:8px;padding:10px 14px;margin:8px 0;background:${c.bg}"><p style="margin:0">Type inside box...</p></div><p></p>`);
@@ -3948,11 +3949,12 @@
     picker.id = 'nn-box-picker';
     picker.style.cssText = 'position:absolute;background:white;border:1.5px solid #ddd;border-radius:10px;padding:8px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000';
     var boxColors = [
-      {key:'teal',   bg:'#f0f7f5', border:'#2e5d56', label:'Teal'},
-      {key:'yellow', bg:'#fffde7', border:'#f9a825', label:'Yellow'},
-      {key:'pink',   bg:'#fce4ec', border:'#e91e63', label:'Pink'},
-      {key:'blue',   bg:'#e3f2fd', border:'#1976d2', label:'Blue'},
-      {key:'purple', bg:'#f3e5f5', border:'#7b1fa2', label:'Purple'},
+      {key:'sage',    bg:'#f4f8f4', border:'#7aab7a', label:'Sage'},
+      {key:'blush',   bg:'#fdf4f4', border:'#e8a0a0', label:'Blush'},
+      {key:'sky',     bg:'#f3f8fd', border:'#85b8e0', label:'Sky'},
+      {key:'butter',  bg:'#fdfaf0', border:'#d4b96a', label:'Butter'},
+      {key:'lavender',bg:'#f7f4fc', border:'#b09fd4', label:'Lavender'},
+      {key:'peach',   bg:'#fdf6f0', border:'#e0a87a', label:'Peach'},
     ];
     picker.innerHTML = boxColors.map(c =>
       `<button onclick="nnInsertBox('${c.key}');document.getElementById('nn-box-picker').remove()"
