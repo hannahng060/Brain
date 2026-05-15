@@ -1844,12 +1844,13 @@ async def create_new_note(request: Request):
     content = body.get("content", "").strip()
     category = body.get("category", "personal")
     subcategory = body.get("subcategory") or None
+    tags = body.get("tags", [])
     if not content:
         raise HTTPException(status_code=400, detail="Content required")
     # Content is already HTML from the rich text editor
     html_content = content
     summary = title if title else (content[:80] + ("…" if len(content) > 80 else ""))
-    result = db_save_note("[Manual note]", html_content, summary, category, subcategory, [], [])
+    result = db_save_note("[Manual note]", html_content, summary, category, subcategory, tags, [])
     return result
 
 @app.post("/merge-notes")

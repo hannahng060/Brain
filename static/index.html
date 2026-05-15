@@ -3912,6 +3912,7 @@
             <option value="">Subcategory...</option>
           </select>
         </div>
+        <input id="nn-tags" type="text" placeholder="Tags (comma separated, e.g. brn, ancc, boards)" style="padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit;outline:none">
         <button onclick="saveNewNote()" style="padding:12px;border:none;border-radius:12px;background:#2e5d56;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Save Note</button>
       </div>`;
     document.body.appendChild(modal);
@@ -3977,6 +3978,8 @@
     var content = document.getElementById('nn-content').innerHTML.trim();
     var cat = document.getElementById('nn-cat').value;
     var subcat = document.getElementById('nn-subcat').value;
+    var tagsRaw = document.getElementById('nn-tags').value;
+    var tags = tagsRaw.split(',').map(t=>t.trim().toLowerCase()).filter(t=>t);
     if(!content || content === '<br>') { alert('Please write something first.'); return; }
     if(!cat) { alert('Please pick a category.'); return; }
     var btn = document.querySelector('#new-note-modal button:last-child');
@@ -3985,7 +3988,7 @@
       var res = await fetch('/new-note', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({title: title, content: content, category: cat, subcategory: subcat})
+        body: JSON.stringify({title: title, content: content, category: cat, subcategory: subcat, tags: tags})
       });
       if(res.ok) {
         document.getElementById('new-note-modal').remove();
