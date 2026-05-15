@@ -1739,7 +1739,15 @@
   // Box control helpers — called from onclick inside box HTML
   function _bbUp(btn)  { var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.previousElementSibling; if(s)p.insertBefore(b,s); }
   function _bbDn(btn)  { var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.nextElementSibling;     if(s)p.insertBefore(s,b); }
-  function _bbDel(btn) { btn.closest('[data-brainbox]').remove(); }
+  function _bbDel(btn) {
+    var el = btn.closest('[data-brainbox]');
+    var parent = el.parentElement;
+    el.remove();
+    // If the parent row now has no boxes left, remove the whole row (cleans up orphaned controls)
+    if(parent && parent.getAttribute && parent.getAttribute('data-brainbox') === 'row') {
+      if(!parent.querySelector('[data-brainbox="box"]')) parent.remove();
+    }
+  }
 
   function _bbCtrl(isRow) {
     var s = 'background:rgba(0,0,0,.07);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#555;font-family:inherit';
@@ -1913,7 +1921,7 @@
     }
     return Array.from(el.childNodes).map(walk).join('');
   }
-  // First keystroke inside a faded placeholder clears it (no scroll side-effects)
+  // First keystroke inside a faded placeholder: clear it and insert the character
   document.addEventListener('keydown', function(e) {
     if(e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       var sel = window.getSelection();
@@ -1921,15 +1929,16 @@
       var node = sel.anchorNode;
       for(var i=0; i<6 && node; i++) {
         if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
+          e.preventDefault(); // take full control — insert character ourselves
           node.innerHTML=''; node.removeAttribute('data-bb-ph');
           node.style.color=''; node.style.fontStyle='';
-          // Restore cursor into the now-empty element so the keystroke lands there
           try {
-            var r = document.createRange();
-            r.setStart(node, 0); r.collapse(true);
-            sel.removeAllRanges(); sel.addRange(r);
+            // sel.collapse is atomic — avoids focus loss from removeAllRanges on iOS
+            if(sel.collapse) { sel.collapse(node, 0); }
+            else { var r=document.createRange(); r.setStart(node,0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
+            document.execCommand('insertText', false, e.key);
           } catch(err) {}
-          return; // let the keystroke insert normally
+          return;
         }
         node = node.parentNode;
       }
