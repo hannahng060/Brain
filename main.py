@@ -2573,7 +2573,8 @@ def extract_image_text(data: bytes, media_type: str) -> str:
 5. URLs — write in full format starting with https://.
 6. Format everything as clean HTML — no markdown asterisks or pound signs.
 7. Extract EVERYTHING visible — do not skip any text even if small or in margins.
-8. Do NOT bold or emphasize highlighted/colored text — the original photo is saved for reference."""}
+8. Do NOT bold or emphasize highlighted/colored text — the original photo is saved for reference.
+9. MULTIPLE CHOICE QUESTIONS — CRITICAL: always preserve the exact A) B) C) D) letter labels on each answer choice exactly as shown. Do NOT convert choices to plain bullet points without their letter labels. A choice must appear as "A) text" or "A. text", never just "text"."""}
             ]
         }]
     )
@@ -2679,10 +2680,20 @@ def _looks_like_board_questions(text: str, user_note: str) -> bool:
     note_lower = (user_note or "").lower()
     if any(kw in note_lower for kw in ["board", "question", "quiz", "practice", "georgette", "blueprint", "ancc", "pmhnp"]):
         return True
-    # Match both A) and A. formats (e.g. "A. ADHD" or "A) ADHD")
-    # 4+ matches = at least one full A/B/C/D question
-    matches = len(re.findall(r'\b[A-D][).]', text))
-    return matches >= 4
+    # Match A)/A./A- formats
+    matches = len(re.findall(r'\b[A-D][).:\-]', text))
+    if matches >= 4:
+        return True
+    # Even 2 matches + question-style wording = board question
+    # (catches cases where OCR strips some labels)
+    if matches >= 2:
+        question_words = ["which", "what should", "what is the", "a patient", "a nurse",
+                          "a pmhnp", "which action", "which response", "the nurse",
+                          "the provider", "the client", "most appropriate"]
+        text_lower = text.lower()
+        if any(q in text_lower for q in question_words):
+            return True
+    return False
 
 def _normalize_topic(raw: str) -> str:
     """Map a raw topic string to a canonical board subcategory."""
