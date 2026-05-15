@@ -691,6 +691,10 @@
           <button class="fmt-btn" onclick="fmtHighlight('#f8bbd0')" title="Pink highlight"><span class="color-dot" style="background:#f8bbd0"></span></button>
           <button class="fmt-btn" onclick="fmtHighlight('#ffe0b2')" title="Orange highlight"><span class="color-dot" style="background:#ffe0b2"></span></button>
           <button class="fmt-btn" onclick="fmtHighlight('transparent')" title="Remove highlight">✕HL</button>
+          <div class="fmt-divider"></div>
+          <button class="fmt-btn" onclick="fmt('insertUnorderedList')" title="Bullet list">• List</button>
+          <button class="fmt-btn" onclick="fmtInsertLine()" title="Divider line">― Line</button>
+          <button class="fmt-btn" onclick="fmtShowBoxPicker()" title="Colored box">□ Box ▾</button>
         </div>
         <div id="edit-content" contenteditable="true"></div>
       </div>
@@ -1639,6 +1643,46 @@
   function fmtSize(size) {
     if(size) document.execCommand('fontSize', false, size);
     $('edit-content').focus();
+  }
+  function fmtInsertLine() {
+    document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #ccc;margin:12px 0">');
+    $('edit-content').focus();
+  }
+  function fmtInsertBox(color) {
+    var colors = {
+      sage:     {bg:'#f4f8f4', border:'#7aab7a'},
+      blush:    {bg:'#fdf4f4', border:'#e8a0a0'},
+      sky:      {bg:'#f3f8fd', border:'#85b8e0'},
+      butter:   {bg:'#fdfaf0', border:'#d4b96a'},
+      lavender: {bg:'#f7f4fc', border:'#b09fd4'},
+      peach:    {bg:'#fdf6f0', border:'#e0a87a'},
+    };
+    var c = colors[color] || colors.sage;
+    document.execCommand('insertHTML', false,
+      `<div style="border:2px solid ${c.border};border-radius:8px;padding:10px 14px;margin:8px 0;background:${c.bg}"><p style="margin:0">Type inside box...</p></div><p></p>`);
+    $('edit-content').focus();
+  }
+  function fmtShowBoxPicker() {
+    var existing = document.getElementById('fmt-box-picker');
+    if(existing) { existing.remove(); return; }
+    var picker = document.createElement('div');
+    picker.id = 'fmt-box-picker';
+    picker.style.cssText = 'position:absolute;background:white;border:1.5px solid #ddd;border-radius:10px;padding:8px;display:flex;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000;bottom:40px;right:0';
+    var boxColors = [
+      {key:'sage',     bg:'#f4f8f4', border:'#7aab7a'},
+      {key:'blush',    bg:'#fdf4f4', border:'#e8a0a0'},
+      {key:'sky',      bg:'#f3f8fd', border:'#85b8e0'},
+      {key:'butter',   bg:'#fdfaf0', border:'#d4b96a'},
+      {key:'lavender', bg:'#f7f4fc', border:'#b09fd4'},
+      {key:'peach',    bg:'#fdf6f0', border:'#e0a87a'},
+    ];
+    picker.innerHTML = boxColors.map(c =>
+      `<button onclick="fmtInsertBox('${c.key}');document.getElementById('fmt-box-picker').remove()"
+        style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer" title="${c.key}"></button>`
+    ).join('');
+    var toolbar = document.querySelector('#edit-toolbar');
+    toolbar.style.position = 'relative';
+    toolbar.appendChild(picker);
   }
   function fmtFont(font) {
     if(font) document.execCommand('fontName', false, font);
