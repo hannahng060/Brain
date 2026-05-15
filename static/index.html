@@ -1666,31 +1666,66 @@
   function _bbDn(btn)  { var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.nextElementSibling;     if(s)p.insertBefore(s,b); }
   function _bbDel(btn) { btn.closest('[data-brainbox]').remove(); }
 
-  function _bbCtrl(labels) {
-    // labels: true=show ↑↓, false=row-only (no per-box move)
+  function _bbCtrl(isRow) {
     var s = 'background:rgba(0,0,0,.07);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#555;font-family:inherit';
     var d = 'background:rgba(200,0,0,.08);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#b00;font-family:inherit';
-    var btns = labels
-      ? `<button onclick="_bbUp(this)" style="${s}">↑</button><button onclick="_bbDn(this)" style="${s}">↓</button>`
-      : `<button onclick="_bbUp(this)" style="${s}">↑ row</button><button onclick="_bbDn(this)" style="${s}">↓ row</button>`;
-    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1">${btns}<button onclick="_bbDel(this)" style="${d}">✕</button></span>`;
+    var label = isRow ? ' row' : '';
+    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1"><button onclick="_bbUp(this)" style="${s}">↑${label}</button><button onclick="_bbDn(this)" style="${s}">↓${label}</button><button onclick="_bbDel(this)" style="${d}">✕</button></span>`;
+  }
+
+  // Direct DOM insert — more reliable than execCommand for complex structures
+  function _insertNodeAtCursor(editor, node) {
+    var afterP = document.createElement('p');
+    afterP.innerHTML = '<br>';
+    var sel = window.getSelection();
+    if(sel && sel.rangeCount && editor.contains(sel.anchorNode)) {
+      var anchor = sel.anchorNode;
+      while(anchor.parentNode && anchor.parentNode !== editor) anchor = anchor.parentNode;
+      if(anchor.parentNode === editor) {
+        editor.insertBefore(node, anchor.nextSibling);
+        editor.insertBefore(afterP, node.nextSibling);
+      } else { editor.appendChild(node); editor.appendChild(afterP); }
+    } else { editor.appendChild(node); editor.appendChild(afterP); }
+    var r = document.createRange(); r.setStart(afterP, 0); r.collapse(true);
+    sel.removeAllRanges(); sel.addRange(r);
   }
 
   function fmtInsertBox(color) {
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(true)}<p style="margin:0">Click to type...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}<p style="margin:0">Click to type...</p></div><p></p>`);
     $('edit-content').focus({preventScroll:true});
   }
   function fmtInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
-    // Use inline-block (NOT flex) so resize:both works on each box
-    var b1 = `<div style="display:inline-block;vertical-align:top;width:calc(50% - 6px);margin-right:8px;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};resize:both;overflow:auto;min-width:80px;min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>`;
-    var b2 = `<div style="display:inline-block;vertical-align:top;width:calc(50% - 6px);border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};resize:both;overflow:auto;min-width:80px;min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>`;
-    document.execCommand('insertHTML', false,
-      `<div data-brainbox="row" style="margin:8px 0">${_bbCtrl(false)}<div style="font-size:0">${b1}${b2}</div></div><p></p>`);
+    var bs = 'border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;font-family:inherit';
+    // Build via DOM (not execCommand) so browser can't mangle the flex structure
+    var row = document.createElement('div');
+    row.setAttribute('data-brainbox','row');
+    row.style.cssText = 'margin:8px 0';
+    // Control bar
+    var ctrl = document.createElement('div');
+    ctrl.className = 'bb-ctrl';
+    ctrl.contentEditable = 'false';
+    ctrl.style.cssText = 'display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px';
+    ctrl.innerHTML =
+      `<button onclick="_bbUp(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↑ row</button>` +
+      `<button onclick="_bbDn(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↓ row</button>` +
+      `<button onclick="_bbDel(this)" style="${bs};background:rgba(200,0,0,.08);color:#b00">✕</button>`;
+    // Flex row
+    var flex = document.createElement('div');
+    flex.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+    var box1 = document.createElement('div');
+    box1.style.cssText = `flex:1;min-width:0;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};min-height:60px;box-sizing:border-box`;
+    box1.innerHTML = '<p style="margin:0">Left box...</p>';
+    var box2 = document.createElement('div');
+    box2.style.cssText = `flex:1;min-width:0;border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};min-height:60px;box-sizing:border-box`;
+    box2.innerHTML = '<p style="margin:0">Right box...</p>';
+    flex.appendChild(box1); flex.appendChild(box2);
+    row.appendChild(ctrl); row.appendChild(flex);
+    _insertNodeAtCursor($('edit-content'), row);
     $('edit-content').focus({preventScroll:true});
   }
   function fmtShowBoxPicker() {
@@ -4012,17 +4047,36 @@
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(true)}<p style="margin:0">Click to type...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}<p style="margin:0">Click to type...</p></div><p></p>`);
   }
   function nnInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
+    var bs = 'border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;font-family:inherit';
+    var row = document.createElement('div');
+    row.setAttribute('data-brainbox','row');
+    row.style.cssText = 'margin:8px 0';
+    var ctrl = document.createElement('div');
+    ctrl.className = 'bb-ctrl';
+    ctrl.contentEditable = 'false';
+    ctrl.style.cssText = 'display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px';
+    ctrl.innerHTML =
+      `<button onclick="_bbUp(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↑ row</button>` +
+      `<button onclick="_bbDn(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↓ row</button>` +
+      `<button onclick="_bbDel(this)" style="${bs};background:rgba(200,0,0,.08);color:#b00">✕</button>`;
+    var flex = document.createElement('div');
+    flex.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+    var box1 = document.createElement('div');
+    box1.style.cssText = `flex:1;min-width:0;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};min-height:60px;box-sizing:border-box`;
+    box1.innerHTML = '<p style="margin:0">Left box...</p>';
+    var box2 = document.createElement('div');
+    box2.style.cssText = `flex:1;min-width:0;border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};min-height:60px;box-sizing:border-box`;
+    box2.innerHTML = '<p style="margin:0">Right box...</p>';
+    flex.appendChild(box1); flex.appendChild(box2);
+    row.appendChild(ctrl); row.appendChild(flex);
+    _insertNodeAtCursor(document.getElementById('nn-content'), row);
     document.getElementById('nn-content').focus({preventScroll:true});
-    var b1 = `<div style="display:inline-block;vertical-align:top;width:calc(50% - 6px);margin-right:8px;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};resize:both;overflow:auto;min-width:80px;min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>`;
-    var b2 = `<div style="display:inline-block;vertical-align:top;width:calc(50% - 6px);border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};resize:both;overflow:auto;min-width:80px;min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>`;
-    document.execCommand('insertHTML', false,
-      `<div data-brainbox="row" style="margin:8px 0">${_bbCtrl(false)}<div style="font-size:0">${b1}${b2}</div></div><p></p>`);
   }
 
   function nnShowBoxPicker() {
