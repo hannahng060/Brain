@@ -1680,7 +1680,7 @@
       `<button onclick="fmtInsertBox('${c.key}');document.getElementById('fmt-box-picker').remove()"
         style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer" title="${c.key}"></button>`
     ).join('');
-    var toolbar = document.querySelector('#edit-toolbar');
+    var toolbar = document.querySelector('.format-toolbar');
     toolbar.style.position = 'relative';
     toolbar.appendChild(picker);
   }
