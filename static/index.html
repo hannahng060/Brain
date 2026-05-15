@@ -1766,7 +1766,7 @@
     $('edit-content').focus({preventScroll:true});
   }
   function _galleryBoxStyle(c, w) {
-    return 'width:'+w+';flex-shrink:0;border:2px solid '+c.border+';border-radius:8px;padding:10px 14px;background:'+c.bg+';min-height:80px;resize:horizontal;overflow:auto;box-sizing:border-box;min-width:80px';
+    return 'width:'+w+';flex-shrink:0;border:2px solid '+c.border+';border-radius:8px;padding:10px 14px;background:'+c.bg+';min-height:80px;resize:both;overflow:auto;box-sizing:border-box;min-width:80px;min-height:60px';
   }
   function fmtInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
