@@ -1976,7 +1976,7 @@ async def update_profile(body: ProfileUpdate, request: Request):
     return {"ok": True}
 
 @app.get("/notes")
-async def list_notes(request: Request, category: str = "all", limit: int = 500, full: int = 0):
+async def list_notes(request: Request, category: str = "all", limit: int = 2000, full: int = 0):
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_recent(limit, category, metadata_only=(full == 0))

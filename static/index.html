@@ -1000,7 +1000,7 @@
 
     // Load both inspiration banners
     try {
-      const r2 = await fetch('/notes?category=all&limit=500');
+      const r2 = await fetch('/notes?category=all&limit=2000');
       if(!r2.ok) return;
       const notes = await r2.json();
 
@@ -1316,7 +1316,7 @@
   async function loadNotes() {
     $('notes-list').innerHTML = '<div class="loading-notes">Loading your notes...</div>';
     try {
-      const res = await fetch('/notes?limit=500');
+      const res = await fetch('/notes?limit=2000');
       if(res.status===401){location.reload();return;}
       allNotes = await res.json();
       renderNotes();
@@ -2282,7 +2282,7 @@
         loadDashboard();
         loadStreak();
       }
-      fetch('/notes?limit=500').then(r=>r.json()).then(n=>{
+      fetch('/notes?limit=2000').then(r=>r.json()).then(n=>{
         allNotes=n;
         // If the notes tab is already open, re-render so new/updated notes appear immediately
         if($('notes-page') && $('notes-page').classList.contains('active')) renderNotes();
@@ -2315,7 +2315,7 @@
     try {
       // Fetch fresh if allNotes not loaded yet
       if (!allNotes.length) {
-        const r = await fetch('/notes?limit=500');
+        const r = await fetch('/notes?limit=2000');
         if (r.ok) allNotes = await r.json();
       }
       let pool = allNotes.filter(n => n.content && n.content.length > 30);
@@ -2554,7 +2554,7 @@
   // ── Study streak (kept for loadStreak calls but display removed) ───────
   async function loadStreak() {
     try {
-      const r = await fetch('/notes?category=all&limit=500');
+      const r = await fetch('/notes?category=all&limit=2000');
       if (!r.ok) return;
       const notes = await r.json();
 
