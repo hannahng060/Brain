@@ -1923,6 +1923,12 @@
         if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
           node.innerHTML=''; node.removeAttribute('data-bb-ph');
           node.style.color=''; node.style.fontStyle='';
+          // Restore cursor into the now-empty element so the keystroke lands there
+          try {
+            var r = document.createRange();
+            r.setStart(node, 0); r.collapse(true);
+            sel.removeAllRanges(); sel.addRange(r);
+          } catch(err) {}
           return; // let the keystroke insert normally
         }
         node = node.parentNode;
