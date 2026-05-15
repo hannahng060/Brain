@@ -1700,32 +1700,11 @@
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
-    var bs = 'border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;font-family:inherit';
-    // Build via DOM (not execCommand) so browser can't mangle the flex structure
-    var row = document.createElement('div');
-    row.setAttribute('data-brainbox','row');
-    row.style.cssText = 'margin:8px 0';
-    // Control bar
-    var ctrl = document.createElement('div');
-    ctrl.className = 'bb-ctrl';
-    ctrl.contentEditable = 'false';
-    ctrl.style.cssText = 'display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px';
-    ctrl.innerHTML =
-      `<button onclick="_bbUp(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↑ row</button>` +
-      `<button onclick="_bbDn(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↓ row</button>` +
-      `<button onclick="_bbDel(this)" style="${bs};background:rgba(200,0,0,.08);color:#b00">✕</button>`;
-    // Flex row
-    var flex = document.createElement('div');
-    flex.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
-    var box1 = document.createElement('div');
-    box1.style.cssText = `flex:1;min-width:0;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};min-height:60px;box-sizing:border-box`;
-    box1.innerHTML = '<p style="margin:0">Left box...</p>';
-    var box2 = document.createElement('div');
-    box2.style.cssText = `flex:1;min-width:0;border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};min-height:60px;box-sizing:border-box`;
-    box2.innerHTML = '<p style="margin:0">Right box...</p>';
-    flex.appendChild(box1); flex.appendChild(box2);
-    row.appendChild(ctrl); row.appendChild(flex);
-    _insertNodeAtCursor($('edit-content'), row);
+    document.execCommand('insertHTML', false,
+      '<div style="display:flex;gap:8px;margin:8px 0">' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>' +
+      '</div><p></p>');
     $('edit-content').focus({preventScroll:true});
   }
   function fmtShowBoxPicker() {
@@ -1763,8 +1742,14 @@
   // Strip external formatting on paste — keep plain text only
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, text);
+    // Prefer HTML paste so bold/highlight/formatting is preserved
+    const html = (e.clipboardData || window.clipboardData).getData('text/html');
+    if(html) {
+      document.execCommand('insertHTML', false, html);
+    } else {
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
   });
 
   let _editingNote = null;
@@ -4053,30 +4038,12 @@
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
-    var bs = 'border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;font-family:inherit';
-    var row = document.createElement('div');
-    row.setAttribute('data-brainbox','row');
-    row.style.cssText = 'margin:8px 0';
-    var ctrl = document.createElement('div');
-    ctrl.className = 'bb-ctrl';
-    ctrl.contentEditable = 'false';
-    ctrl.style.cssText = 'display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px';
-    ctrl.innerHTML =
-      `<button onclick="_bbUp(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↑ row</button>` +
-      `<button onclick="_bbDn(this)" style="${bs};background:rgba(0,0,0,.07);color:#555">↓ row</button>` +
-      `<button onclick="_bbDel(this)" style="${bs};background:rgba(200,0,0,.08);color:#b00">✕</button>`;
-    var flex = document.createElement('div');
-    flex.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
-    var box1 = document.createElement('div');
-    box1.style.cssText = `flex:1;min-width:0;border:2px solid ${c1.border};border-radius:8px;padding:10px 14px;background:${c1.bg};min-height:60px;box-sizing:border-box`;
-    box1.innerHTML = '<p style="margin:0">Left box...</p>';
-    var box2 = document.createElement('div');
-    box2.style.cssText = `flex:1;min-width:0;border:2px solid ${c2.border};border-radius:8px;padding:10px 14px;background:${c2.bg};min-height:60px;box-sizing:border-box`;
-    box2.innerHTML = '<p style="margin:0">Right box...</p>';
-    flex.appendChild(box1); flex.appendChild(box2);
-    row.appendChild(ctrl); row.appendChild(flex);
-    _insertNodeAtCursor(document.getElementById('nn-content'), row);
     document.getElementById('nn-content').focus({preventScroll:true});
+    document.execCommand('insertHTML', false,
+      '<div style="display:flex;gap:8px;margin:8px 0">' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>' +
+      '</div><p></p>');
   }
 
   function nnShowBoxPicker() {
