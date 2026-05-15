@@ -1648,12 +1648,33 @@
   }
   // ── End Select & Merge ──────────────────────────────────────────────────────
 
+  var _deleteConfirmId = null, _deleteConfirmTimer = null;
   async function deleteNote(e, id) {
     e.stopPropagation();
-    if(!confirm('Delete this note? This cannot be undone.')) return;
+    var btn = e.currentTarget;
+    // Two-tap confirm — avoids window.confirm() which iOS Safari blocks in standalone mode
+    if (_deleteConfirmId !== id) {
+      // First tap: arm the button
+      _deleteConfirmId = id;
+      var orig = btn.textContent;
+      btn.textContent = '✓ confirm?';
+      btn.style.cssText += ';background:#fce4ec;color:#c62828;border-radius:6px;padding:2px 6px';
+      clearTimeout(_deleteConfirmTimer);
+      _deleteConfirmTimer = setTimeout(function() {
+        _deleteConfirmId = null;
+        btn.textContent = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.padding = '';
+      }, 3000);
+      return;
+    }
+    // Second tap: actually delete
+    clearTimeout(_deleteConfirmTimer);
+    _deleteConfirmId = null;
     const res = await fetch(`/notes/${id}`, {method:'DELETE'});
     if(res.ok) { closeModal(); loadNotes(); }
-    else alert('Could not delete note. Try again.');
+    else { btn.textContent = '🗑'; alert('Could not delete note. Try again.'); }
   }
 
   function updateSubcatOptions() {
