@@ -1713,14 +1713,30 @@
       `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_PH}Type here...</p></div><p></p>`);
     $('edit-content').focus({preventScroll:true});
   }
+  function _galleryBoxStyle(c, w) {
+    return 'width:'+w+';flex-shrink:0;border:2px solid '+c.border+';border-radius:8px;padding:10px 14px;background:'+c.bg+';min-height:80px;resize:horizontal;overflow:auto;box-sizing:border-box;min-width:80px';
+  }
   function fmtInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:8px;margin:8px 0">' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Left box...</p></div>' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Right box...</p></div>' +
+      '<div style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
+      '</div><p></p>');
+    $('edit-content').focus({preventScroll:true});
+  }
+  function fmtInsert3Col(color) {
+    var idx = _BOX_COLORS.findIndex(c=>c.key===color);
+    var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
+    var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
+    var c3 = _BOX_COLORS[(idx+2) % _BOX_COLORS.length];
+    document.execCommand('insertHTML', false,
+      '<div style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
       '</div><p></p>');
     $('edit-content').focus({preventScroll:true});
   }
@@ -1738,12 +1754,21 @@
             style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer" title="${c.key}"></button>`
         ).join('') +
       `</div>` +
-      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">SIDE BY SIDE ⊞</div>` +
-      `<div style="display:flex;gap:6px">` +
+      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">2 SIDE BY SIDE ⊞</div>` +
+      `<div style="display:flex;gap:6px;margin-bottom:10px">` +
         _BOX_COLORS.map(c=>
           `<button onclick="fmtInsertGallery('${c.key}');document.getElementById('fmt-box-picker').remove()"
             style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer;position:relative" title="${c.key} (2 cols)">` +
             `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.border};font-weight:900">⊞</span>` +
+          `</button>`
+        ).join('') +
+      `</div>` +
+      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">3 COLUMNS ⊟</div>` +
+      `<div style="display:flex;gap:6px">` +
+        _BOX_COLORS.map(c=>
+          `<button onclick="fmtInsert3Col('${c.key}');document.getElementById('fmt-box-picker').remove()"
+            style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer;position:relative" title="${c.key} (3 cols)">` +
+            `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:${c.border};font-weight:900">⊟</span>` +
           `</button>`
         ).join('') +
       `</div>`;
@@ -1782,15 +1807,20 @@
     }
     return Array.from(el.childNodes).map(walk).join('');
   }
-  // Click on faded placeholder → auto-select all so next keystroke replaces it
-  document.addEventListener('click', function(e) {
-    var t = e.target;
-    if(t && t.nodeType === 1 && t.hasAttribute && t.hasAttribute('data-bb-ph')) {
-      var range = document.createRange();
-      range.selectNodeContents(t);
+  // First keystroke inside a faded placeholder clears it (no scroll side-effects)
+  document.addEventListener('keydown', function(e) {
+    if(e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       var sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
+      if(!sel || !sel.rangeCount) return;
+      var node = sel.anchorNode;
+      for(var i=0; i<6 && node; i++) {
+        if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
+          node.innerHTML=''; node.removeAttribute('data-bb-ph');
+          node.style.color=''; node.style.fontStyle='';
+          return; // let the keystroke insert normally
+        }
+        node = node.parentNode;
+      }
     }
   });
 
@@ -4095,9 +4125,22 @@
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:8px;margin:8px 0">' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Left box...</p></div>' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Right box...</p></div>' +
+      '<div style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
+      '</div><p></p>');
+  }
+  function nnInsert3Col(color) {
+    var idx = _BOX_COLORS.findIndex(c=>c.key===color);
+    var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
+    var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
+    var c3 = _BOX_COLORS[(idx+2) % _BOX_COLORS.length];
+    document.getElementById('nn-content').focus({preventScroll:true});
+    document.execCommand('insertHTML', false,
+      '<div style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
       '</div><p></p>');
   }
 
@@ -4115,12 +4158,21 @@
             style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer" title="${c.key}"></button>`
         ).join('') +
       `</div>` +
-      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">SIDE BY SIDE ⊞</div>` +
-      `<div style="display:flex;gap:6px">` +
+      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">2 SIDE BY SIDE ⊞</div>` +
+      `<div style="display:flex;gap:6px;margin-bottom:10px">` +
         _BOX_COLORS.map(c=>
           `<button onclick="nnInsertGallery('${c.key}');document.getElementById('nn-box-picker').remove()"
             style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer;position:relative" title="${c.key} (2 cols)">` +
             `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.border};font-weight:900">⊞</span>` +
+          `</button>`
+        ).join('') +
+      `</div>` +
+      `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">3 COLUMNS ⊟</div>` +
+      `<div style="display:flex;gap:6px">` +
+        _BOX_COLORS.map(c=>
+          `<button onclick="nnInsert3Col('${c.key}');document.getElementById('nn-box-picker').remove()"
+            style="width:28px;height:28px;border-radius:6px;border:2px solid ${c.border};background:${c.bg};cursor:pointer;position:relative" title="${c.key} (3 cols)">` +
+            `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:${c.border};font-weight:900">⊟</span>` +
           `</button>`
         ).join('') +
       `</div>`;
