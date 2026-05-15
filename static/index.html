@@ -336,6 +336,7 @@
     .modal-content br + br { display:none; }
     /* Hide box control buttons in view mode — only show inside edit-content */
     #modal-body .bb-ctrl { display:none !important; }
+    #modal-body [data-brainbox="row"] { padding-top: 0 !important; }
     [data-brainbox] { position:relative; }
     .modal-sidebar { width:64px; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 8px; border-left:1px solid var(--border); background:var(--bg); flex-shrink:0; }
     .sidebar-btn { width:48px; padding:10px 4px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); font-size:11px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
@@ -1766,17 +1767,53 @@
     $('edit-content').focus({preventScroll:true});
   }
   function _galleryBoxStyle(c, w) {
-    return 'width:'+w+';flex-shrink:0;border:2px solid '+c.border+';border-radius:8px;padding:10px 14px;background:'+c.bg+';min-height:80px;resize:both;overflow:auto;box-sizing:border-box;min-width:80px;min-height:60px';
+    return 'width:'+w+';flex-shrink:0;border:2px solid '+c.border+';border-radius:8px;padding:10px 14px;background:'+c.bg+';min-height:60px;resize:both;overflow:auto;box-sizing:border-box;min-width:80px';
+  }
+  // After execCommand inserts the bare gallery HTML, enhance it via DOM:
+  // adds data-brainbox, row-level ↑↓✕ controls, and per-box ✕ buttons.
+  function _enhanceGalleryEl(el) {
+    if (!el) return;
+    var s = 'background:rgba(0,0,0,.07);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#555;font-family:inherit';
+    var d = 'background:rgba(200,0,0,.08);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#b00;font-family:inherit';
+    // Snapshot box children before we add the controls child
+    var boxes = Array.from(el.children);
+    // Mark the row
+    el.setAttribute('data-brainbox', 'row');
+    el.removeAttribute('id');
+    el.style.position = 'relative';
+    el.style.paddingTop = '24px';
+    // Row control bar — absolutely positioned so it doesn't affect flex layout
+    var rowCtrl = document.createElement('span');
+    rowCtrl.className = 'bb-ctrl';
+    rowCtrl.contentEditable = 'false';
+    rowCtrl.style.cssText = 'position:absolute;top:2px;right:0;display:inline-flex;gap:3px;line-height:1';
+    rowCtrl.innerHTML =
+      '<button onclick="_bbUp(this)" style="'+s+'">↑ row</button>' +
+      '<button onclick="_bbDn(this)" style="'+s+'">↓ row</button>' +
+      '<button onclick="_bbDel(this)" style="'+d+'">✕ row</button>';
+    el.insertBefore(rowCtrl, el.firstChild);
+    // Per-box ✕ button (float:right inside each flex item)
+    boxes.forEach(function(box) {
+      box.setAttribute('data-brainbox', 'box');
+      var boxCtrl = document.createElement('span');
+      boxCtrl.className = 'bb-ctrl';
+      boxCtrl.contentEditable = 'false';
+      boxCtrl.style.cssText = 'float:right;display:inline-flex;margin:0 0 2px 4px;line-height:1';
+      boxCtrl.innerHTML = '<button onclick="_bbDel(this)" style="'+d+'">✕</button>';
+      box.insertBefore(boxCtrl, box.firstChild);
+    });
   }
   function fmtInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
+    var gid = '_ng' + Date.now();
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
+      '<div id="'+gid+'" style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
       '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
       '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
       '</div><p></p>');
+    setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
     $('edit-content').focus({preventScroll:true});
   }
   function fmtInsert3Col(color) {
@@ -1784,12 +1821,14 @@
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
     var c3 = _BOX_COLORS[(idx+2) % _BOX_COLORS.length];
+    var gid = '_ng' + Date.now();
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
+      '<div id="'+gid+'" style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
       '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
       '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
       '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
       '</div><p></p>');
+    setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
     $('edit-content').focus({preventScroll:true});
   }
   function fmtShowBoxPicker() {
@@ -4216,25 +4255,29 @@
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
+    var gid = '_ng' + Date.now();
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
+      '<div id="'+gid+'" style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
       '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
       '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
       '</div><p></p>');
+    setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
   }
   function nnInsert3Col(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
     var c1 = _BOX_COLORS[idx] || _BOX_COLORS[0];
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
     var c3 = _BOX_COLORS[(idx+2) % _BOX_COLORS.length];
+    var gid = '_ng' + Date.now();
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      '<div style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
+      '<div id="'+gid+'" style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
       '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
       '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
       '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
       '</div><p></p>');
+    setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
   }
 
   function nnShowBoxPicker() {
