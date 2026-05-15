@@ -698,6 +698,7 @@
           <button class="fmt-btn" onclick="fmt('insertUnorderedList')" title="Bullet list">• List</button>
           <button class="fmt-btn" onclick="fmtInsertLine()" title="Divider line">― Line</button>
           <button class="fmt-btn" onclick="fmtShowBoxPicker()" title="Colored box">□ Box ▾</button>
+          <button class="fmt-btn" onclick="fmtDeleteBox()" title="Delete the box your cursor is inside" style="color:#b00">✕ Box</button>
         </div>
         <div id="edit-content" contenteditable="true"></div>
       </div>
@@ -1650,6 +1651,21 @@
   function fmtInsertLine() {
     document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #ccc;margin:12px 0">');
     $('edit-content').focus({preventScroll:true});
+  }
+  function fmtDeleteBox() {
+    // Find the box or flex row containing the cursor and remove it
+    var sel = window.getSelection();
+    if(!sel || !sel.rangeCount) return;
+    var node = sel.anchorNode;
+    var editor = $('edit-content');
+    while(node && node !== editor) {
+      if(node.nodeType === 1) {
+        var bb = node.getAttribute && node.getAttribute('data-brainbox');
+        var isFlex = node.style && node.style.display === 'flex';
+        if(bb || isFlex) { node.remove(); return; }
+      }
+      node = node.parentNode;
+    }
   }
   var _BOX_COLORS = [
     {key:'sage',     bg:'#f4f8f4', border:'#7aab7a'},
