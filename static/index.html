@@ -1739,8 +1739,16 @@
   function _boxColorMap() { var m={}; _BOX_COLORS.forEach(c=>m[c.key]=c); return m; }
 
   // Box control helpers — called from onclick inside box HTML
-  function _bbUp(btn)  { var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.previousElementSibling; if(s)p.insertBefore(b,s); }
-  function _bbDn(btn)  { var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.nextElementSibling;     if(s)p.insertBefore(s,b); }
+  function _bbUp(btn)  {
+    var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.previousElementSibling;
+    while(s && s.tagName==='P' && !s.textContent.trim() && !s.getAttribute('data-brainbox')) s=s.previousElementSibling;
+    if(s) p.insertBefore(b,s);
+  }
+  function _bbDn(btn)  {
+    var b=btn.closest('[data-brainbox]'),p=b.parentElement,s=b.nextElementSibling;
+    while(s && s.tagName==='P' && !s.textContent.trim() && !s.getAttribute('data-brainbox')) s=s.nextElementSibling;
+    if(s) p.insertBefore(s,b);
+  }
   function _bbDel(btn) {
     var el = btn.closest('[data-brainbox]');
     var parent = el.parentElement;
@@ -1755,7 +1763,8 @@
     var s = 'background:rgba(0,0,0,.07);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#555;font-family:inherit';
     var d = 'background:rgba(200,0,0,.08);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#b00;font-family:inherit';
     var label = isRow ? ' row' : '';
-    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1"><button onclick="_bbUp(this)" style="${s}">↑${label}</button><button onclick="_bbDn(this)" style="${s}">↓${label}</button><button onclick="_bbDel(this)" style="${d}">✕</button></span>`;
+    var delBtn = isRow ? `<button onclick="_bbDel(this)" style="${d}">✕${label}</button>` : '';
+    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1"><button onclick="_bbUp(this)" style="${s}">↑${label}</button><button onclick="_bbDn(this)" style="${s}">↓${label}</button>${delBtn}</span>`;
   }
 
   // Direct DOM insert — more reliable than execCommand for complex structures
