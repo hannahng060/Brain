@@ -338,6 +338,8 @@
     #modal-body .bb-ctrl { display:none !important; }
     #modal-body [data-brainbox="row"] { padding-top: 0 !important; }
     [data-brainbox] { position:relative; }
+    /* CSS-only placeholder — box is empty from the start, no JS cursor tricks needed */
+    [data-bb-ph]:empty::before { content:attr(data-bb-ph); color:#bbb; font-style:italic; pointer-events:none; }
     .modal-sidebar { width:64px; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 8px; border-left:1px solid var(--border); background:var(--bg); flex-shrink:0; }
     .sidebar-btn { width:48px; padding:10px 4px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); font-size:11px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
     .sidebar-btn.primary { background:var(--primary-light); color:var(--primary); border-color:var(--primary); }
@@ -1773,11 +1775,12 @@
     sel.removeAllRanges(); sel.addRange(r);
   }
 
-  var _PH = '<p data-bb-ph style="margin:0;color:#bbb;font-style:italic">';
+  // CSS placeholder: box is truly empty — ::before shows hint text, typing just works
+  function _ph(txt) { return '<p data-bb-ph="'+(txt||'Type here...')+'" style="margin:0;min-height:1.4em"></p>'; }
   function fmtInsertBox(color) {
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_PH}Type here...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_ph('Type here...')}</div><p></p>`);
     $('edit-content').focus({preventScroll:true});
   }
   function _galleryBoxStyle(c, w) {
@@ -1824,8 +1827,8 @@
     var gid = '_ng' + Date.now();
     document.execCommand('insertHTML', false,
       '<div id="'+gid+'" style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
-      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _ph('Left box...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _ph('Right box...') + '</div>' +
       '</div><p></p>');
     setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
     $('edit-content').focus({preventScroll:true});
@@ -1838,9 +1841,9 @@
     var gid = '_ng' + Date.now();
     document.execCommand('insertHTML', false,
       '<div id="'+gid+'" style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
-      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _ph('Box 1...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _ph('Box 2...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _ph('Box 3...') + '</div>' +
       '</div><p></p>');
     setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
     $('edit-content').focus({preventScroll:true});
@@ -1921,59 +1924,25 @@
     }
     return Array.from(el.childNodes).map(walk).join('');
   }
-  // First keystroke inside a faded placeholder: clear it and insert the character
-  document.addEventListener('keydown', function(e) {
-    if(e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      var sel = window.getSelection();
-      if(!sel || !sel.rangeCount) return;
-      var node = sel.anchorNode;
-      for(var i=0; i<6 && node; i++) {
-        if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
-          e.preventDefault(); // take full control — insert character ourselves
-          node.innerHTML=''; node.removeAttribute('data-bb-ph');
-          node.style.color=''; node.style.fontStyle='';
-          try {
-            // sel.collapse is atomic — avoids focus loss from removeAllRanges on iOS
-            if(sel.collapse) { sel.collapse(node, 0); }
-            else { var r=document.createRange(); r.setStart(node,0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
-            document.execCommand('insertText', false, e.key);
-          } catch(err) {}
-          return;
-        }
-        node = node.parentNode;
-      }
-    }
-  });
+  // No keydown handler needed — boxes are empty by default, placeholder is CSS-only
 
   function _clearPhAtCursor() {
+    // With CSS placeholders, boxes are already empty — just find the element and position cursor
     var sel = window.getSelection();
     if(!sel || !sel.rangeCount) return;
-    // Walk up from the cursor to find a placeholder p, or look inside
-    // the nearest box if the cursor landed at the box level (not inside p)
     var node = sel.anchorNode;
     var ph = null;
     for(var i=0; i<8 && node; i++) {
       if(node.nodeType===1) {
-        if(node.hasAttribute && node.hasAttribute('data-bb-ph')) {
-          ph = node; break;
-        }
-        // Cursor is at the box container level — find the placeholder inside it
+        if(node.hasAttribute && node.hasAttribute('data-bb-ph')) { ph = node; break; }
         var inner = node.querySelector && node.querySelector('[data-bb-ph]');
         if(inner) { ph = inner; break; }
       }
       node = node.parentNode;
     }
     if(!ph) return;
-    ph.innerHTML=''; ph.removeAttribute('data-bb-ph');
-    ph.style.color=''; ph.style.fontStyle='';
-    // Restore cursor into the now-empty element
-    try {
-      var r = document.createRange();
-      r.setStart(ph, 0);
-      r.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(r);
-    } catch(err) {}
+    ph.innerHTML = ''; // clear any legacy text-based placeholder content
+    try { sel.collapse(ph, 0); } catch(err) {}
   }
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
@@ -4296,7 +4265,7 @@
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_PH}Type here...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_ph('Type here...')}</div><p></p>`);
   }
   function nnInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
@@ -4306,8 +4275,8 @@
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
       '<div id="'+gid+'" style="display:flex;gap:8px;margin:8px 0;align-items:flex-start">' +
-      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _PH + 'Left box...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _PH + 'Right box...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(50% - 4px)') + '">' + _ph('Left box...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(50% - 4px)') + '">' + _ph('Right box...') + '</div>' +
       '</div><p></p>');
     setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
   }
@@ -4320,9 +4289,9 @@
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
       '<div id="'+gid+'" style="display:flex;gap:6px;margin:8px 0;align-items:flex-start">' +
-      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _PH + 'Box 1...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _PH + 'Box 2...</p></div>' +
-      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _PH + 'Box 3...</p></div>' +
+      '<div style="' + _galleryBoxStyle(c1,'calc(33% - 4px)') + '">' + _ph('Box 1...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c2,'calc(33% - 4px)') + '">' + _ph('Box 2...') + '</div>' +
+      '<div style="' + _galleryBoxStyle(c3,'calc(34% - 4px)') + '">' + _ph('Box 3...') + '</div>' +
       '</div><p></p>');
     setTimeout(function(){ _enhanceGalleryEl(document.getElementById(gid)); }, 0);
   }
