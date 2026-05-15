@@ -1740,15 +1740,41 @@
   }
 
   // Strip external formatting on paste — keep plain text only
+  // Sanitize pasted HTML: keep inline formatting (bold/highlight/color/italic)
+  // but strip block elements (div/p/h1…) so they can't break box layouts.
+  function _sanitizePaste(el) {
+    var SKIP  = new Set(['meta','style','script','head','html','body','title','link','base']);
+    var BLOCK = new Set(['div','p','h1','h2','h3','h4','h5','h6','li','ul','ol',
+                         'table','tr','td','th','tbody','thead','tfoot',
+                         'blockquote','pre','section','article','header','footer','main','aside','figure']);
+    function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+    function walk(node) {
+      if(node.nodeType===3) return esc(node.textContent);
+      if(node.nodeType!==1) return '';
+      var tag = node.tagName.toLowerCase();
+      if(SKIP.has(tag)) return '';
+      if(tag==='br') return '<br>';
+      if(tag==='img') return node.outerHTML;
+      var inner = Array.from(node.childNodes).map(walk).join('');
+      if(BLOCK.has(tag)) return inner ? inner+'<br>' : '';
+      // inline element — preserve with its style/color attrs only
+      var style = node.getAttribute('style')||'';
+      var color = node.getAttribute('color')||'';
+      var a = (style?' style="'+style+'"':'')+(color?' color="'+color+'"':'');
+      return '<'+tag+a+'>'+inner+'</'+tag+'>';
+    }
+    return Array.from(el.childNodes).map(walk).join('');
+  }
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
-    // Prefer HTML paste so bold/highlight/formatting is preserved
-    const html = (e.clipboardData || window.clipboardData).getData('text/html');
+    const cd = e.clipboardData || window.clipboardData;
+    const html = cd.getData('text/html');
     if(html) {
-      document.execCommand('insertHTML', false, html);
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      document.execCommand('insertHTML', false, _sanitizePaste(tmp));
     } else {
-      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-      document.execCommand('insertText', false, text);
+      document.execCommand('insertText', false, cd.getData('text/plain'));
     }
   });
 
