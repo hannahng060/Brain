@@ -3069,8 +3069,32 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 reply = parse_and_save_board_questions(description, filename or "Image")
                 db_add_message("assistant", reply)
                 return {"reply": reply}
-            # Check if user wants to continue/append to a previous note
+            # User is asking a QUESTION about the image — route through agent to answer it
+            # (not save it). Detected when message contains question/help-seeking language.
             note_lower = note.strip().lower()
+            is_asking_question = any(kw in note_lower for kw in [
+                "what should i do", "what do i do", "what should i", "what do i",
+                "look at the screenshot", "look at this", "look at the",
+                "help me", "help me with", "guide me", "walk me through",
+                "what does this", "what is this", "what is it",
+                "how do i", "how should i", "how should",
+                "tell me", "explain", "can you see", "do you see",
+                "what should", "what next", "next step", "next steps",
+                "what am i", "what are", "should i", "can i", "am i",
+                "i need help", "need help", "not sure", "confused",
+                "can you look", "please look",
+            ])
+            if is_asking_question and note.strip():
+                user_msg = (
+                    f"[IMAGE QUESTION — user attached a screenshot and is asking for help/guidance. "
+                    f"Do NOT save this as a new note. Answer their question using the image content "
+                    f"AND your memory of our conversation. User's question: {note.strip()}]\n\n"
+                    f"Extracted content from the screenshot:\n{description}"
+                )
+                db_add_message("user", f"[Screenshot attached: {filename}] {note.strip()}")
+                result = run_agent(user_msg)
+                return {"reply": result["reply"]}
+            # Check if user wants to continue/append to a previous note
             is_continuation = any(kw in note_lower for kw in [
                 "continue previous note", "add to previous note", "continue previous",
                 "same note", "append to previous", "add to last note",
