@@ -1927,33 +1927,50 @@
   function _clearPhAtCursor() {
     var sel = window.getSelection();
     if(!sel || !sel.rangeCount) return;
+    // Walk up from the cursor to find a placeholder p, or look inside
+    // the nearest box if the cursor landed at the box level (not inside p)
     var node = sel.anchorNode;
-    for(var i=0; i<6 && node; i++) {
-      if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
-        node.innerHTML=''; node.removeAttribute('data-bb-ph');
-        node.style.color=''; node.style.fontStyle='';
-        // Restore cursor into the now-empty element so paste lands there
-        try {
-          var r = document.createRange();
-          r.setStart(node, 0);
-          r.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(r);
-        } catch(err) {}
-        break;
+    var ph = null;
+    for(var i=0; i<8 && node; i++) {
+      if(node.nodeType===1) {
+        if(node.hasAttribute && node.hasAttribute('data-bb-ph')) {
+          ph = node; break;
+        }
+        // Cursor is at the box container level — find the placeholder inside it
+        var inner = node.querySelector && node.querySelector('[data-bb-ph]');
+        if(inner) { ph = inner; break; }
       }
       node = node.parentNode;
     }
+    if(!ph) return;
+    ph.innerHTML=''; ph.removeAttribute('data-bb-ph');
+    ph.style.color=''; ph.style.fontStyle='';
+    // Restore cursor into the now-empty element
+    try {
+      var r = document.createRange();
+      r.setStart(ph, 0);
+      r.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch(err) {}
   }
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
-    _clearPhAtCursor(); // clear faded placeholder before pasting
+    _clearPhAtCursor();
+    // Save range, re-focus (ensures execCommand has a live target), restore range
+    var sel = window.getSelection();
+    var savedRange = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+    $('edit-content').focus({preventScroll:true});
+    if(savedRange) { try { sel.removeAllRanges(); sel.addRange(savedRange); } catch(err){} }
     const cd = e.clipboardData || window.clipboardData;
     const html = cd.getData('text/html');
     if(html) {
       var tmp = document.createElement('div');
       tmp.innerHTML = html;
-      document.execCommand('insertHTML', false, _sanitizePaste(tmp));
+      var clean = _sanitizePaste(tmp);
+      if(!document.execCommand('insertHTML', false, clean)) {
+        document.execCommand('insertText', false, cd.getData('text/plain'));
+      }
     } else {
       document.execCommand('insertText', false, cd.getData('text/plain'));
     }
