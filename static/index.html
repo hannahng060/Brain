@@ -1706,10 +1706,11 @@
     sel.removeAllRanges(); sel.addRange(r);
   }
 
+  var _PH = '<p data-bb-ph style="margin:0;color:#bbb;font-style:italic">';
   function fmtInsertBox(color) {
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}<p style="margin:0">Click to type...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_PH}Type here...</p></div><p></p>`);
     $('edit-content').focus({preventScroll:true});
   }
   function fmtInsertGallery(color) {
@@ -1718,8 +1719,8 @@
     var c2 = _BOX_COLORS[(idx+1) % _BOX_COLORS.length];
     document.execCommand('insertHTML', false,
       '<div style="display:flex;gap:8px;margin:8px 0">' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Left box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Right box...</p></div>' +
       '</div><p></p>');
     $('edit-content').focus({preventScroll:true});
   }
@@ -1781,6 +1782,18 @@
     }
     return Array.from(el.childNodes).map(walk).join('');
   }
+  // Click on faded placeholder → auto-select all so next keystroke replaces it
+  document.addEventListener('click', function(e) {
+    var t = e.target;
+    if(t && t.nodeType === 1 && t.hasAttribute && t.hasAttribute('data-bb-ph')) {
+      var range = document.createRange();
+      range.selectNodeContents(t);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
     const cd = e.clipboardData || window.clipboardData;
@@ -4074,7 +4087,7 @@
     var c = _boxColorMap()[color] || _BOX_COLORS[0];
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
-      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}<p style="margin:0">Click to type...</p></div><p></p>`);
+      `<div data-brainbox="single" style="border:2px solid ${c.border};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:${c.bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box">${_bbCtrl(false)}${_PH}Type here...</p></div><p></p>`);
   }
   function nnInsertGallery(color) {
     var idx = _BOX_COLORS.findIndex(c=>c.key===color);
@@ -4083,8 +4096,8 @@
     document.getElementById('nn-content').focus({preventScroll:true});
     document.execCommand('insertHTML', false,
       '<div style="display:flex;gap:8px;margin:8px 0">' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Left box...</p></div>' +
-      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box"><p style="margin:0">Right box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c1.border + ';border-radius:8px;padding:10px 14px;background:' + c1.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Left box...</p></div>' +
+      '<div style="flex:1;min-width:100px;border:2px solid ' + c2.border + ';border-radius:8px;padding:10px 14px;background:' + c2.bg + ';min-height:60px;box-sizing:border-box">' + _PH + 'Right box...</p></div>' +
       '</div><p></p>');
   }
 
