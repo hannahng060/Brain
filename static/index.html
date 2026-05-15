@@ -355,7 +355,7 @@
     .edit-field { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; resize:vertical; min-height:120px; outline:none; margin-top:8px; }
     .edit-field:focus { border-color:var(--primary); }
     .edit-label { font-size:13px; font-weight:600; color:var(--muted); margin-top:14px; display:block; }
-    .format-toolbar { display:flex; gap:5px; flex-wrap:wrap; position:sticky; top:0; background:var(--surface); z-index:10; padding:8px 0 6px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+    .format-toolbar { display:flex; gap:5px; flex-wrap:wrap; background:var(--surface); z-index:10; padding:8px 0 6px; border-bottom:1px solid var(--border); margin-bottom:4px; flex-shrink:0; }
     .fmt-btn { padding:5px 11px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; cursor:pointer; font-family:inherit; }
     .fmt-btn.bold { font-weight:700; }
     .fmt-btn.underline { text-decoration:underline; }
@@ -363,7 +363,13 @@
     .fmt-divider { width:1px; background:var(--border); margin:2px 2px; }
     .color-dot { display:inline-block; width:14px; height:14px; border-radius:50%; border:1.5px solid rgba(0,0,0,0.15); vertical-align:middle; }
     .fmt-select { padding:5px 6px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg); font-size:13px; cursor:pointer; font-family:inherit; }
-    #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:160px; outline:none; margin-top:8px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; color:var(--text); }
+    #edit-content { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.6; min-height:120px; outline:none; margin-top:8px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; color:var(--text); flex:1; min-height:0; }
+    /* Edit mode: toolbar always visible — only edit-content scrolls */
+    .modal-sheet.editing .modal-content { overflow-y:hidden !important; display:flex; flex-direction:column; }
+    .modal-sheet.editing .modal-handle,
+    .modal-sheet.editing .modal-badge-row { flex-shrink:0; }
+    .modal-sheet.editing #modal-edit { flex:1; min-height:0; display:flex !important; flex-direction:column; overflow:hidden; }
+    .modal-sheet.editing #edit-content { flex:1; min-height:80px; overflow-y:auto; }
     #edit-content:focus { border-color:var(--primary); }
 
     /* ── Finance tabs ── */
@@ -699,6 +705,14 @@
           <button class="fmt-btn" onclick="fmtInsertLine()" title="Divider line">― Line</button>
           <button class="fmt-btn" onclick="fmtShowBoxPicker()" title="Colored box">□ Box ▾</button>
           <button class="fmt-btn" onclick="fmtDeleteBox()" title="Delete the box your cursor is inside" style="color:#b00">✕ Box</button>
+          <div class="fmt-divider"></div>
+          <select class="fmt-select" onchange="fmtLineHeight(this.value); this.selectedIndex=0;" title="Line spacing">
+            <option value="">≡ Spacing</option>
+            <option value="1.2">Tight</option>
+            <option value="1.5">Normal</option>
+            <option value="1.8">Relaxed</option>
+            <option value="2.2">Double</option>
+          </select>
         </div>
         <div id="edit-content" contenteditable="true"></div>
       </div>
@@ -1652,6 +1666,36 @@
     document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #ccc;margin:12px 0">');
     $('edit-content').focus({preventScroll:true});
   }
+  function fmtLineHeight(lh) {
+    if(!lh) { $('edit-content').focus({preventScroll:true}); return; }
+    var sel = window.getSelection();
+    if(!sel || !sel.rangeCount) { $('edit-content').focus({preventScroll:true}); return; }
+    // Apply to all block elements in selection range, or just the one at cursor
+    var range = sel.getRangeAt(0);
+    var editor = $('edit-content');
+    var start = range.startContainer, end = range.endContainer;
+    function applyToBlock(node) {
+      while(node && node !== editor) {
+        if(node.nodeType===1 && /^(P|DIV|LI|H[1-6])$/.test(node.tagName)) {
+          node.style.lineHeight = lh; return;
+        }
+        node = node.parentNode;
+      }
+    }
+    if(range.collapsed) {
+      applyToBlock(start);
+    } else {
+      // Apply to every block touched by the selection
+      var walker = document.createTreeWalker(editor, NodeFilter.SHOW_ELEMENT);
+      var n;
+      while((n = walker.nextNode())) {
+        if(/^(P|DIV|LI|H[1-6])$/.test(n.tagName) && range.intersectsNode(n)) {
+          n.style.lineHeight = lh;
+        }
+      }
+    }
+    $('edit-content').focus({preventScroll:true});
+  }
   function fmtDeleteBox() {
     // Find the box or flex row containing the cursor and remove it
     var sel = window.getSelection();
@@ -1824,8 +1868,21 @@
     }
   });
 
+  function _clearPhAtCursor() {
+    var sel = window.getSelection();
+    if(!sel || !sel.rangeCount) return;
+    var node = sel.anchorNode;
+    for(var i=0; i<6 && node; i++) {
+      if(node.nodeType===1 && node.hasAttribute && node.hasAttribute('data-bb-ph')) {
+        node.innerHTML=''; node.removeAttribute('data-bb-ph');
+        node.style.color=''; node.style.fontStyle=''; break;
+      }
+      node = node.parentNode;
+    }
+  }
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
+    _clearPhAtCursor(); // clear faded placeholder before pasting
     const cd = e.clipboardData || window.clipboardData;
     const html = cd.getData('text/html');
     if(html) {
@@ -1852,12 +1909,14 @@
     $('edit-content').innerHTML = renderContent(_editingNote.content || '');
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
+    document.querySelector('.modal-sheet').classList.add('editing');
     setSidebarMode('edit');
-    $('edit-content').focus();
+    $('edit-content').focus({preventScroll:true});
   }
   function cancelEdit() {
     $('modal-edit').style.display = 'none';
     $('modal-view').style.display = 'block';
+    document.querySelector('.modal-sheet').classList.remove('editing');
     setSidebarMode('view');
   }
   async function saveEdit() {
@@ -1885,6 +1944,7 @@
       $('modal-body').innerHTML = renderContent(content);
       $('modal-edit').style.display = 'none';
       $('modal-view').style.display  = 'block';
+      document.querySelector('.modal-sheet').classList.remove('editing');
       setSidebarMode('view');
       showToast('✓ Note saved');
       loadNotes(); // refresh note list in background
