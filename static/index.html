@@ -1836,7 +1836,7 @@
     if(existing) { existing.remove(); return; }
     var picker = document.createElement('div');
     picker.id = 'fmt-box-picker';
-    picker.style.cssText = 'position:absolute;background:white;border:1.5px solid #ddd;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:10000;bottom:44px;right:0;min-width:210px';
+    picker.style.cssText = 'position:fixed;background:white;border:1.5px solid #ddd;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:99999;min-width:210px;max-height:70vh;overflow-y:auto';
     picker.innerHTML =
       `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">SINGLE BOX</div>` +
       `<div style="display:flex;gap:6px;margin-bottom:10px">` +
@@ -1863,9 +1863,18 @@
           `</button>`
         ).join('') +
       `</div>`;
+    // Attach to body (fixed) so modal overflow:hidden can't clip it
+    document.body.appendChild(picker);
     var toolbar = document.querySelector('.format-toolbar');
-    toolbar.style.position = 'relative';
-    toolbar.appendChild(picker);
+    var r = toolbar.getBoundingClientRect();
+    picker.style.top  = (r.bottom + 4) + 'px';
+    picker.style.left = Math.max(4, r.left) + 'px';
+    // Close on tap outside
+    setTimeout(function(){
+      document.addEventListener('click', function _cp(e){
+        if(!picker.contains(e.target)){ picker.remove(); document.removeEventListener('click',_cp); }
+      });
+    }, 100);
   }
   function fmtFont(font) {
     if(font) document.execCommand('fontName', false, font);
@@ -4285,7 +4294,7 @@
     if(existing) { existing.remove(); return; }
     var picker = document.createElement('div');
     picker.id = 'nn-box-picker';
-    picker.style.cssText = 'position:absolute;background:white;border:1.5px solid #ddd;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:10000;min-width:210px;bottom:36px;left:0';
+    picker.style.cssText = 'position:fixed;background:white;border:1.5px solid #ddd;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:99999;min-width:210px;max-height:70vh;overflow-y:auto';
     picker.innerHTML =
       `<div style="font-size:10px;font-weight:700;color:#999;letter-spacing:.5px;margin-bottom:6px">SINGLE BOX</div>` +
       `<div style="display:flex;gap:6px;margin-bottom:10px">` +
@@ -4312,9 +4321,17 @@
           `</button>`
         ).join('') +
       `</div>`;
+    // Attach to body (fixed) so any parent overflow:hidden can't clip it
+    document.body.appendChild(picker);
     var toolbar = document.querySelector('#new-note-modal .nn-toolbar');
-    toolbar.style.position = 'relative';
-    toolbar.appendChild(picker);
+    var r = toolbar.getBoundingClientRect();
+    picker.style.top  = (r.bottom + 4) + 'px';
+    picker.style.left = Math.max(4, r.left) + 'px';
+    setTimeout(function(){
+      document.addEventListener('click', function _cp(e){
+        if(!picker.contains(e.target)){ picker.remove(); document.removeEventListener('click',_cp); }
+      });
+    }, 100);
   }
 
   function updateNewNoteSubcats() {
