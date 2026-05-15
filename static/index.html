@@ -1473,6 +1473,10 @@
   }
 
   function _setupModal(n) {
+    // Always exit edit mode before loading a new note —
+    // the .editing class uses !important so it overrides inline display:none
+    document.querySelector('.modal-sheet').classList.remove('editing');
+    _editingNote = null;
     window._openNote = n;
     const tags = tryParse(n.tags);
     const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
@@ -1511,6 +1515,8 @@
   function openNoteDirectly(n) { _setupModal(n); }
 
   function _setupModalLoading(n) {
+    document.querySelector('.modal-sheet').classList.remove('editing');
+    _editingNote = null;
     window._openNote = n;
     const tags = tryParse(n.tags);
     const date = new Date(n.created_at).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
