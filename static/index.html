@@ -648,26 +648,34 @@
 
       <!-- Edit mode -->
       <div id="modal-edit" style="display:none">
-        <span class="edit-label">Heading</span>
-        <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text" placeholder="Short, catchy heading (3-6 words)">
-        <span class="edit-label">Category</span>
-        <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions()">
-          <option value="psychiatry">Psychiatry</option>
-          <option value="psychotherapy">Psychotherapy</option>
-          <option value="icu">ICU</option>
-          <option value="np_fellowship">NP Fellowship</option>
-          <option value="business">Business</option>
-          <option value="resources">Resources</option>
-          <option value="personal">Personal</option>
-          <option value="lifestyle">Lifestyle</option>
-          <option value="mom">🧡 Mom</option>
-          <option value="garden">🌱 Garden</option>
-          <option value="boards">🎓 Boards</option>
-          <option value="people">👥 People</option>
-        </select>
-        <span class="edit-label">Subcategory</span>
-        <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
-        <span class="edit-label">Content</span>
+        <!-- Collapsed fields toggle — tap to reveal heading/category -->
+        <div id="edit-fields-bar" onclick="toggleEditFields()" style="display:flex;align-items:center;gap:8px;padding:6px 0 4px;cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:6px;flex-shrink:0">
+          <span style="font-size:12px;color:var(--muted)">✏️</span>
+          <span id="edit-fields-summary" style="flex:1;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+          <span id="edit-fields-arrow" style="font-size:11px;color:var(--muted)">▾ fields</span>
+        </div>
+        <!-- Expandable fields -->
+        <div id="edit-fields" style="display:none;flex-shrink:0">
+          <span class="edit-label">Heading</span>
+          <input id="edit-summary" class="edit-field" style="min-height:unset;height:44px" type="text" placeholder="Short, catchy heading (3-6 words)" oninput="updateEditFieldsSummary()">
+          <span class="edit-label">Category</span>
+          <select id="edit-category" class="edit-field" style="min-height:unset;height:44px" onchange="updateSubcatOptions();updateEditFieldsSummary()">
+            <option value="psychiatry">Psychiatry</option>
+            <option value="psychotherapy">Psychotherapy</option>
+            <option value="icu">ICU</option>
+            <option value="np_fellowship">NP Fellowship</option>
+            <option value="business">Business</option>
+            <option value="resources">Resources</option>
+            <option value="personal">Personal</option>
+            <option value="lifestyle">Lifestyle</option>
+            <option value="mom">🧡 Mom</option>
+            <option value="garden">🌱 Garden</option>
+            <option value="boards">🎓 Boards</option>
+            <option value="people">👥 People</option>
+          </select>
+          <span class="edit-label">Subcategory</span>
+          <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
+        </div>
         <div class="format-toolbar">
           <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
           <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
@@ -1900,6 +1908,18 @@
     $('sidebar-save').style.display   = mode === 'edit' ? 'block' : 'none';
     $('sidebar-cancel').style.display = mode === 'edit' ? 'block' : 'none';
   }
+  function toggleEditFields() {
+    var f = $('edit-fields');
+    var arrow = $('edit-fields-arrow');
+    var open = f.style.display === 'none' || f.style.display === '';
+    f.style.display = open ? 'block' : 'none';
+    arrow.textContent = open ? '▴ fields' : '▾ fields';
+  }
+  function updateEditFieldsSummary() {
+    var summary = $('edit-summary').value || '(no heading)';
+    var cat = $('edit-category').value || '';
+    $('edit-fields-summary').textContent = summary + (cat ? ' · ' + cat : '');
+  }
   function startEdit() {
     _editingNote = window._openNote;
     $('edit-summary').value = _editingNote.summary || '';
@@ -1907,6 +1927,10 @@
     updateSubcatOptions();
     $('edit-subcategory').value = _editingNote.subcategory || '';
     $('edit-content').innerHTML = renderContent(_editingNote.content || '');
+    // Collapse fields panel and update summary bar
+    $('edit-fields').style.display = 'none';
+    $('edit-fields-arrow').textContent = '▾ fields';
+    updateEditFieldsSummary();
     $('modal-view').style.display = 'none';
     $('modal-edit').style.display = 'block';
     document.querySelector('.modal-sheet').classList.add('editing');
