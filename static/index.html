@@ -334,6 +334,9 @@
     .modal-content li p { margin:0 !important; }
     .modal-content div + div { margin-top:0 !important; }
     .modal-content br + br { display:none; }
+    /* Hide box control buttons in view mode — only show inside edit-content */
+    #modal-body .bb-ctrl { display:none !important; }
+    [data-brainbox] { position:relative; }
     .modal-sidebar { width:64px; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 8px; border-left:1px solid var(--border); background:var(--bg); flex-shrink:0; }
     .sidebar-btn { width:48px; padding:10px 4px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); font-size:11px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
     .sidebar-btn.primary { background:var(--primary-light); color:var(--primary); border-color:var(--primary); }
@@ -1670,7 +1673,7 @@
     var btns = labels
       ? `<button onclick="_bbUp(this)" style="${s}">↑</button><button onclick="_bbDn(this)" style="${s}">↓</button>`
       : `<button onclick="_bbUp(this)" style="${s}">↑ row</button><button onclick="_bbDn(this)" style="${s}">↓ row</button>`;
-    return `<span contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1">${btns}<button onclick="_bbDel(this)" style="${d}">✕</button></span>`;
+    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;gap:3px;margin:0 0 4px 6px;line-height:1">${btns}<button onclick="_bbDel(this)" style="${d}">✕</button></span>`;
   }
 
   function fmtInsertBox(color) {
