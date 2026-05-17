@@ -24,6 +24,7 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 active_sessions = set()
 _last_error: dict = {}   # stores most recent chat error for debugging
+_undo_stack: list = []   # last 5 reversible Brain actions (saves/updates)
 
 # ── Database ──────────────────────────────────────────────────────────────────
 def get_db():
@@ -860,6 +861,15 @@ TOOLS = [
         }
     },
     {
+        "name": "undo_last_action",
+        "description": "Reverse the last save or update Brain performed. Call this when the user says 'undo', 'undo that', 'go back', 'reverse that', 'delete what you just saved', 'that was wrong undo it', etc. Deletes the last saved note OR restores the previous version of the last updated note.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
         "name": "get_weak_areas",
         "description": "Returns Hannah's board exam weak areas sorted by lowest score. Use this during morning briefings to personalize the board study card with her actual weakest topic.",
         "input_schema": {
@@ -950,6 +960,7 @@ Examples of messages that need SAVE + ANSWER:
 The question ALWAYS deserves a real answer, not a brush-off.
 
 UNDERSTANDING INSTRUCTIONS — READ CAREFULLY:
+0. UNDO: If the user says "undo", "undo that", "go back", "reverse that", "delete what you just saved", "that was wrong", "oops undo" — call undo_last_action immediately. Confirm what was reversed in one short sentence. Do not ask for confirmation first.
 1. CORRECTIONS: If the user says "no", "that's not right", "you misunderstood", "I meant...", "not that" — STOP, acknowledge the mistake in ONE sentence, then redo it correctly. Never defend the wrong action.
 2. AMBIGUOUS REFERENCES: If the user says "update it", "change that", "add to it", "fix it" without specifying which note — call search_notes FIRST to find the most recent relevant note, then act on it. Never say "which note?" without trying to find it first.
 3. VAGUE BUT CLEAR INTENT: If the instruction is short or informal ("save this", "remember that", "note that down") — just save it. Don't ask for clarification.
@@ -1410,9 +1421,33 @@ Tag the note with the topic name as a tag.
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
+    global _undo_stack
     if name == "save_note":
-        return db_save_note(raw, args["content"], args["summary"], args["category"],
-                            args.get("subcategory"), args.get("tags", []), args.get("entities", []))
+        result = db_save_note(raw, args["content"], args["summary"], args["category"],
+                              args.get("subcategory"), args.get("tags", []), args.get("entities", []))
+        if "id" in result:
+            _undo_stack.append({"type": "save", "note_id": result["id"], "summary": result.get("summary", "")})
+            _undo_stack = _undo_stack[-5:]  # keep last 5
+        return result
+    elif name == "undo_last_action":
+        if not _undo_stack:
+            return {"status": "nothing_to_undo", "message": "No recent action to undo."}
+        action = _undo_stack.pop()
+        conn = get_db(); cur = conn.cursor()
+        if action["type"] == "save":
+            cur.execute("DELETE FROM notes WHERE id = %s", (action["note_id"],))
+            conn.commit(); cur.close(); conn.close()
+            return {"status": "undone", "action": "deleted", "summary": action.get("summary", ""), "note_id": action["note_id"]}
+        elif action["type"] == "update":
+            prev = action.get("prev_fields", {})
+            if prev:
+                sets = ", ".join(f"{k} = %s" for k in prev)
+                cur.execute(f"UPDATE notes SET {sets} WHERE id = %s", list(prev.values()) + [action["note_id"]])
+                conn.commit()
+            cur.close(); conn.close()
+            return {"status": "undone", "action": "restored", "note_id": action["note_id"]}
+        cur.close(); conn.close()
+        return {"status": "undone"}
     elif name == "search_notes":
         return db_search_notes(args["query"], args.get("category", "all"), args.get("limit", 30))
     elif name == "get_person":
@@ -1436,6 +1471,18 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
     elif name == "update_note":
         note_id = args.get("note_id")
         fields = {k: args.get(k) for k in ["subcategory", "category", "summary", "content"]}
+        # Snapshot existing fields before overwriting so undo can restore them
+        try:
+            conn2 = get_db(); cur2 = conn2.cursor()
+            cur2.execute("SELECT subcategory, category, summary, content FROM notes WHERE id = %s", (note_id,))
+            old = cur2.fetchone()
+            cur2.close(); conn2.close()
+            if old:
+                prev = {k: old[k] for k in fields if fields.get(k) is not None and old.get(k) is not None}
+                _undo_stack.append({"type": "update", "note_id": note_id, "prev_fields": prev})
+                _undo_stack = _undo_stack[-5:]
+        except Exception:
+            pass
         return db_update_note(note_id, fields)
     elif name == "merge_notes":
         note_ids = args.get("note_ids", [])
