@@ -1960,22 +1960,32 @@
   // No keydown handler needed — boxes are empty by default, placeholder is CSS-only
 
   function _clearPhAtCursor() {
-    // With CSS placeholders, boxes are already empty — just find the element and position cursor
+    // Only acts when cursor is inside a truly-empty placeholder box.
+    // Bugs we're avoiding:
+    //   1. data-bb-ph stays on <p> even after typing — never wipe content that's already there
+    //   2. querySelector on edit-content finds the FIRST placeholder in the note,
+    //      not the one the cursor is in — never search above the box boundary
     var sel = window.getSelection();
     if(!sel || !sel.rangeCount) return;
     var node = sel.anchorNode;
-    var ph = null;
     for(var i=0; i<8 && node; i++) {
       if(node.nodeType===1) {
-        if(node.hasAttribute && node.hasAttribute('data-bb-ph')) { ph = node; break; }
-        var inner = node.querySelector && node.querySelector('[data-bb-ph]');
-        if(inner) { ph = inner; break; }
+        if(node.hasAttribute && node.hasAttribute('data-bb-ph')) {
+          // Only reposition cursor if the element is genuinely empty (CSS placeholder showing)
+          if(!node.textContent.trim()) { try { sel.collapse(node, 0); } catch(e){} }
+          return;
+        }
+        var bb = node.getAttribute && node.getAttribute('data-brainbox');
+        if(bb === 'single' || bb === 'box') {
+          // Cursor is at the box-container level — find placeholder ONLY inside THIS box
+          var inner = node.querySelector('[data-bb-ph]');
+          if(inner && !inner.textContent.trim()) { try { sel.collapse(inner, 0); } catch(e){} }
+          return; // stop — never search above the box boundary
+        }
       }
       node = node.parentNode;
     }
-    if(!ph) return;
-    ph.innerHTML = ''; // clear any legacy text-based placeholder content
-    try { sel.collapse(ph, 0); } catch(err) {}
+    // Cursor is in normal text outside any box — nothing to do, paste goes where cursor is
   }
   $('edit-content').addEventListener('paste', e => {
     e.preventDefault();
