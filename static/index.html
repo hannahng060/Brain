@@ -2108,15 +2108,31 @@
     var cat = $('edit-category').value || '';
     $('edit-fields-summary').textContent = summary + (cat ? ' · ' + cat : '');
   }
-  function _patchDragHandles(root) {
-    // Add ⠿ handle to any bb-ctrl that doesn't already have one (existing saved boxes)
-    root.querySelectorAll('.bb-ctrl').forEach(function(ctrl) {
-      if (ctrl.querySelector('.bb-drag')) return; // already has handle
-      var handle = document.createElement('button');
-      handle.className = 'bb-drag';
-      handle.title = 'Drag to move';
-      handle.textContent = '⠿';
-      ctrl.insertBefore(handle, ctrl.firstChild);
+  function _patchDragHandles(root) { /* drag removed — kept for compatibility */ }
+
+  function _patchBoxControls(root) {
+    // Add ↑↓ controls to any single box missing them (e.g. Brain-generated boxes)
+    var s = 'background:rgba(0,0,0,.07);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#555;font-family:inherit';
+    root.querySelectorAll('[data-brainbox="single"]').forEach(function(box) {
+      if (box.querySelector('.bb-ctrl')) return;
+      var ctrl = document.createElement('span');
+      ctrl.className = 'bb-ctrl';
+      ctrl.contentEditable = 'false';
+      ctrl.style.cssText = 'float:right;display:inline-flex;align-items:center;gap:3px;margin:0 0 4px 6px;line-height:1';
+      ctrl.innerHTML = '<button onclick="_bbUp(this)" style="'+s+'">↑</button><button onclick="_bbDn(this)" style="'+s+'">↓</button>';
+      box.insertBefore(ctrl, box.firstChild);
+    });
+    // Enhance any gallery rows missing their controls
+    root.querySelectorAll('[data-brainbox="row"]').forEach(function(row) {
+      if (row.querySelector('.bb-ctrl')) return;
+      _enhanceGalleryEl(row);
+    });
+    // Also catch flex rows that look like galleries but aren't yet marked
+    root.querySelectorAll('div[style*="display:flex"]').forEach(function(row) {
+      if (row.getAttribute('data-brainbox') === 'row') return;
+      if (row.children.length >= 2 && row.parentElement && row.parentElement.id === 'edit-content') {
+        _enhanceGalleryEl(row);
+      }
     });
   }
   function startEdit() {
@@ -2126,7 +2142,7 @@
     updateSubcatOptions();
     $('edit-subcategory').value = _editingNote.subcategory || '';
     $('edit-content').innerHTML = renderContent(_editingNote.content || '');
-    _patchDragHandles($('edit-content'));
+    _patchBoxControls($('edit-content'));
     // Collapse fields panel and update summary bar
     $('edit-fields').style.display = 'none';
     $('edit-fields-arrow').textContent = '▾ fields';
@@ -2188,7 +2204,7 @@
       } else {
         editor.innerHTML = data.html;
       }
-      _patchDragHandles(editor);
+      _patchBoxControls(editor);
       status.textContent = '✅ Done!';
       setTimeout(function(){ status.style.display='none'; }, 2000);
     } catch(e) {
