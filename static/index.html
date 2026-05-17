@@ -1972,25 +1972,29 @@
     if (!l) { l = document.createElement('div'); l.id = '_bb_dropline'; l.className = 'bb-drop-line'; }
     return l;
   }
-  document.addEventListener('pointerdown', function(e) {
-    if (!e.target.closest('.bb-drag')) return;
-    var box = e.target.closest('[data-brainbox="single"],[data-brainbox="row"]');
-    if (!box) return;
-    e.preventDefault(); e.stopPropagation();
-    _dragState = { box: box, pointerId: e.pointerId, dropTarget: null, dropAfter: false };
-    box.style.opacity = '0.45';
-    box.style.outline = '2px dashed #1565c0';
-    try { e.target.setPointerCapture(e.pointerId); } catch(_) {}
-  }, true);
-  document.addEventListener('pointermove', function(e) {
-    if (!_dragState || e.pointerId !== _dragState.pointerId) return;
+  function _dragCleanup() {
+    var line = document.getElementById('_bb_dropline');
+    if (line) line.remove();
+    if (_dragState) {
+      _dragState.box.style.opacity = '';
+      _dragState.box.style.outline = '';
+    }
+    document.body.style.touchAction = '';
+    document.body.style.userSelect = '';
+    document.removeEventListener('pointermove', _onDragMove, { capture: true });
+    document.removeEventListener('pointerup',   _onDragEnd,  { capture: true });
+    document.removeEventListener('pointercancel', _dragCleanup, { capture: true });
+    _dragState = null;
+  }
+  function _onDragMove(e) {
+    if (!_dragState) return;
+    e.preventDefault(); // stops iOS from treating vertical drag as page scroll
     var box = _dragState.box;
     var parent = box.parentElement;
-    // Temporarily hide box so elementFromPoint sees what's underneath
+    if (!parent) return;
     box.style.visibility = 'hidden';
     var el = document.elementFromPoint(e.clientX, e.clientY);
     box.style.visibility = '';
-    // Find nearest sibling box/row
     var target = el && el.closest('[data-brainbox="single"],[data-brainbox="row"]');
     if (target && target !== box && target.parentElement === parent) {
       var rect = target.getBoundingClientRect();
@@ -2002,32 +2006,37 @@
       else parent.insertBefore(line, target);
     } else {
       _dragState.dropTarget = null;
-      var existing = document.getElementById('_bb_dropline');
-      if (existing) existing.remove();
+      var old = document.getElementById('_bb_dropline');
+      if (old) old.remove();
     }
-  });
-  document.addEventListener('pointerup', function(e) {
-    if (!_dragState || e.pointerId !== _dragState.pointerId) return;
+  }
+  function _onDragEnd(e) {
+    if (!_dragState) return;
     var box = _dragState.box;
     var target = _dragState.dropTarget;
-    var line = document.getElementById('_bb_dropline');
-    if (line) line.remove();
-    if (target) {
-      if (_dragState.dropAfter) box.parentElement.insertBefore(box, target.nextSibling);
-      else box.parentElement.insertBefore(box, target);
+    var after  = _dragState.dropAfter;
+    _dragCleanup();
+    if (target && box.parentElement) {
+      if (after) box.parentElement.insertBefore(box, target.nextSibling);
+      else       box.parentElement.insertBefore(box, target);
     }
-    box.style.opacity = '';
-    box.style.outline = '';
-    _dragState = null;
-  });
-  document.addEventListener('pointercancel', function(e) {
-    if (!_dragState) return;
-    var line = document.getElementById('_bb_dropline');
-    if (line) line.remove();
-    _dragState.box.style.opacity = '';
-    _dragState.box.style.outline = '';
-    _dragState = null;
-  });
+  }
+  document.addEventListener('pointerdown', function(e) {
+    if (!e.target.closest('.bb-drag')) return;
+    var box = e.target.closest('[data-brainbox="single"],[data-brainbox="row"]');
+    if (!box) return;
+    e.preventDefault(); e.stopPropagation();
+    _dragState = { box: box, dropTarget: null, dropAfter: false };
+    box.style.opacity = '0.45';
+    box.style.outline = '2px dashed #1565c0';
+    // Lock out iOS scroll and text selection for the duration of the drag
+    document.body.style.touchAction = 'none';
+    document.body.style.userSelect  = 'none';
+    // Attach move/end listeners only while dragging — passive:false lets us preventDefault
+    document.addEventListener('pointermove',   _onDragMove,   { capture: true, passive: false });
+    document.addEventListener('pointerup',     _onDragEnd,    { capture: true });
+    document.addEventListener('pointercancel', _dragCleanup,  { capture: true });
+  }, { capture: true });
 
   function _clearPhAtCursor() {
     // Only acts when cursor is inside a truly-empty placeholder box.
