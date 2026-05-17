@@ -729,6 +729,13 @@
             <option value="2.2">Double</option>
           </select>
         </div>
+        <!-- Brain bar — ask Brain to restructure the note or a selection -->
+        <div id="brain-bar" style="display:flex;align-items:center;gap:6px;padding:5px 0 6px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <span style="font-size:15px;flex-shrink:0">🧠</span>
+          <input id="brain-bar-input" type="text" placeholder="Ask Brain to restructure… e.g. "put this in 2 boxes"" style="flex:1;border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--surface)">
+          <button onclick="brainBarSend()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:20px;padding:5px 13px;font-size:13px;font-weight:600;cursor:pointer">Go</button>
+        </div>
+        <div id="brain-bar-status" style="display:none;font-size:12px;color:var(--muted);padding:3px 0 2px;flex-shrink:0;text-align:center"></div>
         <div id="edit-content" contenteditable="true"></div>
       </div>
     </div>
@@ -2129,7 +2136,69 @@
     document.querySelector('.modal-sheet').classList.add('editing');
     setSidebarMode('edit');
     $('edit-content').focus({preventScroll:true});
+    // Allow Enter key in brain bar to submit
+    $('brain-bar-input').onkeydown = function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); brainBarSend(); }
+    };
   }
+
+  async function brainBarSend() {
+    var instruction = $('brain-bar-input').value.trim();
+    if (!instruction) return;
+    var editor = $('edit-content');
+    var status = $('brain-bar-status');
+
+    // If text is selected inside edit-content, restructure only that part
+    var sel = window.getSelection();
+    var selectedHTML = '';
+    var savedRange = null;
+    if (sel && sel.rangeCount && !sel.isCollapsed) {
+      var range = sel.getRangeAt(0);
+      if (editor.contains(range.commonAncestorContainer)) {
+        var frag = range.cloneContents();
+        var tmp = document.createElement('div'); tmp.appendChild(frag);
+        selectedHTML = tmp.innerHTML;
+        savedRange = range.cloneRange();
+      }
+    }
+
+    var contentToSend = selectedHTML || editor.innerHTML;
+    if (!contentToSend.trim()) return;
+
+    $('brain-bar-input').value = '';
+    $('brain-bar-input').disabled = true;
+    status.style.display = 'block';
+    status.textContent = selectedHTML ? '🧠 Restructuring selection…' : '🧠 Restructuring note…';
+
+    try {
+      var res = await fetch('/restructure-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: contentToSend, instruction: instruction })
+      });
+      var data = await res.json();
+      if (!data.html) throw new Error('no html');
+
+      if (savedRange) {
+        // Replace only the selected portion
+        sel.removeAllRanges(); sel.addRange(savedRange);
+        savedRange.deleteContents();
+        savedRange.insertNode(document.createRange().createContextualFragment(data.html));
+        sel.removeAllRanges();
+      } else {
+        editor.innerHTML = data.html;
+      }
+      _patchDragHandles(editor);
+      status.textContent = '✅ Done!';
+      setTimeout(function(){ status.style.display='none'; }, 2000);
+    } catch(e) {
+      status.textContent = '❌ Something went wrong — try again.';
+      setTimeout(function(){ status.style.display='none'; }, 3000);
+    }
+    $('brain-bar-input').disabled = false;
+    editor.focus({ preventScroll: true });
+  }
+
   function cancelEdit() {
     $('modal-edit').style.display = 'none';
     $('modal-view').style.display = 'block';

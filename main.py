@@ -2419,6 +2419,47 @@ async def patch_note(note_id: int, request: Request):
     result = db_update_note(note_id, fields)
     return result
 
+class RestructureRequest(BaseModel):
+    content: str
+    instruction: str
+
+@app.post("/restructure-note")
+async def restructure_note(body: RestructureRequest, request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Build the box style reference so Brain can reuse existing box CSS
+    box_style_ref = (
+        "Box styles used in this app:\n"
+        "- Single box: <div data-brainbox=\"single\" style=\"border:2px solid {color};border-radius:8px;padding:8px 14px 10px;margin:8px 0;background:{bg};resize:both;overflow:auto;min-height:60px;box-sizing:border-box\">\n"
+        "- 2-col row: <div style=\"display:flex;gap:8px;margin:8px 0;align-items:flex-start\"> with two child divs each width calc(50% - 4px)\n"
+        "- 3-col row: same but three children each calc(33% - 4px)\n"
+        "- Available border/bg color pairs: blue (#1565c0/#e3f2fd), green (#2e7d32/#f1f8e9), red (#b71c1c/#fce4ec), purple (#6a1b9a/#f3e5f5), teal (#00695c/#e0f2f1), amber (#e65100/#fff8e1), pink (#880e4f/#fce4ec), navy (#1a237e/#e8eaf6), sage (#33691e/#f9fbe7), peach (#bf360c/#fbe9e7)\n"
+        "Keep all existing text content exactly — only change the structure/layout/boxes.\n"
+        "Return ONLY clean HTML. No markdown, no explanation, no code fences."
+    )
+
+    prompt = (
+        f"You are restructuring a section of a study note. The user's instruction is:\n"
+        f"\"{body.instruction}\"\n\n"
+        f"{box_style_ref}\n\n"
+        f"Current content to restructure:\n{body.content}\n\n"
+        f"Return the restructured HTML now:"
+    )
+
+    response = client.messages.create(
+        model="claude-sonnet-4-5-20251001",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    html = response.content[0].text.strip()
+    # Strip any accidental markdown code fences
+    if html.startswith("```"):
+        html = "\n".join(html.split("\n")[1:])
+    if html.endswith("```"):
+        html = "\n".join(html.split("\n")[:-1])
+    return {"html": html}
+
 @app.delete("/notes/{note_id}")
 async def delete_note(note_id: int, request: Request):
     if not is_authenticated(request):
