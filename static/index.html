@@ -340,11 +340,7 @@
     [data-brainbox] { position:relative; }
     /* CSS-only placeholder — box is empty from the start, no JS cursor tricks needed */
     [data-bb-ph]:empty::before { content:attr(data-bb-ph); color:#bbb; font-style:italic; pointer-events:none; }
-    /* Drag handle for boxes */
-    .bb-drag { cursor:grab; user-select:none; touch-action:none; padding:1px 5px; color:#bbb; font-size:14px; border:none; background:none; font-family:inherit; border-radius:4px; }
-    .bb-drag:hover { color:#888; background:rgba(0,0,0,.06); }
-    .bb-drag:active { cursor:grabbing; }
-    .bb-drop-line { height:3px; background:#1565c0; border-radius:2px; margin:3px 0; pointer-events:none; position:relative; z-index:10; }
+    .bb-drop-line { display:none; } /* drag removed — iOS contenteditable limitation */
     .modal-sidebar { width:64px; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 8px; border-left:1px solid var(--border); background:var(--bg); flex-shrink:0; }
     .sidebar-btn { width:48px; padding:10px 4px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); font-size:11px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
     .sidebar-btn.primary { background:var(--primary-light); color:var(--primary); border-color:var(--primary); }
@@ -1793,7 +1789,7 @@
     var d = 'background:rgba(200,0,0,.08);border:none;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px;color:#b00;font-family:inherit';
     var label = isRow ? ' row' : '';
     var delBtn = isRow ? `<button onclick="_bbDel(this)" style="${d}">✕${label}</button>` : '';
-    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;align-items:center;gap:3px;margin:0 0 4px 6px;line-height:1"><button class="bb-drag" title="Drag to move">⠿</button><button onclick="_bbUp(this)" style="${s}">↑${label}</button><button onclick="_bbDn(this)" style="${s}">↓${label}</button>${delBtn}</span>`;
+    return `<span class="bb-ctrl" contenteditable="false" style="float:right;display:inline-flex;align-items:center;gap:3px;margin:0 0 4px 6px;line-height:1"><button onclick="_bbUp(this)" style="${s}">↑${label}</button><button onclick="_bbDn(this)" style="${s}">↓${label}</button>${delBtn}</span>`;
   }
 
   // Direct DOM insert — more reliable than execCommand for complex structures
@@ -1843,7 +1839,6 @@
     rowCtrl.contentEditable = 'false';
     rowCtrl.style.cssText = 'position:absolute;top:2px;right:0;display:inline-flex;gap:3px;line-height:1';
     rowCtrl.innerHTML =
-      '<button class="bb-drag" title="Drag to move">⠿</button>' +
       '<button onclick="_bbUp(this)" style="'+s+'">↑ row</button>' +
       '<button onclick="_bbDn(this)" style="'+s+'">↓ row</button>' +
       '<button onclick="_bbDel(this)" style="'+d+'">✕ row</button>';
@@ -1965,8 +1960,8 @@
   }
   // No keydown handler needed — boxes are empty by default, placeholder is CSS-only
 
-  // ── Box drag-to-reorder ────────────────────────────────────────────────────
-  var _dragState = null;
+  // ── Box drag-to-reorder (removed — iOS Safari contenteditable limitation) ──
+  var _dragState = null; // kept so _patchDragHandles reference is harmless
   function _bbDropLine() {
     var l = document.getElementById('_bb_dropline');
     if (!l) { l = document.createElement('div'); l.id = '_bb_dropline'; l.className = 'bb-drop-line'; }
