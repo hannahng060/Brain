@@ -2097,6 +2097,17 @@
     var cat = $('edit-category').value || '';
     $('edit-fields-summary').textContent = summary + (cat ? ' · ' + cat : '');
   }
+  function _patchDragHandles(root) {
+    // Add ⠿ handle to any bb-ctrl that doesn't already have one (existing saved boxes)
+    root.querySelectorAll('.bb-ctrl').forEach(function(ctrl) {
+      if (ctrl.querySelector('.bb-drag')) return; // already has handle
+      var handle = document.createElement('button');
+      handle.className = 'bb-drag';
+      handle.title = 'Drag to move';
+      handle.textContent = '⠿';
+      ctrl.insertBefore(handle, ctrl.firstChild);
+    });
+  }
   function startEdit() {
     _editingNote = window._openNote;
     $('edit-summary').value = _editingNote.summary || '';
@@ -2104,6 +2115,7 @@
     updateSubcatOptions();
     $('edit-subcategory').value = _editingNote.subcategory || '';
     $('edit-content').innerHTML = renderContent(_editingNote.content || '');
+    _patchDragHandles($('edit-content'));
     // Collapse fields panel and update summary bar
     $('edit-fields').style.display = 'none';
     $('edit-fields-arrow').textContent = '▾ fields';
