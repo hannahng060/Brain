@@ -680,6 +680,9 @@
           <select id="edit-subcategory" class="edit-field" style="min-height:unset;height:44px"></select>
         </div>
         <div class="format-toolbar">
+          <button class="fmt-btn" onclick="document.execCommand('undo');$('edit-content').focus({preventScroll:true})" title="Undo">↩</button>
+          <button class="fmt-btn" onclick="document.execCommand('redo');$('edit-content').focus({preventScroll:true})" title="Redo">↪</button>
+          <div class="fmt-divider"></div>
           <button class="fmt-btn bold" onclick="fmt('bold')" title="Bold">B</button>
           <button class="fmt-btn underline" onclick="fmt('underline')" title="Underline">U</button>
           <div class="fmt-divider"></div>
@@ -4254,6 +4257,8 @@
         </div>
         <input id="nn-title" type="text" placeholder="Title (optional)" style="padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;outline:none">
         <div class="nn-toolbar" style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px;border:1.5px solid #ddd;border-radius:10px;background:#fafafa;position:relative">
+          <button style="${btnStyle}" onclick="document.execCommand('undo');document.getElementById('nn-content').focus({preventScroll:true})" title="Undo">↩</button>
+          <button style="${btnStyle}" onclick="document.execCommand('redo');document.getElementById('nn-content').focus({preventScroll:true})" title="Redo">↪</button>
           <button style="${btnStyle};font-weight:700" onclick="nnFmt('bold')" title="Bold">B</button>
           <button style="${btnStyle};font-style:italic" onclick="nnFmt('italic')" title="Italic">I</button>
           <button style="${btnStyle};text-decoration:underline" onclick="nnFmt('underline')" title="Underline">U</button>
