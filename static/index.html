@@ -2421,6 +2421,8 @@
 
   // Paste screenshot support (Cmd+V from Arc or anywhere)
   document.addEventListener('paste', e => {
+    // Don't intercept if the weekly plan box is focused — it has its own handler
+    if (document.activeElement && document.activeElement.id === 'weekly-plan-text') return;
     if($('chat-page').classList.contains('active')) {
       const items = e.clipboardData?.items;
       if(!items) return;
