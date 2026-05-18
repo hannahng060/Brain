@@ -437,6 +437,7 @@
           <div onclick="toggleCallPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📞 Call</div>
           <div onclick="toggleGardenPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌱 Garden</div>
           <div onclick="toggleBoardQPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Board Q</div>
+          <div onclick="togglePeoplePanel()" style="display:inline-flex;align-items:center;gap:5px;background:#fce4ec;border:1.5px solid #e91e63;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;color:#880e4f;">💛 People</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.5"></div>
         <div id="dash-affirmation" style="display:none;font-size:13px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:12px"></div>
@@ -4714,6 +4715,46 @@
     if (to) url += '&to_date=' + to;
     if (labels) url += '&day_labels=' + encodeURIComponent(labels);
     window.open(url, '_blank');
+  }
+</script>
+
+<!-- ── People Panel ─────────────────────────────────────────────────── -->
+<style>
+  #people-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1100; }
+  #people-panel { display:none;position:fixed;bottom:0;left:0;right:0;max-height:75vh;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:20px 18px 32px;z-index:1101;box-shadow:0 -4px 24px rgba(0,0,0,.13); }
+  #people-panel.open, #people-overlay.open { display:block; }
+</style>
+<div id="people-overlay" onclick="togglePeoplePanel()"></div>
+<div id="people-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="font-size:16px;font-weight:700">💛 People on your mind</div>
+    <button onclick="togglePeoplePanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+  </div>
+  <div id="people-panel-body" style="font-size:14px;color:var(--muted)">Loading…</div>
+</div>
+<script>
+  function togglePeoplePanel() {
+    var panel = document.getElementById('people-panel');
+    var overlay = document.getElementById('people-overlay');
+    var isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open', !isOpen);
+    overlay.classList.toggle('open', !isOpen);
+    if (!isOpen) loadPeoplePanel();
+  }
+  async function loadPeoplePanel() {
+    var body = document.getElementById('people-panel-body');
+    body.innerHTML = '<em style="color:#aaa">Loading…</em>';
+    try {
+      var res = await fetch('/people-panel');
+      var data = await res.json();
+      if (data.html) {
+        body.innerHTML = data.html;
+      } else {
+        body.innerHTML = '<em style="color:#aaa">No people notes yet.</em>';
+      }
+    } catch(e) {
+      body.innerHTML = '<em style="color:#aaa">Could not load.</em>';
+    }
   }
 </script>
 

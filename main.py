@@ -2460,6 +2460,38 @@ class RestructureRequest(BaseModel):
     content: str
     instruction: str
 
+@app.get("/people-panel")
+async def people_panel(request: Request):
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT summary, content FROM notes
+        WHERE category = 'people'
+        ORDER BY updated_at DESC NULLS LAST, created_at DESC
+        LIMIT 30
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    if not rows:
+        return {"html": ""}
+    html_parts = []
+    for summary, content in rows:
+        name = summary or "Unknown"
+        # Strip HTML tags for clean display
+        clean = re.sub(r'<[^>]+>', ' ', content or '')
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        preview = clean[:160] + ('…' if len(clean) > 160 else '')
+        html_parts.append(
+            f'<div style="border:1.5px solid #fce4ec;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff9fb">'
+            f'<div style="font-weight:700;font-size:14px;color:#880e4f;margin-bottom:4px">👤 {name}</div>'
+            f'<div style="font-size:13px;color:#555;line-height:1.5">{preview}</div>'
+            f'</div>'
+        )
+    return {"html": "".join(html_parts)}
+
 @app.post("/restructure-note")
 async def restructure_note(body: RestructureRequest, request: Request):
     if not is_authenticated(request):
