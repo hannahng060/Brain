@@ -224,6 +224,7 @@
     #send-btn:disabled { opacity:.4; cursor:default; }
     #send-btn svg { fill:white; stroke:none; }
     #attach-btn { width:42px; height:42px; border-radius:50%; background:var(--bg); border:1.5px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
+    #discuss-btn.active { background:#e8f5e9; border-color:#2e7d32; box-shadow:0 0 0 2px #c8e6c9; }
     #quick-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .quick-btn { background:var(--primary-light); color:var(--primary); border:1.5px solid var(--primary); border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .quick-btn:hover { background:var(--primary); color:white; }
@@ -471,6 +472,7 @@
       <div id="quick-actions"></div>
       <div id="input-row">
         <button id="attach-btn" onclick="$('file-input').click()" title="Attach file">📎</button>
+        <button id="discuss-btn" onclick="toggleDiscussMode()" title="Discuss mode — Brain will talk about what you send instead of saving it" style="width:42px;height:42px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;transition:all .2s">💬</button>
         <textarea id="input" placeholder="Tell me something, paste a screenshot, or attach a file..." rows="1"></textarea>
         <button id="send-btn" onclick="sendMessage()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
@@ -2331,6 +2333,20 @@
 
   let sending=false;
 
+  // ── Discuss mode — Brain talks about content instead of saving it ─────
+  let _discussMode = false;
+  function toggleDiscussMode() {
+    _discussMode = !_discussMode;
+    var btn = $('discuss-btn');
+    btn.classList.toggle('active', _discussMode);
+    btn.title = _discussMode
+      ? 'Discuss mode ON — Brain will respond conversationally (tap to turn off)'
+      : 'Discuss mode — Brain will talk about what you send instead of saving it';
+    $('input').placeholder = _discussMode
+      ? 'Ask Brain anything — it will respond without saving…'
+      : 'Tell me something, paste a screenshot, or attach a file…';
+  }
+
   // ── File upload ───────────────────────────────────────────────────────
   let _attachedFile = null;
 
@@ -2418,6 +2434,9 @@
     _touchActive();
     sending = true; input.value = ''; input.style.height = 'auto'; $('send-btn').disabled = true;
 
+    // In discuss mode, prepend [DISCUSS] so Brain knows to respond conversationally
+    const sendText = _discussMode ? '[DISCUSS] ' + (text || 'Look at this and tell me what you think.') : text;
+
     const displayText = text || (_attachedFile ? `📎 ${_attachedFile.name}` : '');
     appendMessage('user', displayText);
     showTyping();
@@ -2427,7 +2446,7 @@
       if(_attachedFile) {
         const form = new FormData();
         form.append('file', _attachedFile);
-        form.append('note', text);
+        form.append('note', sendText);
         // Study guides take time — show a more specific loading message
         const isPDF = _attachedFile.name.toLowerCase().endsWith('.pdf');
         const noteLC = text.toLowerCase();
@@ -2440,7 +2459,7 @@
         clearFile();
       } else {
         const localDate = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: text, local_date: localDate, local_time: _localTimeStr()})});
+        res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: sendText, local_date: localDate, local_time: _localTimeStr()})});
       }
       removeTyping();
       if(res.status === 401) { location.reload(); return; }
