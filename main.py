@@ -1266,7 +1266,15 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
       📚 <strong>Board focus today:</strong> [Weakest topic] ([score]%) — [one honest, specific study tip for this topic, not generic]
     </div>
 
-    ⛔ NO PEOPLE CARD — never include a "People on your mind" card in the morning briefing. Hannah has a private 💛 People button in her toolbar for that. Do not generate this card under any circumstances.
+    [If any People notes have birthdays TODAY or within 7 days, OR upcoming events within 7 days — add this card. MUST use this exact collapsible format — details hidden by default for privacy:]
+    <div style="background:#fce4ec;border-left:4px solid #e91e63;border-radius:8px;margin-bottom:10px;font-size:14px;overflow:hidden">
+      <button onclick="var d=this.nextElementSibling;var open=d.style.display!=='none';d.style.display=open?'none':'block';this.querySelector('.arr').textContent=open?'▾':'▴'" style="width:100%;text-align:left;padding:10px 14px;background:none;border:none;cursor:pointer;font-size:14px;font-family:inherit;display:flex;justify-content:space-between;align-items:center">
+        <span>💛 <strong>People on your mind</strong></span><span class="arr" style="color:#888;font-weight:normal">▾</span>
+      </button>
+      <div style="display:none;padding:0 14px 10px">
+        [Bullet per person — keep short: "• 🎂 [Name]'s birthday is [today/in X days]" / "• 🏥 [Name] has surgery on [date]" etc.]
+      </div>
+    </div>
 
     <div style="font-size:13px;color:#888;margin-top:6px">[One short encouraging sentence — specific to what she has going on today]</div>
     </div>
