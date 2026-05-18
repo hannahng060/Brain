@@ -448,9 +448,17 @@
             <button onclick="toggleWeeklyPlan()" style="padding:9px 16px;background:none;border:1.5px solid var(--primary);color:var(--primary);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📆 Plan Next Week</button>
           </div>
           <div id="weekly-plan-input" style="display:none;margin-top:12px">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tell Brain your schedule — work days, days off, appointments, anything coming up</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tell Brain your schedule — or attach a screenshot of your calendar</div>
             <textarea id="weekly-plan-text" placeholder="e.g. Monday work, Tuesday off, Wednesday work, Thursday appointment with Dr. Smith at 2pm, Friday work. Also have a family dinner Saturday." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;box-sizing:border-box;min-height:80px"></textarea>
-            <button onclick="submitWeeklyPlan()" style="margin-top:8px;width:100%;padding:11px;background:#667eea;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Send to Brain →</button>
+            <div id="weekly-plan-img-preview" style="display:none;margin-top:6px;font-size:13px;color:var(--primary);background:var(--primary-light);border-radius:8px;padding:6px 10px;display:none;align-items:center;gap:8px">
+              <span id="weekly-plan-img-name"></span>
+              <button onclick="clearWeeklyPlanImg()" style="background:none;border:none;color:#b00;cursor:pointer;font-size:13px;padding:0">✕</button>
+            </div>
+            <input type="file" id="weekly-plan-file" accept="image/*" style="display:none" onchange="weeklyPlanFileSelected(this.files[0])">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button onclick="$('weekly-plan-file').click()" style="padding:11px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit">📎 Attach screenshot</button>
+              <button onclick="submitWeeklyPlan()" style="flex:1;padding:11px;background:#667eea;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Send to Brain →</button>
+            </div>
           </div>
         </div>
         <div id="dash-weak" style="display:none;margin-bottom:10px"></div>
@@ -4000,6 +4008,19 @@
     }, 300);
   }
 
+  var _weeklyPlanImg = null;
+  function weeklyPlanFileSelected(file) {
+    if (!file) return;
+    _weeklyPlanImg = file;
+    var preview = $('weekly-plan-img-preview');
+    $('weekly-plan-img-name').textContent = '📷 ' + file.name;
+    preview.style.display = 'flex';
+  }
+  function clearWeeklyPlanImg() {
+    _weeklyPlanImg = null;
+    $('weekly-plan-img-preview').style.display = 'none';
+    $('weekly-plan-file').value = '';
+  }
   function toggleWeeklyPlan() {
     var el = $('weekly-plan-input');
     if (!el) return;
@@ -4010,13 +4031,28 @@
   function submitWeeklyPlan() {
     var ta = $('weekly-plan-text');
     var val = ta ? ta.value.trim() : '';
-    if (!val) return;
+    if (!val && !_weeklyPlanImg) return;
     if (ta) ta.value = '';
+    var img = _weeklyPlanImg;
+    clearWeeklyPlanImg();
     toggleWeeklyPlan();
     showTab('chat');
     setTimeout(function() {
-      var inp = document.getElementById('input');
-      if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); if (typeof sendMessage === 'function') sendMessage(); }
+      // Weekly plan should always save — force save mode on for this send
+      var wasSaving = _saveMode;
+      if (!_saveMode) toggleSaveMode();
+      if (img) {
+        handleFileSelect(img);
+        var inp = $('input');
+        var note = val || 'This is my schedule for next week. Please plan my week based on this.';
+        if (inp) { inp.value = note; inp.dispatchEvent(new Event('input')); }
+        if (typeof sendMessage === 'function') sendMessage();
+      } else {
+        var inp = $('input');
+        if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); if (typeof sendMessage === 'function') sendMessage(); }
+      }
+      // Restore previous mode after send
+      setTimeout(function() { if (!wasSaving && _saveMode) toggleSaveMode(); }, 500);
     }, 300);
   }
 
