@@ -9,7 +9,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     // Force iOS PWA to always load fresh — append build stamp if missing
-    (function(){var v='20260519d';var k='_bv';if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);if(location.search.indexOf('v=')===-1){location.replace(location.pathname+'?v='+v+(location.hash||''));}}})();
+    (function(){var v='20260519e';var k='_bv';if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);if(location.search.indexOf('v=')===-1){location.replace(location.pathname+'?v='+v+(location.hash||''));}}})();
   </script>
   <meta name="theme-color" content="#2d4a7a">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
@@ -177,6 +177,26 @@
     .cl-no-plan { font-size:13px; color:#aaa; text-align:center; padding:10px 0; line-height:1.6; }
     /* ── Streak display ── */
     #dash-tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .dash-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(to bottom, #ffffff 0%, #e8ede6 100%);
+      border: 1px solid #bcc5b7;
+      border-bottom: 2.5px solid #9faa99;
+      border-radius: 20px;
+      padding: 5px 13px;
+      cursor: pointer;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      user-select: none; color: var(--text);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+      transition: transform 0.08s, box-shadow 0.08s, border-bottom-width 0.08s;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dash-btn:active {
+      transform: translateY(1px);
+      border-bottom-width: 1px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
     /* ── Today's Focus panel ── */
     #dash-focus { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
     .focus-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#888; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
@@ -435,17 +455,17 @@
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
         <div id="dash-tools">
-          <div id="cl-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
-          <div id="focus-btn" onclick="toggleFocusPanel()" title="Set today's focus" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;position:relative;">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
-          <div onclick="toggleSleepPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌙 Sleep</div>
-          <div onclick="toggleMoodPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌡️ Mood</div>
-          <div id="fin-btn" onclick="toggleFinPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">💰 Finance</div>
-          <div onclick="toggleBoardQPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📋 Board Q</div>
-          <div onclick="startDrill()" title="5 quick board questions, no chat" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Drill</div>
-          <div id="quick-win-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">⚡ Quick Win</div>
-          <div onclick="toggleCallPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">📞 Call</div>
-          <div onclick="toggleGardenPanel()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;">🌱 Garden</div>
-          <div onclick="togglePeoplePanel()" style="display:inline-flex;align-items:center;gap:5px;background:#fce4ec;border:1.5px solid #e91e63;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;user-select:none;color:#880e4f;">💛 People</div>
+          <div id="cl-btn" class="dash-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
+          <div id="focus-btn" class="dash-btn" onclick="toggleFocusPanel()" title="Set today's focus">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
+          <div class="dash-btn" onclick="toggleSleepPanel()">🌙 Sleep</div>
+          <div class="dash-btn" onclick="toggleMoodPanel()">🌡️ Mood</div>
+          <div id="fin-btn" class="dash-btn" onclick="toggleFinPanel()">💰 Finance</div>
+          <div class="dash-btn" onclick="toggleBoardQPanel()">📋 Board Q</div>
+          <div class="dash-btn" onclick="startDrill()" title="5 quick board questions, no chat">⚡ Drill</div>
+          <div id="quick-win-btn" class="dash-btn" onclick="doQuickWin()" title="Easy question on your closest-to-mastery topic">⚡ Quick Win</div>
+          <div class="dash-btn" onclick="toggleCallPanel()">📞 Call</div>
+          <div class="dash-btn" onclick="toggleGardenPanel()">🌱 Garden</div>
+          <div class="dash-btn" onclick="togglePeoplePanel()">💛 People</div>
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.5"></div>
         <div id="dash-affirmation" style="display:none;font-size:13px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:12px"></div>
