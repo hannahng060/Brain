@@ -4,13 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <script>
-    // Force iOS PWA to always load fresh — append build stamp if missing
-    (function(){var v='20260519e';var k='_bv';if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);if(location.search.indexOf('v=')===-1){location.replace(location.pathname+'?v='+v+(location.hash||''));}}})();
-  </script>
   <meta name="theme-color" content="#2d4a7a">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/static/favicon.svg">
@@ -444,7 +437,6 @@
         <span>Profile</span>
       </button>
       <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-      <button onclick="location.replace(location.pathname+'?v='+Date.now())" title="Load latest updates" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px 6px;opacity:0.6">🔄</button>
       <button class="sign-out" onclick="doLogout()">Sign out</button>
     </div>
   </div>
