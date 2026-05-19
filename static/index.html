@@ -765,6 +765,7 @@
       <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
       <button class="sidebar-btn" id="sidebar-remove-img" onclick="removeNoteImage()" style="display:none;color:#e53935;border-color:#e53935">🖼️<br>Remove<br>Image</button>
       <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
+      <button class="sidebar-btn" id="sidebar-delete" onclick="deleteNote(event, window._openNote&&window._openNote.id)" style="color:#e53935;border-color:#e53935;margin-top:auto">🗑️<br>Delete</button>
     </div>
   </div>
 </div>
@@ -2113,6 +2114,7 @@
     $('sidebar-edit').style.display   = mode === 'view' ? 'block' : 'none';
     $('sidebar-save').style.display   = mode === 'edit' ? 'block' : 'none';
     $('sidebar-cancel').style.display = mode === 'edit' ? 'block' : 'none';
+    $('sidebar-delete').style.display = mode === 'view' ? 'block' : 'none';
   }
   function toggleEditFields() {
     var f = $('edit-fields');
