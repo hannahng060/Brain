@@ -67,16 +67,6 @@ def init_db():
     for s in sections:
         cur.execute("INSERT INTO profile (section, content) VALUES (%s, '') ON CONFLICT (section) DO NOTHING", (s,))
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS quiz_results (
-            id          SERIAL PRIMARY KEY,
-            topic       TEXT NOT NULL,
-            question    TEXT NOT NULL,
-            result      TEXT NOT NULL CHECK (result IN ('right','partial','wrong')),
-            created_at  TIMESTAMP DEFAULT NOW()
-        )
-    """)
-    cur.execute("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS note_id INTEGER")
-    cur.execute("""
         CREATE TABLE IF NOT EXISTS user_settings (
             key        TEXT PRIMARY KEY,
             value      TEXT,
@@ -122,32 +112,10 @@ def init_db():
           AND created_at::date BETWEEN '2026-05-12' AND '2026-05-13'
           AND (tags IS NULL OR tags::text NOT LIKE '%georgette%')
     """)
-    # Remap quiz_results topics to official 6 ANCC board categories
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Assessment & Diagnosis'
-        WHERE topic IN ('DSM-5','Assessments','Assessment','Diagnosis','Mental Status','Neuroscience','Neuro')
-    """)
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Psychopharmacology'
-        WHERE topic IN ('Medications','Pharmacology','Medication','Lab Values','Neuroscience','Biochemistry','Side Effects')
-    """)
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Psychotherapy'
-        WHERE topic IN ('CBT','DBT','ACT','Psychodynamic','Motivational Interviewing','Trauma-Focused',
-                        'Family & Couples','Group Therapy','Theory & Foundations','Therapy','Therapies')
-    """)
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Medical Management'
-        WHERE topic IN ('Medical','Lab','Labs','Procedures','Protocols','ICU','Cardiac','Respiratory','Renal')
-    """)
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Special Populations'
-        WHERE topic IN ('Child','Geriatric','Pediatric','Pregnancy','Forensic','Older Adults','Adolescent')
-    """)
-    cur.execute("""
-        UPDATE quiz_results SET topic = 'Professional & Ethics'
-        WHERE topic IN ('Ethics','Law','Legal','Licensing','Professional','Credentialing')
-    """)
+    # Remove all boards notes and quiz_results data
+    cur.execute("DELETE FROM notes WHERE category = 'boards'")
+    cur.execute("DELETE FROM notes WHERE subcategory IN ('Quiz Psychiatry', 'Quiz ICU')")
+    cur.execute("DROP TABLE IF EXISTS quiz_results")
     conn.commit()
     cur.close()
     conn.close()
@@ -588,39 +556,6 @@ def build_profile_context() -> str:
 
     return "\n".join(lines)
 
-def db_save_quiz_result(topic: str, question: str, result: str, note_id: int = None) -> dict:
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO quiz_results (topic, question, result, note_id) VALUES (%s, %s, %s, %s) RETURNING id",
-        (topic, question[:200], result, note_id)
-    )
-    row = cur.fetchone()
-    conn.commit(); cur.close(); conn.close()
-    return {"status": "saved", "id": row["id"]}
-
-def db_get_weak_areas(limit: int = 8) -> list:
-    """Return topics sorted by lowest score (most wrong answers first)."""
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT topic,
-               COUNT(*) as total,
-               SUM(CASE WHEN result='right'   THEN 1 ELSE 0 END) as rights,
-               SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) as partials,
-               SUM(CASE WHEN result='wrong'   THEN 1 ELSE 0 END) as wrongs,
-               ROUND(100.0 * (SUM(CASE WHEN result='right' THEN 1 ELSE 0 END) +
-                              SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) * 0.5) / COUNT(*)) AS score_pct
-        FROM quiz_results
-        GROUP BY topic
-        HAVING COUNT(*) >= 1
-        ORDER BY score_pct ASC
-        LIMIT %s
-    """, (limit,))
-    rows = cur.fetchall()
-    cur.close(); conn.close()
-    return [dict(r) for r in rows]
-
 def db_save_daily_focus(priorities: list, study_focus: str, date_str: str) -> dict:
     data = json.dumps({"date": date_str, "priorities": priorities, "study_focus": study_focus})
     db_update_profile_section("daily_focus", data)
@@ -674,7 +609,7 @@ TOOLS = [
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
                 "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "boards"],
-                                "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam prep — practice questions organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                                "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam study notes organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Board Prep), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["Assessment & Diagnosis","Psychopharmacology","Treatments","Lab Values","Neuroscience","Professional & Ethics",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
@@ -800,21 +735,6 @@ TOOLS = [
         }
     },
     {
-        "name": "save_quiz_result",
-        "description": "Call this immediately after evaluating the user's quiz answer — BEFORE giving feedback. Records whether she got it right, partial, or wrong so Brain can track weak areas and focus future quizzes.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "topic":    {"type": "string", "enum": ["Assessment & Diagnosis","Psychopharmacology","Psychotherapy","Medical Management","Special Populations","Professional & Ethics"], "description": "MUST be one of the 6 official ANCC board categories. Map the question's subject: DSM-5/assessments/diagnosis → 'Assessment & Diagnosis'; medications/pharmacology/neuroscience/lab values → 'Psychopharmacology'; CBT/DBT/ACT/psychodynamic/any therapy modality → 'Psychotherapy'; medical conditions/procedures/ICU → 'Medical Management'; child/geriatric/pregnancy/forensic → 'Special Populations'; ethics/law/licensing/professional → 'Professional & Ethics'"},
-                "question": {"type": "string", "description": "First 150 characters of the question asked"},
-                "result":   {"type": "string", "enum": ["right","partial","wrong"],
-                             "description": "right=fully correct and complete, partial=correct concept but missing key details, wrong=incorrect or didn't know"},
-                "note_id":  {"type": "integer", "description": "The note ID of the board question that was answered (from NOTE_ID in the quiz message)"}
-            },
-            "required": ["topic", "question", "result"]
-        }
-    },
-    {
         "name": "save_daily_focus",
         "description": "Save today's focus: up to 3 daily priorities (any life area) + one study topic. Call this when the user sets their intentions for the day.",
         "input_schema": {
@@ -869,15 +789,6 @@ TOOLS = [
             "required": []
         }
     },
-    {
-        "name": "get_weak_areas",
-        "description": "Returns Hannah's board exam weak areas sorted by lowest score. Use this during morning briefings to personalize the board study card with her actual weakest topic.",
-        "input_schema": {
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-    }
 ]
 
 SYSTEM_PROMPT = """You are Brain, a personal AI assistant and note-taking agent.
@@ -1240,8 +1151,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 
     a. If sleep data is included (Oura check-in) → FIRST save it to OURA RING METRICS as usual (Rule 4).
     b. ALWAYS call search_notes with category="people" and query="birthday important date surgery event" to scan People notes for anything time-sensitive today or in the next 7 days.
-    c. ALWAYS call get_weak_areas to find her weakest board topic to highlight in the study card.
-    d. ⛔ ALWAYS respond using the EXACT HTML card format below — NEVER plain text, NEVER markdown, NEVER skip the colored cards. Every section must be a colored div card exactly as shown:
+    c. ⛔ ALWAYS respond using the EXACT HTML card format below — NEVER plain text, NEVER markdown, NEVER skip the colored cards. Every section must be a colored div card exactly as shown:
 
     <div style="font-size:14px;line-height:1.7">
     <div style="font-weight:700;font-size:16px;margin-bottom:10px">[use the correct greeting based on local_time provided: before 12pm → ☀️ Good morning; 12–5pm → 🌤 Good afternoon; after 5pm → 🌙 Good evening], Hannah!</div>
@@ -1259,11 +1169,6 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
     [If daily focus is set for today:]
     <div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
       🎯 <strong>Today's focus:</strong> [Brain / Home / World items if set]
-    </div>
-
-    [Always include if board notes exist — use get_weak_areas result:]
-    <div style="background:#f3e5f5;border-left:4px solid #9c27b0;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:14px">
-      📚 <strong>Board focus today:</strong> [Weakest topic] ([score]%) — [one honest, specific study tip for this topic, not generic]
     </div>
 
     [If any People notes have birthdays TODAY or within 7 days, OR upcoming events within 7 days — add this card. MUST use this exact collapsible format — details hidden by default for privacy:]
@@ -1291,38 +1196,6 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 15. WEEKLY PLAN: When the user describes their upcoming week (work days, appointments, events) — call save_weekly_plan immediately. This is NOT a note, it is a live setting Brain uses all week for smart reminders. Extract: which days are work days, any appointments or events per day. Overwrite the previous week every time. Examples that trigger this rule: "this week I work Mon, Wed, Thu", "next week my schedule is...", "I'm on modified schedule: Monday and Friday", "I have PT on Monday".
     CALENDAR IMAGE RULE: When the user shares a calendar screenshot, carefully read every day visible in the image. Extract work days AND all events/appointments per day. After calling save_weekly_plan, ALWAYS respond with a confirmation summary like: "✅ Got your week! Here's what I saved: **Mon** — work, PT at 2pm · **Tue** — work · **Wed** — off · ... Let me know if anything looks off!" This lets Hannah catch any misreads. Never silently save from an image without confirming what you extracted.
     DATE CONTEXT: If the user shares a calendar on a Sunday and says "next week" or "my schedule", treat it as the upcoming Mon–Sun week. Use [Today's date] to figure out which dates those are.
-12. QUIZ MODE: When user says "quiz me", "quiz me on [topic]", or "test me":
-    a. Call get_recent_notes with category="clinical" and limit=20 to get all clinical notes. If a specific topic is mentioned, also call search_notes with that topic and category="clinical".
-    b. If notes are found: immediately ask the FIRST question. Do not explain what you're doing, do not ask what they want to study, just start the quiz.
-    c. If truly no notes found: say ONE sentence only — "No clinical notes saved yet — add some and I'll quiz you." Nothing more.
-    d. Ask ONE question at a time. Question style rules:
-       - Simple, direct clinical stem — one sentence maximum
-       - High yield only: mechanism of action, first-line treatment, key DSM criteria, black box warning, contraindication, side effect profile, or a brief clinical scenario
-       - Open ended — never multiple choice
-       - Expected answer: 1–3 sentences
-       - End with "Take your time!" on a new line
-    e. Wait for the user's answer. Do NOT give the answer before they respond.
-    f. After their answer — do this IN ORDER:
-       1. FIRST call save_quiz_result with the topic and result (right/partial/wrong) — do this before giving any feedback
-          - right = fully correct and complete
-          - partial = right idea but missing key details (e.g. knew the drug class but not the mechanism)
-          - wrong = incorrect or said they didn't know
-       2. THEN give feedback using colored HTML cards — NO markdown, NO asterisks:
-
-          - right:
-            <div style="background:#e8f5e9;border-left:4px solid #4caf50;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14px">✅ <strong>Correct!</strong> [one sentence confirmation + ONE clinical pearl to deepen understanding]</div>
-
-          - partial:
-            <div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14px">🟡 <strong>Partially right.</strong> [affirm what she got right]. Missing: [the key piece she missed]. <br><em>Memory hook: [trick if helpful]</em></div>
-
-          - wrong:
-            <div style="background:#fef2f2;border-left:4px solid #ef4444;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14px">❌ <strong>Not quite.</strong> The answer is: [correct answer]. [explain in 2-3 plain sentences]. <br><em>Remember: [one memory hook]</em></div>
-
-       3. End with the teaching point — not another question. Let her ask for the next one.
-    g. Keep going if user says "next", "another", or "keep going".
-    h. At the end give a short score using a card:
-       <div style="background:#f3f4f6;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:14px">📊 <strong>Score: [X/Y]</strong> — [one line: strong on X, review Y]</div>
-
 16. CALL LOG: When a message starts with "Call log (...):":
     a. Save ONE note under mom → the matching subcategory (Social Security, IEHP, Medi-Cal, Medicare, Primary Doc, Eye Care, Pharmacy, Cash Benefits). If no match, use mom → Quick Reference.
     b. Format the note clearly:
@@ -1332,59 +1205,6 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
        Next step: [next step if provided]
     c. Do NOT create multiple notes. ONE note per call log message.
     d. If a phone number was used → also update mom → Quick Reference with that number if not already there.
-18. BOARD QUESTION ENTRY: When a message starts with "Board question entry:" → parse the structured data and save ONE note under boards → [topic subcategory].
-
-    ⚡ PASTED QUESTION RULE: If the message contains a question in A) B) C) D) multiple-choice format AND does NOT start with "[BOARD QUIZ" or "Board quiz:" — treat it as a question to SAVE, not to answer. Call save_note immediately under boards → correct topic subcategory. Format it with the Q, choices, ✅ Correct, and Rationale if provided. Confirm with "✅ Saved to boards!" — do NOT explain, analyze, or answer the question unless Hannah explicitly asks "explain this" or "why is the answer X". Format the note as:
-
-📋 **[TOPIC]**
-
-**Q:** [question text]
-
-[A) choice]
-[B) choice]
-[C) choice]
-[D) choice]
-
-✅ **Correct: [letter]) [correct choice text]**
-
-**Rationale:** [rationale if provided]
-
-*Source: [source if provided]*
-
-Tag the note with the topic name as a tag.
-
-19. BOARD QUIZ: When a message starts with "[BOARD QUIZ - SAVED QUESTION]" →
-    a. The message contains the question, choices, LOCKED CORRECT ANSWER, and rationale from Hannah's saved notes.
-    b. Present it in this EXACT format — do NOT reveal the answer yet:
-
-    📋 **Board Question** *(topic name)*
-
-    [Question text]
-
-    A) [choice]
-    B) [choice]
-    C) [choice]
-    D) [choice]
-
-    *Type A, B, C, or D to answer.*
-
-    c. When she responds with a letter (A/B/C/D), grade her answer ONLY against the LOCKED CORRECT ANSWER in the message.
-       ⛔ NEVER override the locked answer with your own clinical reasoning. The stored answer IS correct for this question — period.
-       ⛔ Even if you believe a different answer is more clinically accurate, you MUST honor the locked answer. Hannah submitted this question herself and the locked answer is what she is studying.
-       - If her answer matches LOCKED CORRECT ANSWER:
-         <div style="background:#e8f5e9;border-left:4px solid #4caf50;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14px">✅ <strong>Correct!</strong> [brief encouragement]</div>
-         Then show the rationale in plain text below.
-       - If her answer does NOT match:
-         <div style="background:#fef2f2;border-left:4px solid #ef4444;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14px">❌ <strong>The correct answer is [locked letter]) [locked text].</strong><br>[show the stored rationale]</div>
-    d. After revealing the answer, call save_quiz_result with the topic, and right/wrong as appropriate.
-    e. Then ask: 'Want another board question? (say next or pick a topic)'
-
-    When a message starts with "Board quiz:" (no saved question) →
-    a. Generate your own board-style question on a random or specified topic.
-    b. Present in the same A/B/C/D format. Grade using your own reasoning for these Brain-generated questions only.
-
-    ⛔ GLOBAL RULE FOR ALL QUIZZES: If you retrieve a question from Hannah's saved notes (boards category) and the note contains a ✅ Correct: answer, that stored answer IS the correct answer — always. Never override it with your own clinical reasoning, regardless of context. This applies whether the quiz was started from the board tab or from regular chat.
-
 25. PERSONAL CRM — People notes:
     Triggers — NO explicit command needed. Brain detects these naturally:
     - Any mention of a fact about a specific named person: kids, spouse, pets, job, birthday, surgery, travel, school, where they live, what they said, what they're going through
@@ -1492,8 +1312,6 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
         return db_get_recent(args.get("limit", 30), args.get("category", "all"))
     elif name == "no_save":
         return {"status": "ok"}
-    elif name == "get_weak_areas":
-        return db_get_weak_areas(limit=6)
     elif name == "get_today_logs":
         return db_get_today_logs(args.get("category","lifestyle"), args.get("subcategory","Diet"))
     elif name == "get_log_by_date":
@@ -1536,13 +1354,6 @@ def execute_tool(name: str, args: dict, raw: str) -> dict:
                         (f"[Merged into #{note_ids[0]}]", f"<p><em>This note was merged into note #{note_ids[0]}.</em></p>", nid))
         conn.commit(); cur.close(); conn.close()
         return {"status": "merged", "master_id": note_ids[0], "merged_count": len(note_ids)}
-    elif name == "save_quiz_result":
-        return db_save_quiz_result(
-            args.get("topic", "General"),
-            args.get("question", ""),
-            args.get("result", "wrong"),
-            note_id=args.get("note_id")
-        )
     elif name == "save_daily_focus":
         return db_save_daily_focus(
             args.get("priorities", []),
@@ -1824,115 +1635,6 @@ async def last_error():
     if not _last_error:
         return {"ok": True, "message": "No errors recorded since last deploy."}
     return _last_error
-
-@app.get("/board-quiz/random")
-async def board_quiz_random(request: Request, topic: str = None, exclude: str = None):
-    """Return a spaced-repetition-weighted board question.
-    exclude: comma-separated note IDs to skip (avoids duplicates in a drill set).
-    """
-    if not is_authenticated(request):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    conn = get_db()
-    cur = conn.cursor()
-    # Parse exclude list
-    excluded_ids = []
-    if exclude:
-        try:
-            excluded_ids = [int(x) for x in exclude.split(",") if x.strip().isdigit()]
-        except Exception:
-            pass
-
-    # Spaced repetition: weight questions by last result + recency
-    # Never seen=100, wrong=80, partial=60, right>7d=40, right>3d=20, right recently=5
-    topic_filter = "AND n.subcategory ILIKE %s" if topic else ""
-    exclude_filter = f"AND n.id != ALL(%s)" if excluded_ids else ""
-    params = []
-    if topic:
-        params.append(f"%{topic}%")
-    if excluded_ids:
-        params.append(excluded_ids)
-    cur.execute(f"""
-        WITH last_results AS (
-            SELECT DISTINCT ON (note_id) note_id, result, created_at
-            FROM quiz_results
-            WHERE note_id IS NOT NULL
-            ORDER BY note_id, created_at DESC
-        ),
-        scored AS (
-            SELECT n.id, n.content, n.subcategory,
-                CASE
-                    WHEN lr.note_id IS NULL THEN 100
-                    WHEN lr.result = 'wrong'   THEN 80
-                    WHEN lr.result = 'partial' THEN 60
-                    WHEN lr.result = 'right' AND lr.created_at < NOW() - INTERVAL '7 days' THEN 40
-                    WHEN lr.result = 'right' AND lr.created_at < NOW() - INTERVAL '3 days' THEN 20
-                    ELSE 5
-                END AS weight
-            FROM notes n
-            LEFT JOIN last_results lr ON lr.note_id = n.id
-            WHERE n.category = 'boards' {topic_filter} {exclude_filter}
-        )
-        SELECT id, content, subcategory FROM scored
-        ORDER BY RANDOM() * weight DESC
-        LIMIT 1
-    """, params)
-    row = cur.fetchone()
-    cur.close(); conn.close()
-    if not row:
-        return {"found": False}
-
-    content = row["content"]
-    subcategory = row["subcategory"] or ""
-
-    # Parse question
-    q_match = re.search(r'\*\*Q:\*\*\s*(.+?)(?=\n\s*[A-D]\))', content, re.DOTALL)
-    question = q_match.group(1).strip() if q_match else ""
-
-    # Parse choices
-    choices = {}
-    for letter in ['A','B','C','D']:
-        m = re.search(rf'\n\s*{letter}\)\s*(.+?)(?=\n\s*[B-D]\)|\n\s*✅|\Z)', content, re.DOTALL)
-        if m:
-            choices[letter] = m.group(1).strip()
-
-    # Parse correct answer  e.g. "✅ **Correct: B) Some text**"
-    correct_match = re.search(r'✅[^\n]*Correct:\s*([A-D])\)\s*(.+?)(?:\*\*|$)', content, re.IGNORECASE)
-    correct_letter = correct_match.group(1).upper() if correct_match else ""
-    correct_text   = correct_match.group(2).strip() if correct_match else choices.get(correct_letter, "")
-
-    # Parse rationale
-    rat_match = re.search(r'\*\*Rationale:\*\*\s*(.+?)(?=\n\*Source|\*Source|\Z)', content, re.DOTALL)
-    rationale = rat_match.group(1).strip() if rat_match else ""
-
-    # Parse source
-    src_match = re.search(r'\*Source:\s*(.+?)\*', content)
-    source = src_match.group(1).strip() if src_match else ""
-
-    return {
-        "found": True,
-        "note_id": row["id"],
-        "topic": subcategory,
-        "question": question,
-        "choices": choices,
-        "correct_letter": correct_letter,
-        "correct_text": correct_text,
-        "rationale": rationale,
-        "source": source
-    }
-
-@app.post("/quiz/save-result")
-async def save_quiz_result_direct(request: Request):
-    """Direct result save for drill mode — bypasses Brain AI."""
-    if not is_authenticated(request):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    body = await request.json()
-    result = db_save_quiz_result(
-        body.get("topic", ""),
-        body.get("question", ""),
-        body.get("result", "wrong"),
-        body.get("note_id")
-    )
-    return result
 
 @app.post("/new-note")
 async def create_new_note(request: Request):
@@ -2311,28 +2013,13 @@ async def start_quiz(body: QuizRequest, request: Request):
     import random as _random
     notes_list = list(notes)
 
-    # ── Weight toward weak areas ──────────────────────────────────────────
-    weak_areas = db_get_weak_areas(limit=5)
-    weak_topics = [w["topic"] for w in weak_areas]  # sorted weakest first
-
-    # Separate notes into weak and non-weak buckets
-    weak_notes   = [n for n in notes_list if (n["subcategory"] or "") in weak_topics]
-    other_notes  = [n for n in notes_list if (n["subcategory"] or "") not in weak_topics]
-    _random.shuffle(weak_notes)
-    _random.shuffle(other_notes)
-
-    # 70% chance to pick from weak bucket if it has notes, otherwise random
-    if weak_notes and _random.random() < 0.70:
-        anchor = weak_notes[0]
-        ordered_notes = weak_notes + other_notes
-    else:
-        _random.shuffle(notes_list)
-        anchor = notes_list[0]
-        ordered_notes = notes_list
+    _random.shuffle(notes_list)
+    anchor = notes_list[0]
+    ordered_notes = notes_list
 
     anchor_topic = anchor["subcategory"] or anchor["summary"] or "clinical knowledge"
 
-    # Build context (up to 40 notes, weak-first)
+    # Build context (up to 40 notes)
     context_notes = ordered_notes[:40]
     notes_text = "\n\n---\n\n".join(
         f"[{n['subcategory'] or 'Clinical'}] {n['summary']}\n{strip_html(n['content'])[:600]}"
@@ -2340,15 +2027,9 @@ async def start_quiz(body: QuizRequest, request: Request):
     )
     topic_label = "clinical knowledge" if topic_lower in ("all_clinical", "all clinical", "clinical", "") else (body.topic or "clinical knowledge")
 
-    # Weak area hint for the prompt
-    weak_hint = ""
-    if weak_areas:
-        weak_list = ", ".join(f"{w['topic']} ({w['score_pct']}%)" for w in weak_areas[:3])
-        weak_hint = f"\nHer current weak areas (lowest scores): {weak_list}. Prioritize these topics."
-
     quiz_prompt = (
         f"You are quizzing Hannah, a PMHNP student preparing for her board exam, using her own saved notes.\n"
-        f"Topic: {topic_label}.{weak_hint}\n\n"
+        f"Topic: {topic_label}.\n\n"
         f"Notes:\n{notes_text}\n\n"
         f"Focus this question on: {anchor_topic}\n\n"
         "Write ONE board-style question. Rules:\n"
@@ -2389,60 +2070,6 @@ async def set_daily_focus(body: DailyFocusRequest, request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     date_str = body.date_str or datetime.now().strftime("%Y-%m-%d")
     return db_save_daily_focus(body.priorities, body.study_focus or "", date_str)
-
-@app.get("/quiz/quick-win")
-async def quiz_quick_win(request: Request):
-    if not is_authenticated(request):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    # Find the weak topic closest to mastery (highest score among weak areas)
-    weak = db_get_weak_areas(limit=10)
-    if weak:
-        # Sort by score descending — pick the "almost there" topic
-        best = sorted(weak, key=lambda x: x["score_pct"], reverse=True)[0]
-        target_topic = best["topic"]
-    else:
-        target_topic = None
-    # Fetch notes for that topic
-    conn = get_db(); cur = conn.cursor()
-    if target_topic:
-        cur.execute(
-            "SELECT content, summary, subcategory FROM notes WHERE subcategory = %s ORDER BY RANDOM() LIMIT 20",
-            (target_topic,)
-        )
-    else:
-        cur.execute(
-            "SELECT content, summary, subcategory FROM notes WHERE category IN ('psychiatry','psychotherapy','icu','np_fellowship') ORDER BY RANDOM() LIMIT 20"
-        )
-    notes = cur.fetchall(); cur.close(); conn.close()
-    if not notes:
-        return {"reply": "Add some clinical notes first and I'll find you a quick win! 💪"}
-    import random as _r; _r.shuffle(list(notes))
-    notes_text = "\n\n---\n\n".join(
-        f"[{n['subcategory']}] {n['summary']}\n{strip_html(n['content'])[:400]}"
-        for n in notes
-    )
-    prompt = (
-        f"You are quizzing a PMHNP student. She needs a confidence boost — pick the most straightforward, achievable question from this topic: {target_topic or 'clinical knowledge'}.\n\n"
-        f"Notes:\n{notes_text}\n\n"
-        "Write ONE easy but meaningful question — something she likely knows or is close to knowing. "
-        "A clear definition, a well-known first-line treatment, or a basic DSM criterion. "
-        "One sentence. Open ended. End with 'You got this! 💪' on a new line."
-    )
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001", max_tokens=200,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    question = response.content[0].text.strip() if response.content else "Could not generate a question."
-    db_add_message("user", f"Quick win quiz on {target_topic or 'clinical knowledge'}")
-    db_add_message("assistant", question)
-    topic_label = f"your best chance right now: **{target_topic}**" if target_topic else "clinical knowledge"
-    return {"reply": f"⚡ Quick win — {topic_label}\n\n{question}"}
-
-@app.get("/quiz/weak-areas")
-async def get_weak_areas(request: Request):
-    if not is_authenticated(request):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return db_get_weak_areas(limit=6)
 
 @app.patch("/note/{note_id}")
 async def patch_note(note_id: int, request: Request):
@@ -2824,265 +2451,6 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
     db_add_message("assistant", reply)
     return reply
 
-_BOARD_TOPIC_MAP = {
-    "assessment": "Assessment & Diagnosis",
-    "diagnosis": "Assessment & Diagnosis",
-    "psychopharmacology": "Psychopharmacology",
-    "pharmacology": "Psychopharmacology",
-    "medication": "Psychopharmacology",
-    "psychotherapy": "Psychotherapy",
-    "therapy": "Psychotherapy",
-    "cbt": "Psychotherapy",
-    "dbt": "Psychotherapy",
-    "medical": "Medical Management",
-    "special population": "Special Populations",
-    "child": "Special Populations",
-    "geriatric": "Special Populations",
-    "ethics": "Professional & Ethics",
-    "legal": "Professional & Ethics",
-    "professional": "Professional & Ethics",
-}
-
-def _looks_like_board_questions(text: str, user_note: str) -> bool:
-    """Detect if content is a practice question PDF or image."""
-    note_lower = (user_note or "").lower()
-    if any(kw in note_lower for kw in ["board", "question", "quiz", "practice", "georgette", "blueprint", "ancc", "pmhnp"]):
-        return True
-    # Match A)/A./A- formats
-    matches = len(re.findall(r'\b[A-D][).:\-]', text))
-    if matches >= 4:
-        return True
-    # Even 2 matches + question-style wording = board question
-    # (catches cases where OCR strips some labels)
-    if matches >= 2:
-        question_words = ["which", "what should", "what is the", "a patient", "a nurse",
-                          "a pmhnp", "which action", "which response", "the nurse",
-                          "the provider", "the client", "most appropriate"]
-        text_lower = text.lower()
-        if any(q in text_lower for q in question_words):
-            return True
-    return False
-
-def _normalize_topic(raw: str) -> str:
-    """Map a raw topic string to a canonical board subcategory."""
-    low = raw.lower()
-    for key, val in _BOARD_TOPIC_MAP.items():
-        if key in low:
-            return val
-    return raw.strip() or "Assessment & Diagnosis"
-
-def parse_and_save_board_questions(extracted: str, source_name: str) -> str:
-    """Parse a practice question document and save each Q as a board note."""
-    # Truncate to avoid token limits but keep as much as possible
-    chunk = extracted[:12000]
-    parse_prompt = (
-        "You are parsing a psychiatric board exam practice question document.\n"
-        "Extract EVERY question you can find. Return a JSON array where each item has:\n"
-        '{"topic": "one of: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics", '
-        '"question": "full question text", '
-        '"choices": {"A": "...", "B": "...", "C": "...", "D": "..."}, '
-        '"correct_letter": "A|B|C|D", '
-        '"correct_text": "text of correct choice", '
-        '"rationale": "explanation if present, else empty string"}\n'
-        "Rules:\n"
-        "- Include ALL questions found, even if rationale is missing\n"
-        "- correct_letter must be a single capital letter A-D\n"
-        "- If you cannot determine the correct answer, skip that question\n"
-        "- Return ONLY the JSON array, no other text\n\n"
-        f"Document:\n{chunk}"
-    )
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=8000,
-        messages=[{"role": "user", "content": parse_prompt}]
-    )
-    raw = response.content[0].text.strip() if response.content else "[]"
-    # Strip code fences
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"): raw = raw[4:]
-    try:
-        questions = json.loads(raw)
-    except Exception:
-        return "⚠️ Could not parse questions from this PDF. Try pasting the text directly or using the Board Q button to add questions manually."
-
-    if not questions:
-        return "⚠️ No questions found in this PDF. Make sure it contains A/B/C/D multiple choice questions."
-
-    saved = 0
-    for q in questions:
-        try:
-            topic = _normalize_topic(q.get("topic", ""))
-            question_text = q.get("question", "").strip()
-            choices = q.get("choices", {})
-            correct_letter = q.get("correct_letter", "").strip().upper()
-            correct_text = q.get("correct_text", choices.get(correct_letter, "")).strip()
-            rationale = q.get("rationale", "").strip()
-            if not question_text or not correct_letter or not choices:
-                continue
-            # Format matching the regex in /board-quiz/random
-            choice_lines = "\n".join(f"{l}) {choices[l]}" for l in ["A","B","C","D"] if choices.get(l))
-            content = (
-                f"**Q:** {question_text}\n"
-                f"{choice_lines}\n"
-                f"✅ **Correct: {correct_letter}) {correct_text}**\n"
-                + (f"**Rationale:** {rationale}\n" if rationale else "")
-                + f"*Source: {source_name}*"
-            )
-            summary = question_text[:60] + ("…" if len(question_text) > 60 else "")
-            db_save_note(f"[Board Q: {topic}]", content, summary, "boards", topic,
-                         ["board exam", "PMHNP", topic.lower()], [])
-            saved += 1
-        except Exception:
-            continue
-
-    if saved == 0:
-        return "⚠️ Found questions but couldn't save them — the format may be unusual. Try the Board Q button to add manually."
-
-    return (
-        f"✅ <strong>Saved {saved} board question{'s' if saved != 1 else ''}</strong> from {source_name}!<br><br>"
-        f"They're now in your drill pool with spaced repetition active. "
-        f"Head to <strong>⚡ Drill</strong> or <strong>🎯 Quick Win</strong> to start practicing. 📚"
-    )
-
-def _looks_like_study_plan(text: str, user_note: str) -> bool:
-    """Detect if content is a study schedule/plan (not clinical content to quiz on)."""
-    note_lower = (user_note or "").lower()
-    if any(kw in note_lower for kw in ["study plan", "schedule", "georgette", "week 1", "week by week"]):
-        return True
-    text_lower = text.lower()
-    week_count = len(re.findall(r'week\s+\d', text_lower))
-    return week_count >= 3
-
-
-def _looks_like_study_guide(text: str, user_note: str) -> bool:
-    """Detect if content is a study guide / clinical notes (not pre-made Q&A)."""
-    note_lower = (user_note or "").lower()
-    if any(kw in note_lower for kw in ["study guide", "studyguide", "generate question", "make question", "create question", "clinical notes", "sarah"]):
-        return True
-    # Study guides have lots of bullets and few A) B) C) D) choices
-    bullet_count = len(re.findall(r'^\s*[•\-\*]', text, re.MULTILINE))
-    choice_count = len(re.findall(r'\b[A-D]\)', text))
-    return bullet_count > 20 and choice_count < 8
-
-
-def _clean_pdf_text(text: str) -> str:
-    """Collapse excessive whitespace caused by character-spaced PDFs.
-    Converts 'W o r d  b y  w o r d' or words-on-separate-lines into readable prose."""
-    import re as _re
-    # Collapse runs of whitespace (spaces, tabs, newlines) into a single space
-    text = _re.sub(r'[ \t]+', ' ', text)          # multiple spaces/tabs → one space
-    text = _re.sub(r'\n[ \t]*\n+', '\n', text)    # multiple blank lines → one newline
-    text = _re.sub(r'(\w)\n(\w)', r'\1 \2', text) # word\nword → word word (broken lines)
-    text = _re.sub(r'\n{3,}', '\n\n', text)        # 3+ newlines → 2
-    # Remove lone page numbers (lines that are just a number)
-    text = _re.sub(r'^\s*\d{1,3}\s*$', '', text, flags=_re.MULTILINE)
-    return text.strip()
-
-
-def generate_questions_from_study_guide(extracted: str, source_name: str) -> str:
-    """
-    Take a clinical study guide (bullet points / prose), chunk it, generate
-    ANCC-style multiple-choice questions, and save them to the board drill bank.
-    """
-    # Clean up whitespace-heavy PDF extraction first
-    extracted = _clean_pdf_text(extracted)
-
-    CHUNK_SIZE = 6000  # chars per Claude call (larger since text is now denser)
-    SYSTEM_MSG = (
-        "You are an expert ANCC PMHNP-BC board exam question writer. "
-        "Given clinical study guide content (bullet points, notes, clinical pearls), "
-        "generate high-quality ANCC-style multiple-choice questions that test clinical reasoning.\n\n"
-        "Rules:\n"
-        "- Each question must have exactly 4 choices (A, B, C, D)\n"
-        "- One clearly correct answer, distractors should be plausible\n"
-        "- Include a 2-3 sentence rationale explaining the correct answer\n"
-        "- Assign each question to ONE of these 6 ANCC categories: "
-        "Assessment & Diagnosis | Psychopharmacology | Psychotherapy | "
-        "Medical Management | Special Populations | Professional & Ethics\n"
-        "- Skip pure test-taking strategy tips (e.g. 'read the question carefully') but DO generate questions from any clinical facts, medications, diagnoses, or treatments\n"
-        "- Generate as many questions as the content supports (aim for 3-6 per chunk)\n"
-        "- If a chunk has ZERO clinical facts at all, return []\n"
-        "- The text may have imperfect formatting from PDF extraction — do your best to interpret it\n\n"
-        "Return ONLY valid JSON — an array of objects:\n"
-        '[{"topic":"Psychopharmacology","question":"A 34-year-old...","choices":{"A":"...","B":"...","C":"...","D":"..."},'
-        '"correct_letter":"B","correct_text":"Lithium","rationale":"Lithium is first-line..."}]'
-    )
-
-    # Split into chunks
-    chunks = []
-    for i in range(0, len(extracted), CHUNK_SIZE):
-        chunk = extracted[i:i + CHUNK_SIZE].strip()
-        if len(chunk) > 150:  # skip tiny fragments
-            chunks.append(chunk)
-
-    if not chunks:
-        return "⚠️ Could not extract enough content from this study guide."
-
-    total_saved = 0
-    topic_tally: dict = {}
-    first_error: str = ""
-    api_errors = 0
-
-    for idx, chunk in enumerate(chunks):
-        try:
-            resp = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=3000,
-                system=SYSTEM_MSG,
-                messages=[{"role": "user", "content": f"Chunk {idx+1}/{len(chunks)}:\n\n{chunk}"}],
-            )
-            raw = resp.content[0].text.strip() if resp.content else "[]"
-            # Strip code fences
-            raw = re.sub(r'^```json\s*', '', raw)
-            raw = re.sub(r'```\s*$', '', raw).strip()
-            questions = json.loads(raw)
-        except Exception as e:
-            api_errors += 1
-            if not first_error:
-                first_error = f"{type(e).__name__}: {str(e)[:200]}"
-            print(f"[study-guide] chunk {idx+1} error: {type(e).__name__}: {e}")
-            continue  # skip bad chunks
-
-        for q in questions:
-            try:
-                topic = _normalize_topic(q.get("topic", ""))
-                question_text = q.get("question", "").strip()
-                choices = q.get("choices", {})
-                correct_letter = q.get("correct_letter", "").strip().upper()
-                correct_text = q.get("correct_text", choices.get(correct_letter, "")).strip()
-                rationale = q.get("rationale", "").strip()
-                if not question_text or not correct_letter or not choices:
-                    continue
-                choice_lines = "\n".join(f"{l}) {choices[l]}" for l in ["A","B","C","D"] if choices.get(l))
-                content = (
-                    f"**Q:** {question_text}\n"
-                    f"{choice_lines}\n"
-                    f"✅ **Correct: {correct_letter}) {correct_text}**\n"
-                    + (f"**Rationale:** {rationale}\n" if rationale else "")
-                    + f"*Source: {source_name}*"
-                )
-                summary = question_text[:60] + ("…" if len(question_text) > 60 else "")
-                db_save_note(f"[Study Guide Q: {topic}]", content, summary, "boards", topic,
-                             ["board exam", "PMHNP", "study-guide", topic.lower().replace(" & ","-").replace(" ","-")], [])
-                total_saved += 1
-                topic_tally[topic] = topic_tally.get(topic, 0) + 1
-            except Exception:
-                continue
-
-    if total_saved == 0:
-        if api_errors > 0:
-            return f"⚠️ Study guide processed ({len(chunks)} chunks) but all API calls failed. First error: {first_error}"
-        return f"⚠️ Processed the study guide ({len(chunks)} chunks, {len(extracted)} chars after cleanup) but Claude returned no questions. The content may be too introductory or strategy-focused."
-
-    breakdown = " | ".join(f"{t}: {n}" for t, n in sorted(topic_tally.items(), key=lambda x: -x[1]))
-    return (
-        f"✅ <strong>Generated {total_saved} board questions</strong> from <em>{source_name}</em>!<br><br>"
-        f"<strong>By category:</strong> {breakdown}<br><br>"
-        f"Spaced repetition is active — your weakest topics will appear most often. "
-        f"Head to <strong>⚡ Drill</strong> to start practicing. 🎯"
-    )
-
 
 @app.get("/people/upcoming")
 async def people_upcoming(request: Request):
@@ -3232,11 +2600,6 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
                 db_add_message("user", f"[Attached devotion image: {filename}]")
                 result = run_agent(user_msg)
                 return {"reply": result["reply"]}
-            # Board question image → drill bank only (no photo needed)
-            if _looks_like_board_questions(description, note.strip()):
-                reply = parse_and_save_board_questions(description, filename or "Image")
-                db_add_message("assistant", reply)
-                return {"reply": reply}
             # User is asking a QUESTION about the image — route through agent to answer it
             # (not save it). Detected when message contains question/help-seeking language.
             note_lower = note.strip().lower()
@@ -3305,33 +2668,6 @@ async def upload_file(request: Request, file: UploadFile = File(...), note: str 
 
         if not extracted.strip():
             raise HTTPException(status_code=400, detail="Could not extract any content from this file.")
-
-        # Board question PDFs → parse and save each question individually
-        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_board_questions(extracted, note):
-            reply = parse_and_save_board_questions(extracted, filename or "Practice PDF")
-            db_add_message("assistant", reply)
-            return {"reply": reply}
-
-        # Study plan PDFs → save as a boards planning note
-        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_study_plan(extracted, note):
-            note_id = db_save_note(
-                raw_input=f"[Uploaded: {filename}]",
-                content=_clean_pdf_text(extracted),
-                summary=f"📅 Study Plan: {filename.replace('.pdf','').replace('_',' ')}",
-                category="boards",
-                subcategory="Study Plan",
-                tags=json.dumps(["study-plan", "boards", "georgette"]),
-                entities=json.dumps([])
-            )
-            reply = f"📅 **Study plan saved!** I've added *{filename}* to your Boards notes as a study plan.\n\nI can now help you:\n- Build a personalized week-by-week schedule based on your exam date\n- Map Georgette's plan to your Brain focus areas\n- Set daily study goals\n\nJust tell me your target exam date and I'll help you plan it out! 🎓"
-            db_add_message("assistant", reply)
-            return {"reply": reply}
-
-        # Study guide PDFs → generate ANCC questions from clinical content
-        if (filename.endswith(".pdf") or content_type == "application/pdf") and _looks_like_study_guide(extracted, note):
-            reply = generate_questions_from_study_guide(extracted, filename or "Study Guide")
-            db_add_message("assistant", reply)
-            return {"reply": reply}
 
         # Save the file content as its own note
         file_reply = run_upload_agent(file_label, extracted, "")
