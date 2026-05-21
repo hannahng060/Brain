@@ -2391,7 +2391,7 @@
           var retryRes = await fetch('/chat', {
             method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
-              message: '[REFORMAT ONLY — do not call any tools, do not save anything] Your previous morning briefing response was plain text. Reformat it now using the exact HTML colored card format from Rule 24 — blue Today card, purple Board focus card, and any other relevant cards. Use the same content, just wrap it in the proper HTML divs.',
+              message: '[REFORMAT ONLY — do not call any tools, do not save anything] Your previous morning briefing response was plain text. Reformat it now using the exact HTML colored card format from Rule 24 — blue Today card and any other relevant cards. Use the same content, just wrap it in the proper HTML divs.',
               local_date: new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}),
               local_time: _localTimeStr()
             })
