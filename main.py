@@ -1426,6 +1426,7 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
             )
             break
         except Exception as _e:
+            print(f"[run_agent_loop] model={_model} failed: {type(_e).__name__}: {_e}")
             if "haiku" in _model:
                 raise
             continue
@@ -1483,20 +1484,28 @@ def run_agent(user_message: str) -> dict:
 
     # Try with progressively fewer messages if we hit the token limit
     final_text, saves_made = None, []
+    _last_loop_error = None
     for history_limit in [10, 6, 4, 2, 0]:
         try:
             messages = _build_messages(history_limit)
             final_text, saves_made = run_agent_loop(messages, user_message)
             break
         except Exception as e:
+            _last_loop_error = e
             err = str(e)
+            import traceback as _tb
+            print(f"[run_agent] history_limit={history_limit} error: {type(e).__name__}: {err}\n{_tb.format_exc()}")
             if "prompt is too long" in err or "too many tokens" in err.lower() or "invalid_request_error" in err:
                 continue
             raise
     if not final_text:
-        final_text = "I'm here but had trouble responding — please try again."
-
-    if not final_text:
+        if _last_loop_error:
+            import traceback as _tb2
+            _last_error["type"] = type(_last_loop_error).__name__
+            _last_error["msg"] = str(_last_loop_error)
+            _last_error["tb"] = _tb2.format_exc()
+            _last_error["time"] = datetime.now().isoformat()
+            _last_error["context"] = "run_agent silent retry exhausted"
         final_text = "I'm here but had trouble responding — please try again."
     db_add_message("assistant", final_text)
     return {"reply": final_text, "saves": saves_made}
