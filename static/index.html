@@ -3198,7 +3198,7 @@
     return { text: `Next water in ${d} days ✅`, color: '#2e7d32' };
   }
   function _gardenEmoji(type) {
-    return {orchid:'🌸', succulent:'🌵', house:'🪴', outdoor:'🌺'}[type] || '🌿';
+    return {orchid:'🌸', succulent:'🌵', cactus:'🌵', tropical:'🌿', herb:'🌿', house:'🪴', outdoor:'🌺'}[type] || '🌿';
   }
 
   function toggleGardenPanel() {
@@ -3242,8 +3242,8 @@
     _gardenType = type;
     document.querySelectorAll('[id^="gtype-"]').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
-    // Set default watering days by type
-    var defaults = { orchid:7, succulent:14, house:7, outdoor:3 };
+    // Set default watering days by type (research-based defaults)
+    var defaults = { orchid:10, succulent:14, cactus:21, house:7, tropical:5, herb:3, outdoor:3 };
     var daysInput = $('garden-add-days');
     if (daysInput) daysInput.value = defaults[type] || 7;
   }
@@ -3876,10 +3876,13 @@
     <div>
       <div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Type</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="mood-btn" id="gtype-orchid"   onclick="selectGardenType(this,'orchid')">🌸 Orchid</button>
+        <button class="mood-btn" id="gtype-orchid"    onclick="selectGardenType(this,'orchid')">🌸 Orchid</button>
         <button class="mood-btn" id="gtype-succulent" onclick="selectGardenType(this,'succulent')">🌵 Succulent</button>
-        <button class="mood-btn" id="gtype-house"    onclick="selectGardenType(this,'house')">🪴 House Plant</button>
-        <button class="mood-btn" id="gtype-outdoor"  onclick="selectGardenType(this,'outdoor')">🌺 Outdoor</button>
+        <button class="mood-btn" id="gtype-cactus"    onclick="selectGardenType(this,'cactus')">🌵 Cactus</button>
+        <button class="mood-btn" id="gtype-tropical"  onclick="selectGardenType(this,'tropical')">🌿 Tropical</button>
+        <button class="mood-btn" id="gtype-herb"      onclick="selectGardenType(this,'herb')">🌿 Herb</button>
+        <button class="mood-btn" id="gtype-house"     onclick="selectGardenType(this,'house')">🪴 House Plant</button>
+        <button class="mood-btn" id="gtype-outdoor"   onclick="selectGardenType(this,'outdoor')">🌺 Outdoor</button>
       </div>
     </div>
     <div style="display:flex;gap:12px;align-items:center">

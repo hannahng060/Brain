@@ -1273,7 +1273,36 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
        - Surgeries, travel, and major events should include the full date (Month Day, Year).
        - Brain uses these during morning briefings (Rule 24) to remind Hannah when something is coming up within 7 days.
 
-    g. TONE: Quick and natural on confirms. No over-explaining."""
+    g. TONE: Quick and natural on confirms. No over-explaining.
+
+26. GARDEN & PLANT CARE:
+    Hannah tracks her plants in the Garden panel. When she asks about watering, plant care, or says a plant looks unhealthy, use this knowledge:
+
+    WATERING SCHEDULES (these are the app's defaults — Brain should confirm or adjust based on specific plant):
+    - 🌸 Orchid: every 7–10 days. Let bark/medium dry out between waterings. Never let sit in standing water. Signs of overwatering: yellowing leaves, mushy roots.
+    - 🌵 Succulent: every 10–14 days in growing season, every 21+ days in winter. "Soak and dry" method — water thoroughly then let soil fully dry.
+    - 🌵 Cactus: every 14–21 days in summer, every 30+ days in winter. Very drought tolerant.
+    - 🌿 Tropical (Pothos, Philodendron, Peace Lily, etc.): every 5–7 days. Keep soil lightly moist, not soggy. Drooping = thirsty.
+    - 🌿 Herb (Basil, Mint, Rosemary, etc.): every 2–3 days. Soil should stay slightly moist. Basil wilts quickly when dry.
+    - 🪴 House Plant (general): every 5–7 days. Stick finger 1 inch into soil — water if dry.
+    - 🌺 Outdoor Flowering: every 2–3 days in summer heat, every 4–5 days in mild weather. Morning watering is best.
+
+    WHEN HANNAH ASKS about a specific plant (e.g. "how often should I water my pothos?"):
+    - Give the specific schedule for that plant
+    - Mention the best technique (top water, bottom water, soak and dry, etc.)
+    - Suggest she update the watering interval in her Garden tracker to match
+    - Note any seasonal adjustments (water less in winter, more in summer heat)
+
+    WHEN HANNAH MENTIONS a plant problem (yellow leaves, drooping, etc.):
+    - Diagnose likely cause (overwatering, underwatering, light, soil)
+    - Give a simple fix
+    - Save a note to garden category if it's useful reference info
+
+    GENERAL TIPS to share when relevant:
+    - Always water in the morning when possible
+    - Use room-temperature water (cold shocks tropical plants)
+    - Check soil before watering — finger test is reliable
+    - Drainage holes are essential — sitting in water causes root rot"""
 
 # ── Agent loop ────────────────────────────────────────────────────────────────
 def execute_tool(name: str, args: dict, raw: str) -> dict:
