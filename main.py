@@ -157,7 +157,7 @@ def db_save_note(raw_input: str, content: str, summary: str,
     import datetime
     today = datetime.date.today().isoformat()
     georgette_days = {"2026-05-12", "2026-05-13", "2026-05-14"}
-    if today in georgette_days and category in ("psychiatry", "boards"):
+    if today in georgette_days and category in ("psychiatry"):
         if "georgette" not in tags:
             tags = list(tags) + ["georgette", f"georgette-{today[5:].replace('-', '/')}", "board-review"]
     conn = get_db()
@@ -608,7 +608,7 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "boards"],
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden"],
                                 "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam study notes organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Board Prep), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["Assessment & Diagnosis","Psychopharmacology","Treatments","Lab Values","Neuroscience","Professional & Ethics",
@@ -634,7 +634,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "boards", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -658,7 +658,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 30},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "boards", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"}
             }
         }
     },
@@ -668,7 +668,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden","boards"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden",]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
@@ -714,7 +714,7 @@ TOOLS = [
                                          "Reflections","Goals","Mental Health","Gratitude",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
                                          "Psychotherapy","Medical Management","Special Populations","Board Prep"]},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "boards"]},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle"]},
                 "summary":     {"type": "string"},
                 "content":     {"type": "string"}
             },
@@ -846,7 +846,7 @@ QUICK CAPTURE RULE:
 If the message starts with [QUICK CAPTURE — MUST SAVE], the user captured a quick thought on the go. You MUST save or update immediately — never call no_save. Strip the [QUICK CAPTURE] prefix from the content before saving. Apply all routing rules (personal/today/I/me → correct Daily Log section per Rule 4; clinical knowledge → new note; etc).
 
 LECTURE DUMP RULE — READ THIS BEFORE SAVING ANY CLINICAL NOTE:
-When Hannah is in a class, review session, or rapid study session, she pastes content in bursts. Before creating a NEW psychiatry/boards note, ALWAYS call search_notes first with the topic keywords to check if a note on the same subject was saved in the last 2 hours. If a match is found:
+When Hannah is in a class, review session, or rapid study session, she pastes content in bursts. Before creating a NEW psychiatry note, ALWAYS call search_notes first with the topic keywords to check if a note on the same subject was saved in the last 2 hours. If a match is found:
 - UPDATE the existing note by appending the new content — do NOT create a duplicate
 - Signal: "Added to your existing [topic] note."
 If no match is found, create a new note as usual.
@@ -931,7 +931,7 @@ This applies to ALL note types: daily log, reflections, spiritual, people, clini
 BOLDING RULE FOR PLAIN TEXT NOTES:
 When saving plain text clinical notes, you MAY use <strong> for: headings, drug names, DSM criteria labels, key terms, and section headers — this helps readability.
 ⛔ But NEVER bold random words mid-sentence just because you think they sound important. Bold = structure and labels, not your own emphasis judgment on content words.
-This applies to personal reflections, health updates, appointments, daily log entries, plans, intentions, and people/CRM notes where Hannah's actions or wishes are mentioned. Clinical/knowledge notes (psychiatry, boards, psychotherapy) are written as reference material and are exempt from this rule.
+This applies to personal reflections, health updates, appointments, daily log entries, plans, intentions, and people/CRM notes where Hannah's actions or wishes are mentioned. Clinical/knowledge notes (psychiatry, psychotherapy) are written as reference material and are exempt from this rule.
 Also: strip out any meta-instructions directed at Brain from the note content. Phrases like "remind me", "save this", "note this", "don't forget" are instructions — they belong in Brain's response, not in the saved note.
 
 When writing the content of a note, always end it with a brief, meaningful sentence that ties the note together — a reflection, clinical pearl, or contextual insight. Write it as a standalone statement, not addressed to the user. No "you" or "your". Example: a Bible verse note ends with "A reminder that strength is found in surrender." A medication note ends with "Key pearl: monitor QTc when combining serotonergic agents."
@@ -1484,7 +1484,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         + f"\nContent:\n{truncated}\n\n"
         "IMPORTANT: If this content is ANY spiritual content — devotion, Bible passage, scripture, sermon, prayer, spiritual thought, worship — → set category=lifestyle, subcategory=Daily Log, and summary should be the passage/sermon title or first line.\n"
         "Return ONLY a JSON object with these fields:\n"
-        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle|people|mom|garden|boards", '
+        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle|people|mom|garden", '
         '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
         "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness, "
         "psychiatry=psychiatric conditions/meds/assessments/board prep, psychotherapy=therapy modalities, "
@@ -2169,7 +2169,7 @@ async def delete_note(note_id: int, request: Request):
 
 @app.get("/export")
 async def export_notes(request: Request, from_date: str = "", to_date: str = "",
-                       cats: str = "psychiatry,boards",
+                       cats: str = "psychiatry",
                        day_labels: str = "", tag: str = ""):
     """Export notes as a printable HTML document grouped by day then subcategory."""
     if not is_authenticated(request):
@@ -2411,7 +2411,7 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         + "✅ Lecture slides, class notes, pharmacology slides, DSM content, clinical assessments, medication info, neuroscience → category=psychiatry. Pick the best subcategory: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Lab Values | Neuroscience | Professional & Ethics.\n"
         + "✅ Psychotherapy models, therapy techniques → category=psychotherapy.\n"
         + "Return ONLY a JSON object: "
-        '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden|boards", '
+        '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden", '
         '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
         "Return ONLY the JSON."
     )
