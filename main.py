@@ -1405,14 +1405,35 @@ def content_to_dict(block) -> dict:
         return {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
     return {}  # unknown block type — filtered out below
 
+def _is_simple_message(msg: str) -> bool:
+    """Returns True for messages that don't need Sonnet's full intelligence.
+    Simple = explicit saves, short logs, greetings. Complex = questions, searches, analysis."""
+    lower = msg.lower().strip()
+    # Explicit save/log commands → always Haiku
+    if any(lower.startswith(p) for p in ["save:", "note:", "log:", "save note", "add note", "save this"]):
+        return True
+    # Question words or search intent → Sonnet
+    complex_signals = ["?", "search", "find", "look up", "what ", "how ", "why ", "when ", "where ",
+                       "who ", "which ", "tell me", "explain", "help me", "brief", "analyz",
+                       "summariz", "what do i", "what does", "what is", "what are"]
+    if any(s in lower for s in complex_signals):
+        return False
+    # Short messages (under 80 chars) without complexity signals → Haiku
+    if len(msg) <= 80:
+        return True
+    return False
+
 def run_agent_loop(messages: list, raw: str) -> tuple:
     saves_made = []
     infer_messages = list(messages)
     if not infer_messages:
         raise ValueError("run_agent_loop called with empty messages")
-    # Try Sonnet 4.5 first (smarter), fall back through to Haiku
-    # tool_choice="any" forces Brain to always call a tool (save, search, or no_save)
-    _MODELS = ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]
+    # Hybrid model routing: Haiku for simple saves/logs, Sonnet for complex requests
+    # Sonnet is ~10x more expensive — routing saves significant API costs
+    if _is_simple_message(raw):
+        _MODELS = ["claude-haiku-4-5-20251001"]
+    else:
+        _MODELS = ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]
     response = None
     last_model_err = None
     for _model in _MODELS:
