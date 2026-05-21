@@ -618,7 +618,6 @@
             <option value="lifestyle">Lifestyle</option>
             <option value="mom">🧡 Mom</option>
             <option value="garden">🌱 Garden</option>
-            <option value="boards">🎓 Boards</option>
             <option value="people">👥 People</option>
           </select>
           <span class="edit-label">Subcategory</span>
@@ -723,7 +722,6 @@
     personal:      ['Reflections','Goals','Mental Health','Gratitude','Relationships'],
     mom:           ['Quick Reference','IEHP','Medi-Cal','Medicare','Social Security','Primary Doc','Eye Care','Pharmacy','Cash Benefits','Vietnam Travel'],
     garden:        ['Orchids','House Plants','Outdoor Flowers','Notes & Learning'],
-    boards:        ['Assessment & Diagnosis','Psychopharmacology','Psychotherapy','Medical Management','Special Populations','Professional & Ethics','Board Prep'],
     lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening','Social Media'],
     people:        ['Family','Friends','Work','Community']
   };
@@ -1349,7 +1347,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden',boards:'🎓 Boards',people:'👥 People'};
+  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden',people:'👥 People'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};
