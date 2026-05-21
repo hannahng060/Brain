@@ -1409,12 +1409,13 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
     saves_made = []
     infer_messages = list(messages)
     if not infer_messages:
-        return "I'm here but had trouble responding — please try again.", saves_made
-    # Force tool_choice=any on first call — Brain MUST call a tool (save_note, search, or no_save)
-    # This makes saving impossible to skip; Brain can no longer "forget" to call a tool
-    # max_tokens=4096 prevents truncation mid-tool-call (daily logs can be long)
-    # Try Sonnet first (smarter), fall back to Haiku if unavailable
-    for _model in ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]:
+        raise ValueError("run_agent_loop called with empty messages")
+    # Try Sonnet 4.5 first (smarter), fall back through to Haiku
+    # tool_choice="any" forces Brain to always call a tool (save, search, or no_save)
+    _MODELS = ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]
+    response = None
+    last_model_err = None
+    for _model in _MODELS:
         try:
             response = client.messages.create(
                 model=_model,
@@ -1426,11 +1427,14 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
             )
             break
         except Exception as _e:
+            last_model_err = _e
             print(f"[run_agent_loop] model={_model} failed: {type(_e).__name__}: {_e}")
-            if "haiku" in _model:
-                raise
-            continue
-    while response.stop_reason == "tool_use":
+            continue  # try next model
+    if response is None:
+        raise last_model_err or RuntimeError("All models failed")
+    loop_count = 0
+    while response.stop_reason == "tool_use" and loop_count < 5:
+        loop_count += 1
         # Filter out empty/unknown content blocks — prevents "invalid content" API errors
         assistant_content = [d for d in (content_to_dict(b) for b in response.content) if d]
         if not assistant_content:
@@ -1439,7 +1443,11 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
         for block in response.content:
             if block.type != "tool_use":
                 continue
-            result = execute_tool(block.name, block.input, raw)
+            try:
+                result = execute_tool(block.name, block.input, raw)
+            except Exception as _te:
+                print(f"[execute_tool] {block.name} failed: {_te}")
+                result = {"error": str(_te)}
             if block.name in ("save_note", "update_note", "update_daily_log") and "id" in result:
                 saves_made.append({
                     "id": result["id"],
@@ -1459,27 +1467,59 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
             {"role": "assistant", "content": assistant_content},
             {"role": "user",      "content": tool_results}
         ]
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=4096,
-            system=SYSTEM_PROMPT,
-            tools=TOOLS,
-            messages=infer_messages
-        )
-    text = "".join(b.text for b in response.content if hasattr(b, "text"))
+        try:
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=4096,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                messages=infer_messages
+            )
+        except Exception as _ce:
+            print(f"[run_agent_loop] continuation call failed: {type(_ce).__name__}: {_ce}")
+            raise
+    text = "".join(b.text for b in response.content if hasattr(b, "text") and b.text)
+    if not text:
+        # Model responded with only tool calls and no text — get a summary response
+        print(f"[run_agent_loop] empty text after tool calls (stop_reason={response.stop_reason}), requesting summary")
+        try:
+            summary_resp = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=512,
+                system=SYSTEM_PROMPT,
+                messages=infer_messages + [
+                    {"role": "assistant", "content": "Done."},
+                    {"role": "user", "content": "Briefly confirm what you just did in one sentence."}
+                ]
+            )
+            text = "".join(b.text for b in summary_resp.content if hasattr(b, "text") and b.text)
+        except Exception:
+            text = "Done."
     return text, saves_made
 
 def run_agent(user_message: str) -> dict:
+    import traceback as _tb
     db_add_message("user", user_message)
     profile_context = build_profile_context()
 
     def _build_messages(limit: int) -> list:
         msgs = db_get_history(limit)
+        # Always ensure the current user message is the last message
+        # (db_get_history may not include it if limit=0 or clock is off)
+        if not msgs or msgs[-1].get("role") != "user" or msgs[-1].get("content","") != user_message[:2000]:
+            msgs = [m for m in msgs if m.get("content","") != user_message[:2000]]  # dedup
+            msgs.append({"role": "user", "content": user_message})
+        # Prepend profile context as a fake user/assistant exchange
         if profile_context:
             msgs = [
                 {"role": "user", "content": profile_context},
                 {"role": "assistant", "content": "Got it, I have your profile and will use it as context for all responses."}
             ] + msgs
+        # Safety: ensure messages list is non-empty and ends with user
+        if not msgs:
+            msgs = [{"role": "user", "content": user_message}]
+        if msgs[-1]["role"] != "user":
+            msgs.append({"role": "user", "content": user_message})
         return msgs
 
     # Try with progressively fewer messages if we hit the token limit
@@ -1493,23 +1533,27 @@ def run_agent(user_message: str) -> dict:
         except Exception as e:
             _last_loop_error = e
             err = str(e)
-            import traceback as _tb
             print(f"[run_agent] history_limit={history_limit} error: {type(e).__name__}: {err}\n{_tb.format_exc()}")
-            # Only retry with fewer messages for actual token-limit errors
-            # Other invalid_request_errors (model not found, bad API key, etc.) should surface immediately
+            # Retry with fewer messages only for token-limit errors
             token_limit_err = ("prompt is too long" in err or "too many tokens" in err.lower()
-                               or ("invalid_request_error" in err and ("token" in err.lower() or "context" in err.lower() or "length" in err.lower())))
+                               or "context_length_exceeded" in err
+                               or ("invalid_request_error" in err and
+                                   any(w in err.lower() for w in ("token", "context", "length", "too long"))))
             if token_limit_err:
                 continue
+            # For all other errors — record and surface them
+            _last_error["type"] = type(e).__name__
+            _last_error["msg"] = err
+            _last_error["tb"] = _tb.format_exc()
+            _last_error["time"] = datetime.now().isoformat()
             raise
     if not final_text:
         if _last_loop_error:
-            import traceback as _tb2
             _last_error["type"] = type(_last_loop_error).__name__
             _last_error["msg"] = str(_last_loop_error)
-            _last_error["tb"] = _tb2.format_exc()
+            _last_error["tb"] = _tb.format_exc()
             _last_error["time"] = datetime.now().isoformat()
-            _last_error["context"] = "run_agent silent retry exhausted"
+            _last_error["context"] = "all retries exhausted"
         final_text = "I'm here but had trouble responding — please try again."
     db_add_message("assistant", final_text)
     return {"reply": final_text, "saves": saves_made}
