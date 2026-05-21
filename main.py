@@ -1495,7 +1495,11 @@ def run_agent(user_message: str) -> dict:
             err = str(e)
             import traceback as _tb
             print(f"[run_agent] history_limit={history_limit} error: {type(e).__name__}: {err}\n{_tb.format_exc()}")
-            if "prompt is too long" in err or "too many tokens" in err.lower() or "invalid_request_error" in err:
+            # Only retry with fewer messages for actual token-limit errors
+            # Other invalid_request_errors (model not found, bad API key, etc.) should surface immediately
+            token_limit_err = ("prompt is too long" in err or "too many tokens" in err.lower()
+                               or ("invalid_request_error" in err and ("token" in err.lower() or "context" in err.lower() or "length" in err.lower())))
+            if token_limit_err:
                 continue
             raise
     if not final_text:
