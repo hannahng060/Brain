@@ -1654,6 +1654,27 @@ async def test():
     except Exception as e:
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
+@app.get("/test-full")
+async def test_full():
+    """Tests the FULL chat pipeline — system prompt + tools + tool_choice — with a simple hello message."""
+    results = {}
+    for model in ["claude-sonnet-4-5-20251001", "claude-3-5-sonnet-20241022", "claude-haiku-4-5-20251001"]:
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=512,
+                system=SYSTEM_PROMPT,
+                tools=TOOLS,
+                tool_choice={"type": "any"},
+                messages=[{"role": "user", "content": "Say hi"}]
+            )
+            text = "".join(b.text for b in response.content if hasattr(b, "text"))
+            tool_calls = [b.name for b in response.content if hasattr(b, "name")]
+            results[model] = {"ok": True, "stop_reason": response.stop_reason, "text": text[:200], "tools_called": tool_calls}
+        except Exception as e:
+            results[model] = {"ok": False, "error": str(e), "type": type(e).__name__}
+    return results
+
 @app.get("/chat-history")
 async def get_chat_history(request: Request, limit: int = 40):
     if not is_authenticated(request):
