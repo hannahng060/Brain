@@ -3177,7 +3177,12 @@
 
   function _gardenDaysAgo(dateStr) {
     if (!dateStr) return null;
-    return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    // Use local midnight for both dates to avoid UTC timezone shift
+    const now = new Date();
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const parts = dateStr.split('-');
+    const storedLocal = new Date(+parts[0], +parts[1]-1, +parts[2]); // local midnight
+    return Math.round((todayLocal - storedLocal) / 86400000);
   }
   function _gardenDaysUntil(plant) {
     const ago = _gardenDaysAgo(plant.lastWatered);
