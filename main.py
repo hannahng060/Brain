@@ -1477,10 +1477,29 @@ def run_agent_loop(messages: list, raw: str) -> tuple:
                     "subcategory": result.get("subcategory", ""),
                     "summary": result.get("summary", "")
                 })
+            # Cap tool result size — large search results can cause 413 request_too_large
+            result_json = json.dumps(result, default=str)
+            if len(result_json) > 12000:
+                # Truncate search/recent results: keep first N notes with shortened content
+                if isinstance(result, list):
+                    truncated = []
+                    total = 0
+                    for item in result:
+                        item_copy = dict(item) if isinstance(item, dict) else item
+                        if isinstance(item_copy, dict) and "content" in item_copy:
+                            item_copy["content"] = item_copy["content"][:400] + ("…" if len(item_copy.get("content","")) > 400 else "")
+                        item_str = json.dumps(item_copy, default=str)
+                        if total + len(item_str) > 10000:
+                            break
+                        truncated.append(item_copy)
+                        total += len(item_str)
+                    result_json = json.dumps(truncated, default=str)
+                else:
+                    result_json = result_json[:12000] + "…"
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
-                "content": json.dumps(result, default=str)
+                "content": result_json
             })
         if not tool_results:
             break  # no tool results to send — exit gracefully
