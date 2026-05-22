@@ -465,8 +465,8 @@ def db_get_history(limit: int = 20) -> list:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # Cap each message at 2000 chars — lecture dumps can be massive and blow token limits
-    MAX_MSG = 2000
+    # Cap each message at 1000 chars — keeps history manageable and prevents 413 errors
+    MAX_MSG = 1000
     msgs = [{"role": r["role"], "content": r["content"][:MAX_MSG] + ("…" if len(r["content"]) > MAX_MSG else "")} for r in reversed(rows)]
     # Sanitize: ensure messages alternate user/assistant (no consecutive same-role)
     # Drop orphaned messages that would break the Anthropic API
@@ -554,7 +554,12 @@ def build_profile_context() -> str:
         except Exception:
             lines.append(f"[Weekly Plan]: {wp_raw}")
 
-    return "\n".join(lines)
+    result = "\n".join(lines)
+    # Cap profile context to prevent 413 request_too_large errors
+    MAX_PROFILE = 3000
+    if len(result) > MAX_PROFILE:
+        result = result[:MAX_PROFILE] + "\n…[profile truncated]"
+    return result
 
 def db_save_daily_focus(priorities: list, study_focus: str, date_str: str) -> dict:
     data = json.dumps({"date": date_str, "priorities": priorities, "study_focus": study_focus})
