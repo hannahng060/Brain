@@ -1882,6 +1882,29 @@ Do NOT wrap in ```html``` fences. Return ONLY the raw HTML content, nothing else
     conn.commit(); cur.close(); conn.close()
     return {"status": "merged", "master_id": master['id'], "merged_count": len(notes)}
 
+@app.post("/unmerge-note")
+async def unmerge_note(request: Request):
+    """Restore a note from its [MERGE BACKUP] saved in raw_input."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    note_id = body.get("id")
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id, summary, raw_input FROM notes WHERE id = %s", (note_id,))
+    note = cur.fetchone()
+    if not note:
+        cur.close(); conn.close()
+        raise HTTPException(status_code=404, detail="Note not found")
+    raw = note["raw_input"] or ""
+    if not raw.startswith("[MERGE BACKUP]"):
+        cur.close(); conn.close()
+        raise HTTPException(status_code=400, detail="No merge backup found for this note")
+    original_content = raw[len("[MERGE BACKUP]"):].strip()
+    cur.execute("UPDATE notes SET content = %s, summary = CASE WHEN summary LIKE '[Merged into%%' THEN %s ELSE summary END WHERE id = %s",
+                (original_content, "Restored note", note_id))
+    conn.commit(); cur.close(); conn.close()
+    return {"status": "restored", "note_id": note_id}
+
 @app.get("/weekly-plan")
 async def get_weekly_plan(request: Request):
     if not is_authenticated(request):
