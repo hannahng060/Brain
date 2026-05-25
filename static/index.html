@@ -1272,7 +1272,8 @@
     $('notes-list').innerHTML = filtered.map((n,i) => {
       const tags = tryParse(n.tags);
       const date = new Date(n.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      return `<div class="note-card ${n.category||''}" onclick="openNote(${i})">
+      return `<div class="note-card ${n.category||''}" id="nc-${n.id}" onclick="noteCardClick(event,${i},${n.id})">
+        <div class="note-select-check">✓</div>
         <div class="note-card-header">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge ${n.category}">${n.category}</span>
