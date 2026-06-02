@@ -613,7 +613,7 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden"],
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "certification"],
                                 "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam study notes organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Board Prep), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
                 "subcategory": {"type": "string",
                                 "enum": ["Assessment & Diagnosis","Psychopharmacology","Treatments","Lab Values","Neuroscience","Professional & Ethics",
@@ -639,7 +639,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -663,7 +663,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 30},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"}
             }
         }
     },
@@ -673,7 +673,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden",]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden", "certification"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
