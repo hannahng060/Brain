@@ -710,9 +710,6 @@
   const $ = id => document.getElementById(id);
   let allNotes = [];
   let currentCat = 'all';
-  // Surprise Me state
-  let _surpriseSeen    = new Set();
-  let _surpriseLastCat = null;
   // Weekly plan + checklist state
   let _weeklyPlan = { work_days: [], events: [], week_of: '', notes: '' };
   let currentSubcat = 'all';
@@ -1182,16 +1179,6 @@
 
       renderBanner($('dash-quote'),     $('wrap-quote'),     window._bannerDecks.quote.deck,     '💡');
       renderBanner($('dash-knowledge'), $('wrap-knowledge'), window._bannerDecks.knowledge.deck, '🧠');
-
-      // Surprise Me button — always on dashboard
-      let surpriseRow = $('dash-surprise');
-      if (!surpriseRow) {
-        const row = document.createElement('div');
-        row.id = 'dash-surprise';
-        row.style = 'margin-top:10px';
-        row.innerHTML = `<button onclick="surpriseMe()" style="background:none;border:1.5px dashed var(--primary);color:var(--primary);border-radius:20px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;text-align:center">✨ Surprise me</button>`;
-        $('dashboard').appendChild(row);
-      }
     } catch(e) {}
   }
 
@@ -2446,40 +2433,6 @@
       if(activePage && activePage.id !== 'chat-page') showTab('chat');
     }
   });
-
-  // ── Surprise Me ──────────────────────────────────────────────────────
-  async function surpriseMe() {
-    try {
-      // Fetch fresh if allNotes not loaded yet
-      if (!allNotes.length) {
-        const r = await fetch('/notes?limit=2000');
-        if (r.ok) allNotes = await r.json();
-      }
-      let pool = allNotes.filter(n => n.content && n.content.length > 30);
-      if (!pool.length) { showToast('No notes yet — add some first!'); return; }
-
-      // Remove already-seen; reset when full cycle done
-      let unseen = pool.filter(n => !_surpriseSeen.has(n.id));
-      if (!unseen.length) {
-        _surpriseSeen.clear();
-        unseen = pool;
-        showToast('✨ Full cycle done — starting fresh!');
-      }
-
-      // Prefer different category from last shown
-      const fresh = unseen.filter(n => n.category !== _surpriseLastCat);
-      const candidates = fresh.length ? fresh : unseen;
-      const note = candidates[Math.floor(Math.random() * candidates.length)];
-
-      _surpriseSeen.add(note.id);
-      _surpriseLastCat = note.category;
-      openNoteDirectly(note);
-      showToast('✨ Surprise!');
-    } catch(e) {
-      console.error('surpriseMe error:', e);
-      showToast('⚠️ ' + (e.message || 'Unknown error'));
-    }
-  }
 
   // ── Today's Focus (Brain / Home / World) ──────────────────────────────
   function _focus3Load() {
