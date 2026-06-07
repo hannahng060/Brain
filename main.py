@@ -497,6 +497,8 @@ def db_update_note(note_id: int, fields: dict) -> dict:
 
 def db_find_today_note(category: str, subcategory: str) -> dict | None:
     """Find a note saved today for the given category+subcategory (for grouping screenshots)."""
+    if not subcategory:
+        return None
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
@@ -505,6 +507,21 @@ def db_find_today_note(category: str, subcategory: str) -> dict | None:
              AND created_at >= NOW() - INTERVAL '20 hours'
            ORDER BY created_at DESC LIMIT 1""",
         (category, subcategory)
+    )
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    return dict(row) if row else None
+
+def db_find_today_note_any(category: str) -> dict | None:
+    """Find the most recent note from today for a category, regardless of subcategory."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, content, summary, tags FROM notes
+           WHERE category = %s
+             AND created_at >= NOW() - INTERVAL '20 hours'
+           ORDER BY created_at DESC LIMIT 1""",
+        (category,)
     )
     row = cur.fetchone()
     cur.close(); conn.close()
@@ -2650,14 +2667,13 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
     except Exception:
         summary, category, subcategory, tags = filename or "Image", "personal", None, []
 
-    # For georgette_lmr: group screenshots by subcategory — append to today's note instead of creating new ones
+    # For georgette_lmr: always append to the single existing note for today — never create new notes
     appended = False
-    if category == "georgette_lmr" and subcategory:
-        existing = db_find_today_note(category, subcategory)
+    if category == "georgette_lmr":
+        existing = db_find_today_note(category, subcategory) or db_find_today_note(category, None) or db_find_today_note_any(category)
         if existing:
             db_append_to_note(existing["id"], content, tags)
             appended = True
-            note_id_used = existing["id"]
     if not appended:
         db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
 
