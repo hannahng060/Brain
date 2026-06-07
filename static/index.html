@@ -27,6 +27,7 @@
       --personal:      #880e4f; --personal-bg:      #fce4ec;
       --lifestyle:     #00796b; --lifestyle-bg:     #e0f2f1;
       --np_fellowship: #e65100; --np_fellowship-bg: #fff3e0;
+      --georgette_lmr: #6a1b9a; --georgette_lmr-bg: #f3e5f5;
       --mom:           #c0770a; --mom-bg:           #fff8e1;
       --garden: #2e7d32; --garden-bg: #e8f5e9;
       --boards: #2e5d56; --boards-bg: #e4edeb;
@@ -281,6 +282,9 @@
     .cat-pill.garden.active { background:var(--garden); border-color:var(--garden); color:white; }
     .cat-pill.certification { border-color:#5c6bc0; color:#5c6bc0; }
     .cat-pill.certification.active { background:#5c6bc0; border-color:#5c6bc0; color:white; }
+    .cat-pill.georgette_lmr { border-color:var(--georgette_lmr); color:var(--georgette_lmr); }
+    .cat-pill.georgette_lmr.active { background:var(--georgette_lmr); border-color:var(--georgette_lmr); color:white; }
+    .note-card.georgette_lmr { border-left-color:var(--georgette_lmr); }
     .note-card.certification { border-left-color:#5c6bc0; }
     .cat-pill.boards  { border-color:var(--boards);  color:var(--boards); }
     .cat-pill.boards.active  { background:var(--boards);  border-color:var(--boards);  color:white; }
@@ -528,7 +532,8 @@
       <div class="cat-pill lifestyle"     data-cat="lifestyle"     onclick="filterNotes('lifestyle')">🌿 Lifestyle</div>
       <div class="cat-pill mom"           data-cat="mom"           onclick="filterNotes('mom')">👵🏼 Mom</div>
       <div class="cat-pill garden"        data-cat="garden"        onclick="filterNotes('garden')">🌱 Garden</div>
-      <div class="cat-pill certification" data-cat="certification" onclick="filterNotes('certification')">📋 Certification</div>
+      <div class="cat-pill certification"  data-cat="certification"  onclick="filterNotes('certification')">📋 Certification</div>
+      <div class="cat-pill georgette_lmr" data-cat="georgette_lmr" onclick="filterNotes('georgette_lmr')">📝 Georgette LMR</div>
       <div class="cat-pill people"        data-cat="people"        onclick="filterNotes('people')">👥 People</div>
     </div>
     <div id="subcat-row"></div>
@@ -726,7 +731,8 @@
     mom:           ['Quick Reference','IEHP','Medi-Cal','Medicare','Social Security','Primary Doc','Eye Care','Pharmacy','Cash Benefits','Vietnam Travel'],
     garden:        ['Orchids','House Plants','Outdoor Flowers','Notes & Learning'],
     lifestyle:     ['Daily Log','Diet','Health','Fitness','Closet','Travel','Finance','Home','Gardening','Social Media'],
-    people:        ['Family','Friends','Work','Community']
+    people:        ['Family','Friends','Work','Community'],
+    georgette_lmr: ['Psychopharmacology','Assessment & Diagnosis','Psychotherapy','Special Populations','Professional & Ethics','Medical Management','Board Strategy']
   };
 
   // ── Profile ───────────────────────────────────────────────────────────
@@ -1341,7 +1347,7 @@
     renderNotes();
   }
 
-  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden',certification:'📋 Certification',people:'👥 People'};
+  const CAT_LABELS = {all:'🗂️ All',psychiatry:'🧠 Psychiatry',psychotherapy:'💬 Psychotherapy',icu:'🏥 ICU',np_fellowship:'🎓 NP Fellowship',business:'💼 Business',resources:'🔗 Resources',personal:'🪞 Personal',lifestyle:'🌿 Lifestyle',mom:'👵🏼 Mom',garden:'🌱 Garden',certification:'📋 Certification',georgette_lmr:'📝 Georgette LMR',people:'👥 People'};
   function renderNotes() {
     // Update category pill counts
     const catCounts = {};

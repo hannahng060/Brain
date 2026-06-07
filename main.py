@@ -613,8 +613,8 @@ TOOLS = [
             "properties": {
                 "content":     {"type": "string", "description": "Cleaned, well-structured version of the note"},
                 "summary":     {"type": "string", "description": "Short heading, 3-6 words max, like a headline. Examples: 'Strattera for Adult ADHD', 'Hooding Ceremony Day', 'Korean BBQ Lunch', 'Morning Oatmeal Recipe'"},
-                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "certification"],
-                                "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam study notes organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Board Prep), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home"},
+                "category":    {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "georgette_lmr", "business", "resources", "lifestyle", "mom", "garden", "certification"],
+                                "description": "personal=inner world/feelings/journal (subcategories: Reflections, Goals, Mental Health, Gratitude), mom=everything related to Hannah's mother — benefits, healthcare, calls, travel (subcategories: Quick Reference, IEHP, Medi-Cal, Medicare, Social Security, Primary Doc, Eye Care, Pharmacy, Cash Benefits, Vietnam Travel), garden=plant tracker and gardening notes (subcategories: Orchids, House Plants, Outdoor Flowers, Notes & Learning), boards=ANCC PMHNP-BC board exam study notes organized by topic (subcategories: Assessment & Diagnosis, Psychopharmacology, Psychotherapy, Medical Management, Special Populations, Professional & Ethics, Board Prep), psychiatry=psychiatric conditions/meds/assessments/treatments, psychotherapy=therapy modalities (CBT/DBT/ACT etc), icu=ICU nursing/medical knowledge, business=clinic building, resources=contacts/URLs/tools/future ideas, lifestyle=outer world/diet/health/fitness/closet/travel/finance/home, georgette_lmr=notes from Georgette's paid Last Minute Review board exam prep course (subcategories: Psychopharmacology, Assessment & Diagnosis, Psychotherapy, Special Populations, Professional & Ethics, Medical Management, Board Strategy)"},
                 "subcategory": {"type": "string",
                                 "enum": ["Assessment & Diagnosis","Psychopharmacology","Treatments","Lab Values","Neuroscience","Professional & Ethics",
                                          "CBT","DBT","ACT","Psychodynamic","Motivational Interviewing","Trauma-Focused","Family & Couples","Group Therapy","Theory & Foundations",
@@ -625,7 +625,7 @@ TOOLS = [
                                          "Reflections","Goals","Mental Health","Gratitude","Journal",
                                          "Daily Log","Diet","Health","Fitness","Closet","Travel","Finance","Home","Gardening","Social Media",
                                          "Psychotherapy","Medical Management","Special Populations","Board Prep"],
-                                "description": "Pick the subcategory. psychiatry→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Lab Values/Neuroscience/Professional & Ethics (NOTE: therapy modality notes like CBT/DBT also go here as psychiatry>Psychotherapy). psychotherapy category no longer used — route all therapy content to psychiatry>Psychotherapy instead. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Board Prep (application, eligibility, ATT letter, scheduling, registration, exam breakdown, question counts, test structure, test-taking strategy — anything about the exam journey that is NOT a practice question)"},
+                                "description": "Pick the subcategory. psychiatry→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Lab Values/Neuroscience/Professional & Ethics (NOTE: therapy modality notes like CBT/DBT also go here as psychiatry>Psychotherapy). psychotherapy category no longer used — route all therapy content to psychiatry>Psychotherapy instead. icu→Neuro/Respiratory/Cardiac/GI/Renal/Hematology/Pharmacology/Procedures/Protocols & Guidelines. np_fellowship→Bootcamp/Case Consults/Weekly Calls/Practice Building/Community Notes/Clinical Pearls. georgette_lmr→Psychopharmacology/Assessment & Diagnosis/Psychotherapy/Special Populations/Professional & Ethics/Medical Management/Board Strategy. business→Licensing/Credentialing/Billing & Insurance/Marketing/Social Media/Platforms/Legal. resources→Contacts/URLs & Links/Books/Courses/Tools/Future Ideas. personal→Reflections/Goals/Mental Health/Gratitude. NOTE: Reflections is also where meaningful spiritual phrases/quotes go when Hannah wants them to appear on her inspiration banner — short, memorable lines worth seeing daily. lifestyle→Daily Log/Diet/Health/Fitness/Closet/Travel/Finance/Home/Gardening/Social Media. boards→Assessment & Diagnosis/Psychopharmacology/Psychotherapy/Medical Management/Special Populations/Professional & Ethics/Board Prep (application, eligibility, ATT letter, scheduling, registration, exam breakdown, question counts, test structure, test-taking strategy — anything about the exam journey that is NOT a practice question)"},
                 "tags":        {"type": "array", "items": {"type": "string"}, "description": "Keywords for retrieval. IMPORTANT: if Hannah mentions a specific review course or instructor (e.g. 'Georgette', 'Sarah', 'blueprint'), always include that name as a tag (lowercase) plus 'board-review'. Example: ['georgette', 'board-review', 'psychopharmacology']"},
                 "entities":    {"type": "array", "items": {"type": "string"}, "description": "Named entities: people, medications, conditions, organizations"}
             },
@@ -639,7 +639,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query":    {"type": "string", "description": "Search keywords"},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"},
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "georgette_lmr", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"},
                 "limit":    {"type": "integer", "default": 30}
             },
             "required": ["query"]
@@ -663,7 +663,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "limit":    {"type": "integer", "default": 30},
-                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"}
+                "category": {"type": "string", "enum": ["personal", "psychiatry", "psychotherapy", "icu", "np_fellowship", "georgette_lmr", "business", "resources", "lifestyle", "mom", "garden", "certification", "all"], "default": "all"}
             }
         }
     },
@@ -673,7 +673,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","business","resources","mom","garden", "certification"]},
+                "category":    {"type": "string", "enum": ["lifestyle","personal","psychiatry","psychotherapy","icu","np_fellowship","georgette_lmr","business","resources","mom","garden", "certification"]},
                 "subcategory": {"type": "string", "description": "e.g. Diet, Health, Fitness, Daily Log"}
             },
             "required": ["category", "subcategory"]
@@ -980,7 +980,8 @@ RULES:
 8. For people, always include their name in entities[].
 9. Be warm and concise. After retrieving notes, show the summary and end with "Want to add anything?" at most — nothing more. You are a note assistant, not a therapist or journal coach. No bullet-point questions, no prompts about feelings.
 10. If you are unsure of category, pick the best fit and mention it.
-14. NP FELLOWSHIP ROUTING: Save to np_fellowship (not psychiatry) when the note includes ANY of: real patient case context, advice from an experienced NP or mentor, wisdom from Lyndsay Hills' program, takeaways from weekly calls or Skool community, practice-building insights, or anything the user says came from "the fellowship" or "the program." Use these subcategories: Bootcamp (program materials/frameworks), Case Consults (real case discussions), Weekly Calls (call notes), Practice Building (running a private practice), Community Notes (Skool/group chat gems), Clinical Pearls (real-world clinical wisdom with context). If the note is a standalone clinical fact with no fellowship context → save to psychiatry/psychotherapy/icu instead.
+14. NP FELLOWSHIP ROUTING: Save to np_fellowship (not psychiatry) when the note includes ANY of: real patient case context, advice from an experienced NP or mentor, wisdom from Lyndsay Hills' program, takeaways from weekly calls or Skool community, practice-building insights, or anything the user says came from "the fellowship" or "the program." Use these subcategories: Georgette Last Minute Review (anything from Georgette's review session — board exam prep material, review notes, content Hannah posts during or after Georgette's live review), Bootcamp (program materials/frameworks), Case Consults (real case discussions), Weekly Calls (call notes), Practice Building (running a private practice), Community Notes (Skool/group chat gems), Clinical Pearls (real-world clinical wisdom with context). If the note is a standalone clinical fact with no fellowship context → save to psychiatry/psychotherapy/icu instead.
+15. GEORGETTE LAST MINUTE REVIEW: Georgette's Last Minute Review is a separate paid board exam prep course (NOT Lindsay Hills' NP Fellowship). When Hannah mentions Georgette's session, posts notes from the review, or says anything came from "Georgette" or "Last Minute Review," save to category georgette_lmr. Pick the matching subcategory: Psychopharmacology, Assessment & Diagnosis, Psychotherapy, Special Populations, Professional & Ethics, Medical Management, or Board Strategy. Always tag with ["georgette","last-minute-review","board-review"].
 
 CASE CONSULT FORMATTING RULES — apply to ALL Case Consult notes:
 When saving a case consult, use this structure:
@@ -1615,7 +1616,7 @@ def run_upload_agent(file_label: str, extracted: str, user_note: str) -> str:
         + f"\nContent:\n{truncated}\n\n"
         "IMPORTANT: If this content is ANY spiritual content — devotion, Bible passage, scripture, sermon, prayer, spiritual thought, worship — → set category=lifestyle, subcategory=Daily Log, and summary should be the passage/sermon title or first line.\n"
         "Return ONLY a JSON object with these fields:\n"
-        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|business|resources|lifestyle|people|mom|garden", '
+        '{"summary": "one sentence", "category": "personal|psychiatry|psychotherapy|icu|np_fellowship|georgette_lmr|business|resources|lifestyle|people|mom|garden|certification", '
         '"subcategory": "exact subcategory name", "tags": ["tag1","tag2"], "entities": ["name1"]}\n'
         "Categories: personal=inner world, lifestyle=outer world/diet/health/fitness, "
         "psychiatry=psychiatric conditions/meds/assessments/board prep, psychotherapy=therapy modalities, "
@@ -2586,7 +2587,7 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         + "✅ Lecture slides, class notes, pharmacology slides, DSM content, clinical assessments, medication info, neuroscience → category=psychiatry. Pick the best subcategory: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Lab Values | Neuroscience | Professional & Ethics.\n"
         + "✅ Psychotherapy models, therapy techniques → category=psychotherapy.\n"
         + "Return ONLY a JSON object: "
-        '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|business|resources|mom|garden", '
+        '{"summary": "short title for this image", "category": "personal|lifestyle|people|psychiatry|psychotherapy|icu|np_fellowship|georgette_lmr|business|resources|mom|garden|certification", '
         '"subcategory": "subcategory or null", "tags": ["tag1"]}\n'
         "Return ONLY the JSON."
     )
