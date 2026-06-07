@@ -495,6 +495,46 @@ def db_update_note(note_id: int, fields: dict) -> dict:
     conn.close()
     return {"status": "updated", "note_id": note_id, "fields": list(updates.keys())}
 
+def db_find_today_note(category: str, subcategory: str) -> dict | None:
+    """Find a note saved today for the given category+subcategory (for grouping screenshots)."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, content, summary, tags FROM notes
+           WHERE category = %s AND subcategory = %s
+             AND created_at >= NOW() - INTERVAL '20 hours'
+           ORDER BY created_at DESC LIMIT 1""",
+        (category, subcategory)
+    )
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    return dict(row) if row else None
+
+def db_append_to_note(note_id: int, extra_content: str, extra_tags: list) -> dict:
+    """Append content to an existing note and merge tags."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT content, tags FROM notes WHERE id = %s", (note_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return {"status": "not_found"}
+    existing_content = row["content"] or ""
+    existing_tags_raw = row["tags"] or "[]"
+    try:
+        existing_tags = json.loads(existing_tags_raw) if isinstance(existing_tags_raw, str) else existing_tags_raw
+    except Exception:
+        existing_tags = []
+    merged_tags = list(dict.fromkeys(existing_tags + extra_tags))  # deduplicate, preserve order
+    new_content = existing_content + "<hr>" + extra_content
+    cur.execute(
+        "UPDATE notes SET content = %s, tags = %s WHERE id = %s",
+        (new_content, json.dumps(merged_tags), note_id)
+    )
+    conn.commit()
+    cur.close(); conn.close()
+    return {"status": "appended", "note_id": note_id}
+
 def db_get_profile() -> dict:
     conn = get_db()
     cur = conn.cursor()
@@ -2610,18 +2650,28 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
     except Exception:
         summary, category, subcategory, tags = filename or "Image", "personal", None, []
 
-    db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
+    # For georgette_lmr: group screenshots by subcategory — append to today's note instead of creating new ones
+    appended = False
+    if category == "georgette_lmr" and subcategory:
+        existing = db_find_today_note(category, subcategory)
+        if existing:
+            db_append_to_note(existing["id"], content, tags)
+            appended = True
+            note_id_used = existing["id"]
+    if not appended:
+        db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
+
     loc = f"<strong>{category}</strong>" + (f" → {subcategory}" if subcategory else "")
     if text_only:
         reply = (
-            f"📝 Text saved (no image) in {loc}.<br><br>"
+            f"📝 {'Added to' if appended else 'Text saved in'} {loc}.<br><br>"
             f"<strong>{summary}</strong><br><br>"
             + description[:300]
             + ("..." if len(description) > 300 else "")
         )
     else:
         reply = (
-            f"📸 Saved! Photo stored in {loc}.<br><br>"
+            f"📸 {'Added to existing note in' if appended else 'Saved! Photo stored in'} {loc}.<br><br>"
             f"<strong>{summary}</strong><br><br>"
             + description[:300]
             + ("..." if len(description) > 300 else "")
