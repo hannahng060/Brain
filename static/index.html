@@ -703,6 +703,8 @@
       <button class="sidebar-btn primary" id="sidebar-edit" onclick="startEdit()">✏️<br>Edit</button>
       <button class="sidebar-btn save" id="sidebar-save" onclick="saveEdit()" style="display:none">💾<br>Save</button>
       <button class="sidebar-btn" id="sidebar-cancel" onclick="cancelEdit()" style="display:none">↩️<br>Cancel</button>
+      <button class="sidebar-btn" id="sidebar-add-img" onclick="$('add-img-file').click()" style="display:none">🖼️<br>Add<br>Image</button>
+      <input type="file" id="add-img-file" accept="image/*" style="display:none" onchange="addImageToEditor(this.files[0])">
       <button class="sidebar-btn" id="sidebar-remove-img" onclick="removeNoteImage()" style="display:none;color:#e53935;border-color:#e53935">🖼️<br>Remove<br>Image</button>
       <button class="sidebar-btn" onclick="closeModal()">✕<br>Close</button>
       <button class="sidebar-btn" id="sidebar-delete" onclick="deleteNote(event, window._openNote&&window._openNote.id)" style="color:#e53935;border-color:#e53935;margin-top:auto">🗑️<br>Delete</button>
@@ -2069,6 +2071,32 @@
     $('sidebar-save').style.display   = mode === 'edit' ? 'block' : 'none';
     $('sidebar-cancel').style.display = mode === 'edit' ? 'block' : 'none';
     $('sidebar-delete').style.display = mode === 'view' ? 'block' : 'none';
+    $('sidebar-add-img').style.display = mode === 'edit' ? 'block' : 'none';
+  }
+  function addImageToEditor(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.maxWidth = '100%';
+      img.style.borderRadius = '10px';
+      img.style.display = 'block';
+      img.style.marginBottom = '12px';
+      const editor = $('edit-content');
+      editor.focus({preventScroll:true});
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        const range = sel.getRangeAt(0);
+        range.collapse(false);
+        range.insertNode(img);
+      } else {
+        editor.appendChild(img);
+      }
+      showToast('🖼️ Image added — don\'t forget to Save');
+    };
+    reader.readAsDataURL(file);
+    $('add-img-file').value = '';
   }
   function toggleEditFields() {
     var f = $('edit-fields');
