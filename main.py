@@ -2680,7 +2680,7 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         f"An image was saved with this description: {description[:500]}\n"
         + (f"User note: {user_note}\n" if user_note else "")
         + "ROUTING RULES:\n"
-        + "🔴 TODAY JUNE 7 2026 OVERRIDE: Hannah is in Georgette's Last Minute Review board exam session ALL DAY. ANY image that looks like a lecture slide, class note, clinical content, pharmacology, DSM, assessment, board prep, or study material → category=georgette_lmr. Pick subcategory: Psychopharmacology | Assessment & Diagnosis | Psychotherapy | Special Populations | Professional & Ethics | Medical Management | Board Strategy. Tags MUST include georgette, last-minute-review, board-review. This override takes priority over ALL rules below.\n"
+        + "✅ Personal day-to-day photos — a moment from Hannah's day, an outing, food, a person, a place, anything that captures 'what happened today' rather than clinical/study content → category=lifestyle, subcategory=Daily Log.\n"
         + "⛔ If this image contains ANY spiritual/faith content — devotions, Bible verses, scripture, sermons, prayers, worship, faith reflections — set category=lifestyle AND subcategory=Daily Log.\n"
         + "✅ category=boards ONLY if the image is explicitly a board exam practice question (has A/B/C/D answer choices) or is labeled as ANCC/board prep material. Subcategory: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Medical Management | Special Populations | Professional & Ethics | Board Prep.\n"
         + "✅ Lecture slides, class notes, pharmacology slides, DSM content, clinical assessments, medication info, neuroscience → category=psychiatry. Pick the best subcategory: Assessment & Diagnosis | Psychopharmacology | Psychotherapy | Lab Values | Neuroscience | Professional & Ethics.\n"
@@ -2714,6 +2714,15 @@ def save_image_note(data: bytes, media_type: str, filename: str, description: st
         if existing:
             db_append_to_note(existing["id"], content, tags)
             appended = True
+    # For lifestyle > Daily Log: embed the photo into today's existing Daily Log note instead of a separate note
+    elif category == "lifestyle" and subcategory and "daily log" in subcategory.lower():
+        todays_logs = db_get_today_logs("lifestyle", "Daily Log")
+        if todays_logs:
+            db_append_to_note(todays_logs[-1]["id"], content, tags)
+            appended = True
+        else:
+            # No log started today yet — create one with a date-stamped heading so the journal calendar can find it
+            summary = datetime.now().strftime("%A, %B %d, %Y")
     if not appended:
         db_save_note(f"[Image: {filename}]", content, summary, category, subcategory, tags, [])
 
