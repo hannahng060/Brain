@@ -1348,7 +1348,7 @@
         <div class="note-card-header">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge ${n.category}">${n.category}</span>
-            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
+            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(SUBCAT_DISPLAY_LABELS[n.subcategory] || n.subcategory)}</span>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:var(--muted);opacity:0.6">#${n.id}</span>
@@ -1381,7 +1381,8 @@
       row.innerHTML = `<div class="subcat-pill active" onclick="filterSubcat('all')">All <span style="opacity:.6;font-size:11px">${allCount}</span></div>` +
         subs.map(s => {
           const c = subcatCounts[s] || 0;
-          return `<div class="subcat-pill" onclick="filterSubcat('${s}')">${s}${c ? ` <span style="opacity:.6;font-size:11px">${c}</span>` : ''}</div>`;
+          const label = SUBCAT_DISPLAY_LABELS[s] || s;
+          return `<div class="subcat-pill" onclick="filterSubcat('${s}')">${label}${c ? ` <span style="opacity:.6;font-size:11px">${c}</span>` : ''}</div>`;
         }).join('');
       row.classList.add('visible');
     } else {
@@ -1454,7 +1455,7 @@
         <div class="note-card-header">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge ${n.category}">${n.category}</span>
-            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(n.subcategory)}</span>`:''}
+            ${n.subcategory?`<span style="font-size:11px;color:var(--muted);font-weight:600">· ${esc(SUBCAT_DISPLAY_LABELS[n.subcategory] || n.subcategory)}</span>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:10px;color:var(--muted);opacity:0.6">#${n.id}</span>
@@ -1675,11 +1676,12 @@
     else { btn.textContent = '🗑'; alert('Could not delete note. Try again.'); }
   }
 
+  const SUBCAT_DISPLAY_LABELS = { 'Daily Log': 'Moments' }; // shown label only — stored value stays "Daily Log" everywhere
   function updateSubcatOptions() {
     const cat = $('edit-category').value;
     const subs = SUBCATS[cat] || [];
     $('edit-subcategory').innerHTML = '<option value="">— None —</option>' +
-      subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+      subs.map(s=>`<option value="${s}">${SUBCAT_DISPLAY_LABELS[s] || s}</option>`).join('');
   }
 
   function fmt(type) {
