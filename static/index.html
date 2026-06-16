@@ -2085,12 +2085,31 @@
     $('sidebar-delete').style.display = mode === 'view' ? 'block' : 'none';
     $('sidebar-add-img').style.display = mode === 'edit' ? 'block' : 'none';
   }
+  function _compressImage(dataUrl, maxDim, quality) {
+    return new Promise(function(resolve) {
+      const im = new Image();
+      im.onload = function() {
+        let w = im.width, h = im.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(im, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      im.onerror = function() { resolve(dataUrl); }; // fall back to original if anything goes wrong
+      im.src = dataUrl;
+    });
+  }
   function addImageToEditor(file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
+      const compressed = await _compressImage(e.target.result, 1600, 0.85);
       const img = document.createElement('img');
-      img.src = e.target.result;
+      img.src = compressed;
       img.style.maxWidth = '100%';
       img.style.borderRadius = '10px';
       img.style.display = 'block';
