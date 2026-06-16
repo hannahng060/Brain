@@ -461,6 +461,14 @@
         </div>
         <div id="dash-greeting" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.5"></div>
         <div id="dash-affirmation" style="display:none;font-size:13px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:12px"></div>
+        <div id="journal-calendar" style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <button onclick="_jcalShiftMonth(-1)" style="background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px 8px">‹</button>
+            <div id="jcal-month-label" style="font-size:13px;font-weight:700;color:var(--text)"></div>
+            <button onclick="_jcalShiftMonth(1)" style="background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px 8px">›</button>
+          </div>
+          <div id="jcal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+        </div>
         <div id="dash-nudges" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="sunday-banner" style="display:none;background:linear-gradient(135deg,#667eea22,#764ba222);border:1.5px solid #667eea55;border-radius:16px;padding:14px 16px;margin-bottom:14px">
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">📅 It's Sunday — weekly review time</div>
@@ -955,9 +963,66 @@
     return deck.queue[deck.idx++];
   }
 
+  // ── Journal Calendar ─────────────────────────────────────────────────
+  let _jcalDate = new Date();        // month currently shown
+  let _jcalLogDates = {};            // {YYYY-MM-DD: note_id}
+
+  async function _jcalLoad() {
+    try {
+      const r = await fetch('/daily-log-calendar');
+      if (r.ok) _jcalLogDates = await r.json();
+    } catch(e) {}
+    _jcalRender();
+  }
+
+  function _jcalShiftMonth(delta) {
+    _jcalDate = new Date(_jcalDate.getFullYear(), _jcalDate.getMonth() + delta, 1);
+    _jcalRender();
+  }
+
+  async function _jcalOpenDate(dateStr) {
+    const noteId = _jcalLogDates[dateStr];
+    if (!noteId) { showToast('No log for this day yet'); return; }
+    try {
+      const res = await fetch('/notes/' + noteId);
+      const full = await res.json();
+      openNoteDirectly(full);
+    } catch(e) { showToast('Could not load that day'); }
+  }
+
+  function _jcalRender() {
+    const year = _jcalDate.getFullYear();
+    const month = _jcalDate.getMonth();
+    $('jcal-month-label').textContent = _jcalDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = _localDateStr();
+
+    const dayLabels = ['S','M','T','W','T','F','S'];
+    let html = dayLabels.map(d => `<div style="font-size:10px;font-weight:700;color:var(--muted)">${d}</div>`).join('');
+
+    for (let i = 0; i < firstDay; i++) html += '<div></div>';
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      const hasLog = !!_jcalLogDates[dateStr];
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      let bg = 'transparent', color = 'var(--text)', border = 'none', fontWeight = '500';
+      if (hasLog) { bg = 'var(--primary)'; color = 'white'; fontWeight='700'; }
+      else if (!isFuture) { color = 'var(--muted)'; }
+      else { color = 'var(--border)'; }
+      if (isToday) { border = '2px solid var(--primary)'; }
+      html += `<div onclick="_jcalOpenDate('${dateStr}')" style="cursor:pointer;padding:6px 0;border-radius:8px;font-size:12px;background:${bg};color:${color};border:${border};font-weight:${fontWeight}">${day}</div>`;
+    }
+    $('jcal-grid').innerHTML = html;
+  }
+
   async function loadDashboard() {
     const now = new Date();
     $('dash-date').textContent = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    _jcalLoad();
 
     // Load both inspiration banners
     try {

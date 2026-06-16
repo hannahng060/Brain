@@ -2025,6 +2025,35 @@ async def list_notes(request: Request, category: str = "all", limit: int = 2000,
         raise HTTPException(status_code=401, detail="Not authenticated")
     return db_get_recent(limit, category, metadata_only=(full == 0))
 
+@app.get("/daily-log-calendar")
+async def daily_log_calendar(request: Request):
+    """Returns {date: note_id} for every Daily Log note, keyed by the actual date in its heading
+    (not created_at) — so backdated entries land on the right day."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, summary FROM notes
+           WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%'"""
+    )
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    date_pattern = re.compile(r'([A-Za-z]+ \d{1,2}, \d{4})')
+    result = {}
+    for row in rows:
+        m = date_pattern.search(row["summary"] or "")
+        if not m:
+            continue
+        try:
+            d = datetime.strptime(m.group(1), "%B %d, %Y")
+            key = d.strftime("%Y-%m-%d")
+            # If multiple notes match the same date, keep the most recent id
+            result[key] = row["id"]
+        except ValueError:
+            continue
+    return result
+
 @app.get("/notes/{note_id}")
 async def get_note(note_id: int, request: Request):
     if not is_authenticated(request):
