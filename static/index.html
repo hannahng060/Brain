@@ -454,8 +454,6 @@
       <div class="dashboard" id="dashboard">
         <div class="dashboard-date" id="dash-date"></div>
         <div id="dash-tools">
-          <div id="cl-btn" class="dash-btn" onclick="toggleChecklist()" title="Daily checklist">✅ Checklist<span id="cl-badge"></span></div>
-          <div id="focus-btn" class="dash-btn" onclick="toggleFocusPanel()" title="Set today's focus">🎯 Focus<span id="focus-badge" style="position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;"></span></div>
           <div class="dash-btn" onclick="toggleSleepPanel()">🌙 Sleep</div>
           <div class="dash-btn" onclick="toggleMoodPanel()">🌡️ Mood</div>
           <div id="fin-btn" class="dash-btn" onclick="toggleFinPanel()">💰 Finance</div>
@@ -2874,6 +2872,7 @@
   }
 
   function _clUpdateNudges() {
+    return; // Checklist nudges disabled — checklist removed from dashboard
     const container = $('dash-nudges');
     if (!container) return;
     const hour = new Date().getHours();
