@@ -983,10 +983,10 @@
   }
 
   async function _jcalOpenDate(dateStr) {
-    const noteId = _jcalLogDates[dateStr];
-    if (!noteId) { showToast('No log for this day yet'); return; }
+    const entry = _jcalLogDates[dateStr];
+    if (!entry) { showToast('No log for this day yet'); return; }
     try {
-      const res = await fetch('/notes/' + noteId);
+      const res = await fetch('/notes/' + entry.id);
       const full = await res.json();
       openNoteDirectly(full);
     } catch(e) { showToast('Could not load that day'); }
@@ -1008,9 +1008,21 @@
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
-      const hasLog = !!_jcalLogDates[dateStr];
+      const entry = _jcalLogDates[dateStr];
+      const hasLog = !!entry;
+      const hasThumb = hasLog && entry.thumb;
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
+
+      if (hasThumb) {
+        const ring = isToday ? 'box-shadow:0 0 0 2px var(--primary)' : '';
+        html += `<div onclick="_jcalOpenDate('${dateStr}')" style="cursor:pointer;position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;${ring}">
+          <img src="${entry.thumb}" style="width:100%;height:100%;object-fit:cover;display:block">
+          <span style="position:absolute;bottom:1px;right:3px;font-size:9px;font-weight:700;color:white;text-shadow:0 1px 2px rgba(0,0,0,.8)">${day}</span>
+        </div>`;
+        continue;
+      }
+
       let bg = 'transparent', color = 'var(--text)', border = 'none', fontWeight = '500';
       if (hasLog) { bg = 'var(--primary)'; color = 'white'; fontWeight='700'; }
       else if (!isFuture) { color = 'var(--muted)'; }

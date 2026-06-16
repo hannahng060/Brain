@@ -2029,19 +2029,21 @@ async def list_notes(request: Request, category: str = "all", limit: int = 2000,
 
 @app.get("/daily-log-calendar")
 async def daily_log_calendar(request: Request):
-    """Returns {date: note_id} for every Daily Log note, keyed by the actual date in its heading
-    (not created_at) — so backdated entries land on the right day."""
+    """Returns {date: {id, thumb}} for every Daily Log note, keyed by the actual date in its heading
+    (not created_at) — so backdated entries land on the right day. thumb is the first embedded image's
+    src (if any), so the calendar can show a photo snippet instead of just the day number."""
     if not is_authenticated(request):
         raise HTTPException(status_code=401, detail="Not authenticated")
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        """SELECT id, summary FROM notes
+        """SELECT id, summary, content FROM notes
            WHERE category = 'lifestyle' AND subcategory ILIKE '%daily log%'"""
     )
     rows = cur.fetchall()
     cur.close(); conn.close()
     date_pattern = re.compile(r'([A-Za-z]+ \d{1,2}, \d{4})')
+    img_pattern = re.compile(r'<img\s+src="([^"]+)"')
     result = {}
     for row in rows:
         m = date_pattern.search(row["summary"] or "")
@@ -2050,8 +2052,9 @@ async def daily_log_calendar(request: Request):
         try:
             d = datetime.strptime(m.group(1), "%B %d, %Y")
             key = d.strftime("%Y-%m-%d")
+            img_match = img_pattern.search(row["content"] or "")
             # If multiple notes match the same date, keep the most recent id
-            result[key] = row["id"]
+            result[key] = {"id": row["id"], "thumb": img_match.group(1) if img_match else None}
         except ValueError:
             continue
     return result
