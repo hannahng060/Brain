@@ -1084,9 +1084,6 @@
         chips.push({ text:"📅 No daily log yet — start one!", color:'var(--lifestyle)', fn:"showTab('chat');$('input').value='Log: ';$('input').dispatchEvent(new Event('input'));$('input').focus()" });
       }
 
-      // Garden nudges
-      gardenNudge().forEach(n => chips.push(n));
-
       // Category balance nudge — remind if key categories haven't had a note in 7+ days
       const _now = new Date();
       const checkCats = [
