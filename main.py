@@ -438,7 +438,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY', 'MEDICATIONS & SUPPLEMENTS', 'MEDICATIONS AND SUPPLEMENTS'}
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY', 'MEDICATIONS & SUPPLEMENTS', 'MEDICATIONS AND SUPPLEMENTS', 'OURA RING METRICS'}
     if section.upper() == 'MEALS':
         # Smart merge: keep existing meal rows, add/replace new ones by meal type
         new_body = _merge_meals(existing, text)
@@ -754,7 +754,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, SPIRITUAL, OURA RING METRICS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, SPIRITUAL"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -888,7 +888,7 @@ STEP 3 — Decide if it's worth saving:
 After responding, ask yourself: does this message contain something with lasting value that Hannah might forget or want to track?
 
 Worth flagging (end your response with a 💾 save offer):
-- Daily log items: activity done, sleep data, reflections, spiritual moments
+- Daily log items: activity done, reflections, spiritual moments
 - Health updates: symptoms, appointments, medications started/stopped
 - Clinical knowledge: facts, drug info, DSM criteria, study content
 - Important personal updates: decisions, events, people updates, anything with a number/date/name
@@ -1069,21 +1069,8 @@ When saving a case consult, use this structure:
     b. Call update_daily_log using the FULL date string from [Today's date:] as date_ref — for example "Wednesday, May 6, 2026". Never use "today" or short formats like "5/6/26". The note heading and the search both use this exact format so they always match.
     c. If the update returns "not found" → ALWAYS auto-create today's log immediately with save_note under lifestyle → Daily Log, then call update_daily_log again to add the data. Never skip the auto-create step. Never modify a note from a different date. This applies to ALL message types: sleep check-in, routine update, activity — if there is no log yet for today, create it first, THEN update it.
     d. Heading format: "Wednesday, May 6, 2026 - Workday" — use the full date from [Today's date:] plus the type of day (Workday or Day Off based on the day of week — Mon–Fri = Workday, Sat–Sun = Day Off).
-    e. ⛔ NEVER WIPE EXISTING DATA: For OURA RING METRICS (which replaces), ALWAYS call get_today_logs first to read what is already there. Read the existing section content, then write the complete merged result.
+    e. ⛔ NEVER WIPE EXISTING DATA: When updating a section, ALWAYS call get_today_logs first to read what is already there, then write the complete merged result.
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
-
-<strong><u>OURA RING METRICS:</u></strong>
-[ONLY written from the morning sleep check-in. Format as a two-column table: left column = Readiness, Sleep Score, Hours Slept; right column = Deep Sleep, REM Sleep, Sleep Debt.
-IMPORTANT: Sleep time values are entered in decimal shorthand where the digits after the decimal = minutes, NOT fractions. Convert before displaying:
-- 1.4 → 1h 4m (not 1h 24m)
-- 1.22 → 1h 22m
-- 1.45 → 1h 45m
-- 6.22 → 6h 22m
-- 0.45 → 45m
-Always display converted human-readable format (e.g. 1h 22m) in the table, never the raw decimal. Example:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Readiness</td><td style="padding:2px 40px 2px 0"><strong>72</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Deep Sleep</td><td><strong>1h 45m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Score</td><td style="padding:2px 40px 2px 0"><strong>65</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">REM Sleep</td><td><strong>1h 22m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Hours Slept</td><td style="padding:2px 40px 2px 0"><strong>6h 22m</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Debt</td><td><strong>6h 30m</strong></td></tr></table>
-NEVER write to this section from a mood check-in. Daytime Stress, Resilience, and HR from mood check-ins go in the MOOD section only. Use — if no sleep data logged at all.]
-
 
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
@@ -1091,7 +1078,7 @@ NEVER write to this section from a mood check-in. Daytime Stress, Resilience, an
 <strong><u>SPIRITUAL:</u></strong>
 [faith, prayer, scripture, gratitude to God, faith moments — preserve prayer: and my words: verbatim; summarize quoted text from others]
 
-⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS, ANALYSIS, MEDICATIONS & SUPPLEMENTS, MOOD. Never write to them, never include them as placeholders with —, never create them. They do not exist.
+⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS, ANALYSIS, MEDICATIONS & SUPPLEMENTS, MOOD, OURA RING METRICS. Never write to them, never include them as placeholders with —, never create them. They do not exist.
 
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
