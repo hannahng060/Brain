@@ -438,7 +438,7 @@ def db_update_daily_log_section(date_ref: str, section: str, text: str) -> dict:
 
     existing = match.group(2).strip()
     # These sections always replace (never append) to prevent duplicate tables
-    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY'}
+    replace_sections = {'OURARINGMETRICS', 'OURA RING METRICS', 'OURA', 'MOOD', 'ENERGY', 'DAILY ROUTINE', 'DAILYROUTINE', 'MORNING ROUTINE', 'MORNINGROUTINE', 'EVENING ROUTINE', 'EVENINGROUTINE', 'MOOD & ENERGY', 'MOODANDENERGY', 'MEDICATIONS & SUPPLEMENTS', 'MEDICATIONS AND SUPPLEMENTS'}
     if section.upper() == 'MEALS':
         # Smart merge: keep existing meal rows, add/replace new ones by meal type
         new_body = _merge_meals(existing, text)
@@ -754,7 +754,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "date_ref": {"type": "string", "description": "When is the log? Use 'today', 'yesterday', or a date like '5/1', '5.1.26', 'May 1'"},
-                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, MEDICATIONS & SUPPLEMENTS, MOOD, SPIRITUAL, OURA RING METRICS"},
+                "section":  {"type": "string", "description": "Section to add to: ACTIVITIES, REFLECTIONS, SPIRITUAL, OURA RING METRICS"},
                 "text":     {"type": "string", "description": "The new text to add to that section"}
             },
             "required": ["date_ref", "section", "text"]
@@ -888,7 +888,7 @@ STEP 3 — Decide if it's worth saving:
 After responding, ask yourself: does this message contain something with lasting value that Hannah might forget or want to track?
 
 Worth flagging (end your response with a 💾 save offer):
-- Daily log items: mood check-in, supplement taken, activity done, sleep data
+- Daily log items: activity done, sleep data, reflections, spiritual moments
 - Health updates: symptoms, appointments, medications started/stopped
 - Clinical knowledge: facts, drug info, DSM criteria, study content
 - Important personal updates: decisions, events, people updates, anything with a number/date/name
@@ -1041,9 +1041,7 @@ RULES:
      ⛔ PRAYER DUPLICATE RULE: When a prayer is typed, call update_daily_log ONCE to the SPIRITUAL section. Do NOT also call save_note for the same prayer content. One save only — never both.
    - REFLECTIONS: feelings, emotions, gratitude, mental/spiritual thoughts (e.g. "I feel blessed", "I'm anxious about...")
    - ACTIVITIES: tasks done, errands, chores, actions taken (e.g. "I cut David's hair", "I went to the store", "I cleaned the house") — APPEND to existing activities, do not replace them
-   - MEDICATIONS & SUPPLEMENTS: any medication or supplement taken with time (e.g. "I took Vyvanse 10mg at 9:30am") — APPEND to existing entries
    - MEALS: anything eaten or drank — REPLACE with complete updated table including ALL meals logged today
-   - MOOD: overall emotional tone, energy level, stress, resilience, HR, BP — Energy is always logged here inside the MOOD table, never as a separate section
    Strong signals it belongs in Daily Log: (a) uses "I" or "me"; (b) mentions people by name in personal context; (c) time words: "today", "tonight", "this morning", "yesterday", "tomorrow".
 5. For journal entries → capture people present in entities[], emotions, milestones, events separately from food.
 5. When user asks a question → call search_notes or get_person FIRST, then give a clear synthesized answer based on what you find. Always show what you retrieved before asking follow-up questions.
@@ -1069,9 +1067,9 @@ When saving a case consult, use this structure:
     When user logs anything about their day (Oura metrics, medications, activities, energy, mood, routine, anything that happened):
     a. You always know today's exact date from [Today's date: ...] at the top of the message. Use it.
     b. Call update_daily_log using the FULL date string from [Today's date:] as date_ref — for example "Wednesday, May 6, 2026". Never use "today" or short formats like "5/6/26". The note heading and the search both use this exact format so they always match.
-    c. If the update returns "not found" → ALWAYS auto-create today's log immediately with save_note under lifestyle → Daily Log, then call update_daily_log again to add the data. Never skip the auto-create step. Never modify a note from a different date. This applies to ALL message types: sleep check-in, mood check-in, supplement log, routine update, activity — if there is no log yet for today, create it first, THEN update it.
+    c. If the update returns "not found" → ALWAYS auto-create today's log immediately with save_note under lifestyle → Daily Log, then call update_daily_log again to add the data. Never skip the auto-create step. Never modify a note from a different date. This applies to ALL message types: sleep check-in, routine update, activity — if there is no log yet for today, create it first, THEN update it.
     d. Heading format: "Wednesday, May 6, 2026 - Workday" — use the full date from [Today's date:] plus the type of day (Workday or Day Off based on the day of week — Mon–Fri = Workday, Sat–Sun = Day Off).
-    e. ⛔ NEVER WIPE EXISTING DATA: For any section that replaces (MOOD, OURA RING METRICS), ALWAYS call get_today_logs first to read what is already there. Hannah logs via panels and chat throughout the day — Brain does not see panel-logged entries in its conversation history. Read the existing section content, then write the complete merged result. Never write a section with only the new entry and lose what was there before.
+    e. ⛔ NEVER WIPE EXISTING DATA: For OURA RING METRICS (which replaces), ALWAYS call get_today_logs first to read what is already there. Read the existing section content, then write the complete merged result.
     d. Always use this consistent section structure. Fill in what the user reported, put "—" for sections not mentioned. Use HTML bold+underline for every section header exactly as shown:
 
 <strong><u>OURA RING METRICS:</u></strong>
@@ -1086,17 +1084,6 @@ Always display converted human-readable format (e.g. 1h 22m) in the table, never
 <table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Readiness</td><td style="padding:2px 40px 2px 0"><strong>72</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Deep Sleep</td><td><strong>1h 45m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Score</td><td style="padding:2px 40px 2px 0"><strong>65</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">REM Sleep</td><td><strong>1h 22m</strong></td></tr><tr><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Hours Slept</td><td style="padding:2px 40px 2px 0"><strong>6h 22m</strong></td><td style="padding:2px 16px 2px 0;color:#888;white-space:nowrap">Sleep Debt</td><td><strong>6h 30m</strong></td></tr></table>
 NEVER write to this section from a mood check-in. Daytime Stress, Resilience, and HR from mood check-ins go in the MOOD section only. Use — if no sleep data logged at all.]
 
-<strong><u>MEDICATIONS & SUPPLEMENTS:</u></strong>
-[IMPORTANT: When a "Supplement log:" message arrives → ALWAYS call update_daily_log with section=MEDICATIONS & SUPPLEMENTS. APPEND the item with the time provided. Example format: "✅ 💊 Vitamin — 8:30 AM". Do not replace existing entries, only append. Never ignore a "Supplement log:" message.]
-
-
-<strong><u>MOOD:</u></strong>
-[IMPORTANT: This section is always REPLACED (not appended). Every time you update MOOD, FIRST call get_today_logs (category=lifestyle, subcategory=Daily Log) to read the existing MOOD section from today's note — there may be earlier check-ins logged via the panel that are NOT in this conversation. Then write ONE complete table containing ALL rows: the existing ones from the note PLUS the new one being added now.
-Format as a single combined table with header row + one data row per check-in. Include only columns where at least one check-in has data. Example with all columns:
-<table style="border-collapse:collapse;font-size:14px;margin:4px 0"><tr><td style="padding:2px 20px 2px 0;color:#888;white-space:nowrap">Time</td><td style="padding:2px 20px 2px 0;color:#888">Mood</td><td style="padding:2px 20px 2px 0;color:#888">Energy</td><td style="padding:2px 20px 2px 0;color:#888">Stress</td><td style="padding:2px 20px 2px 0;color:#888">Resilience</td><td style="padding:2px 20px 2px 0;color:#888">HR</td><td style="color:#888">BP</td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">9:30 AM</td><td style="padding:2px 20px 2px 0"><strong>😊 Happy</strong></td><td style="padding:2px 20px 2px 0"><strong>4/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Relaxed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>66 bpm</strong></td><td><strong>118/76</strong></td></tr><tr><td style="padding:2px 20px 2px 0;white-space:nowrap">3:00 PM</td><td style="padding:2px 20px 2px 0"><strong>😤 Frustrated</strong> — work stress</td><td style="padding:2px 20px 2px 0"><strong>2/5</strong></td><td style="padding:2px 20px 2px 0"><strong>Stressed</strong></td><td style="padding:2px 20px 2px 0"><strong>🟢 Solid</strong></td><td style="padding:2px 20px 2px 0"><strong>72 bpm</strong></td><td>—</td></tr></table>
-Daytime Stress, Resilience, HR, and BP always go HERE — never in OURA RING METRICS.
-If Vyvanse dose is logged → also update MEDICATIONS & SUPPLEMENTS section (e.g. "Vyvanse (Brand) 30mg at 9:00 AM").
-If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, Medicare, IEHP, or any situation involving Hannah's mother → also save a separate note under mom → the relevant subcategory (e.g. IEHP, Social Security, Medi-Cal) capturing what happened, the emotional impact, and any relevant details. Use mom → Quick Reference for phone numbers and account info.]
 
 <strong><u>ACTIVITIES:</u></strong>
 [data or —]
@@ -1104,7 +1091,7 @@ If the mood context mentions mom, family caregiving, Social Security, Medi-Cal, 
 <strong><u>SPIRITUAL:</u></strong>
 [faith, prayer, scripture, gratitude to God, faith moments — preserve prayer: and my words: verbatim; summarize quoted text from others]
 
-⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS, ANALYSIS. Never write to them, never include them as placeholders with —, never create them. They do not exist.
+⛔ DO NOT CREATE these sections — they have been removed: MORNING ROUTINE, EVENING ROUTINE, ENERGY, DAILY ROUTINE, LEARNING, MEALS, ANALYSIS, MEDICATIONS & SUPPLEMENTS, MOOD. Never write to them, never include them as placeholders with —, never create them. They do not exist.
 
 <strong><u>REFLECTIONS:</u></strong>
 [personal feelings, self-observations, emotional processing, relationship moments, gratitude for people/experiences — about her inner world and sense of self, NOT faith/God]
